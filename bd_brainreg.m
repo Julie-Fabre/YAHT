@@ -7,8 +7,9 @@ if atlas == 10
 elseif atlas == 25 
     atlasString = 'allen_mouse_25um';
 end
+
 %brainreg command . more details here: https://docs.brainglobe.info/brainreg/user-guide
-CMD = sprintf('brainreg %s %s -v 25 25 25 --orientation %s %s --atlas %s', ...
+CMD = sprintf('brainreg %s %s -v 25 25 25 --orientation %s --atlas %s', ...
     channelToRegister, outputDir, orientationType, atlasString);
 
 %store a copy of the command to the directory

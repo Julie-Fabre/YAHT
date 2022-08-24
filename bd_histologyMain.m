@@ -5,17 +5,21 @@ myPaths; % see JF_scripts_cortexlab
 animal = 'JF070';
 orientationType = 'psl';
 channelColToRegister = 'green';
-atlas = 10; 
+atlas = 25; 
+atlasLocation = '/home/julie/.brainglobe/allen_mouse_25um_v1.2';
+
 %% Load in images and template %% 
 %bd_loadAllenAtlas()
 % load in allen atlas: get in 'AP' format: histology_ccf.mat with tv_slices, av_slices,
 % plane_ap, plane_ml, plane_dv 
 allen_atlas_path = [allenAtlasPath 'allenCCF'];
-tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
-av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
+% tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
+% av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
+tv = loadtiff([atlasLocation, filesep, 'reference.tiff']);
+av = loadtiff([atlasLocation, filesep, 'annotation.tiff']);
 st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
 bregma = [540,0,570];
-allenAtlas10um = readNPY([allenAtlasPath 'allenCCF' filesep 'template_volume_10um.npy']);
+%allenAtlas10um = readNPY([allenAtlasPath 'allenCCF' filesep 'template_volume_10um.npy']);
 
 % load in channel to register 
 channelToRegister = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
