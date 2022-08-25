@@ -31,7 +31,7 @@ registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
 %% Manually check and adjust registration %% 
-bd_checkAndCorrectAlign(tv,av,st,registeredImage,outputDir)
+bd_checkAndCorrectAlign(tv,av,st,registeredImage,outputDir,1)
 
 %% Draw probes %% 
 

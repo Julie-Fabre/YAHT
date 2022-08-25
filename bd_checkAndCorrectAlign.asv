@@ -1,4 +1,4 @@
-function bd_checkAndCorrectAlign(tv,av,st,regIm, saveDir)
+function bd_checkAndCorrectAlign(tv,av,st,regIm, saveDir, screenOrientation)
 % largely based on:
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
@@ -33,16 +33,27 @@ if exist(auto_ccf_alignment_fn,'file')
 end
 
 % Create figure, set button functions
-gui_fig = figure('KeyPressFcn',@keypress);
+gui_fig = figure('KeyPressFcn',@keypress, 'Color', 'k');
 gui_data.curr_slice = 1;
 
 % Set up axis for histology image
-gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
-set(gui_data.histology_ax,'Position',[0,0,0.5,0.9]);
+
+if screenOrientation == 1
+    gui_data.histology_ax = subplot(2,1,2,'YDir','reverse'); 
+    set(gui_data.histology_ax,'Position',[0,0,1.0,0.5]);
+elseif screenOrientation == 2
+    gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
+    set(gui_data.histology_ax,'Position',[0,0,0.5,0.9]);
+else %assume portrait mode 
+    gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
+    set(gui_data.histology_ax,'Position',[0,0,0.5,0.9]);
+end
+    
 hold on; colormap(gray); axis image off;
 gui_data.histology_im_h = imagesc(gui_data.slice_im{1}, ...
     'Parent',gui_data.histology_ax,'ButtonDownFcn',@mouseclick_histology);
 colormap(gray)
+
 % Set up histology-aligned atlas overlay
 % (and make it invisible to mouse clicks)
 histology_aligned_atlas_boundaries_init = ...
@@ -52,11 +63,28 @@ gui_data.histology_aligned_atlas_boundaries = ...
     'AlphaData',histology_aligned_atlas_boundaries_init,'PickableParts','none');
 
 % Set up axis for atlas slice
-gui_data.atlas_ax = subplot(1,2,2,'YDir','reverse'); 
-set(gui_data.atlas_ax,'Position',[0.5,0,0.5,0.9]);
+if screenOrientation == 1
+    gui_data.atlas_ax = subplot(2,1,1,'YDir','reverse'); 
+    set(gui_data.atlas_ax,'Position',[0,0.5,1.0,0.5]);
+elseif screenOrientation == 2
+    gui_data.atlas_ax = subplot(1,2,2,'YDir','reverse'); 
+    set(gui_data.atlas_ax,'Position',[0.5,0,0.5,0.9]);
+else %assume portrait mode 
+    gui_data.atlas_ax = subplot(1,2,2,'YDir','reverse'); 
+    set(gui_data.atlas_ax,'Position',[0.5,0,0.5,0.9]);
+end
+
 hold on; axis image off; colormap(gray); caxis([0,400]);
 gui_data.atlas_im_h = imagesc(gui_data.histology_ccf(1).tv_slices, ...
     'Parent',gui_data.atlas_ax,'ButtonDownFcn',@mouseclick_atlas);
+
+% Set up histology-aligned atlas overlay
+% (and make it invisible to mouse clicks)
+atlas_aligned_atlas_boundaries_init = ...
+    zeros(size(gui_data.histology_ccf(1).tv_slices,1),size(gui_data.histology_ccf(1).tv_slices,2));
+gui_data.atlas_aligned_atlas_boundaries = ...
+    imagesc(atlas_aligned_atlas_boundaries_init,'Parent',gui_data.atlas_ax, ...
+    'AlphaData',atlas_aligned_atlas_boundaries_init,'PickableParts','none');
 
 % Initialize alignment control points and tform matricies
 gui_data.histology_control_points = repmat({zeros(0,2)},length(gui_data.slice_im),1);
@@ -115,6 +143,11 @@ switch eventdata.Key
             get(gui_data.histology_aligned_atlas_boundaries,'Visible');
         set(gui_data.histology_aligned_atlas_boundaries,'Visible', ...
             cell2mat(setdiff({'on','off'},curr_visibility)))
+
+        curr_visibility_atlas = ...
+            get(gui_data.atlas_aligned_atlas_boundaries,'Visible');
+        set(gui_data.atlas_aligned_atlas_boundaries,'Visible', ...
+            cell2mat(setdiff({'on','off'},curr_visibility_atlas)))
         
     % C: clear current points
     case 'c'
@@ -250,10 +283,23 @@ tform_size = imref2d([size(curr_slice_im,1),size(curr_slice_im,2)]);
 curr_av_slice_warp = imwarp(curr_av_slice, tform, 'OutputView',tform_size);
 
 av_warp_boundaries = round(conv2(curr_av_slice_warp,ones(3)./9,'same')) ~= curr_av_slice_warp;
+av_warp_boundaries_red(:,:,1) = av_warp_boundaries;
+av_warp_boundaries_red(:,:,2) = zeros(size(av_warp_boundaries));
+av_warp_boundaries_red(:,:,3) = zeros(size(av_warp_boundaries));
 
 set(gui_data.histology_aligned_atlas_boundaries, ...
-    'CData',av_warp_boundaries, ...
+    'CData',av_warp_boundaries_red, ...
     'AlphaData',av_warp_boundaries*0.3);
+
+atlas_av_slice = curr_av_slice;
+atlas_av_slice(atlas_av_slice>0)=1;
+atlas_boundaries_red(:,:,1) = logical(atlas_av_slice);
+atlas_boundaries_red(:,:,2) = zeros(size(curr_av_slice));
+atlas_boundaries_red(:,:,3) = zeros(size(curr_av_slice));
+
+set(gui_data.atlas_aligned_atlas_boundaries, ...
+    'CData',logical(atlas_boundaries_red), ...
+    'AlphaData', atlas_boundaries_red(:,:,1)*0.3);
 
 % Update transform matrix
 gui_data.histology_ccf_manual_alignment{gui_data.curr_slice} = tform.T;
@@ -272,6 +318,11 @@ gui_data = guidata(gui_fig);
 
 % Set next histology slice
 set(gui_data.histology_im_h,'CData',gui_data.slice_im{gui_data.curr_slice})
+maxColVal = arrayfun(@(x) max(max(gui_data.slice_im{x})), 1:size(gui_data.slice_im,1));
+thisImage = gui_data.slice_im{gui_data.curr_slice};
+thisImage(thisImage>prctile(maxColVal(maxColVal>0), 90)) = prctile(maxColVal(maxColVal>0), 90);
+set(gui_data.histology_im_h,'CData',thisImage)
+
 set(gui_data.atlas_im_h,'CData',gui_data.histology_ccf(gui_data.curr_slice).tv_slices);
 
 % Plot control points for slice
@@ -288,6 +339,12 @@ histology_aligned_atlas_boundaries_init = ...
 set(gui_data.histology_aligned_atlas_boundaries, ...
     'CData',histology_aligned_atlas_boundaries_init, ...
     'AlphaData',histology_aligned_atlas_boundaries_init);
+
+atlas_aligned_atlas_boundaries_init = ...
+    zeros(size(gui_data.histology_ccf(1).tv_slices,1),size(gui_data.histology_ccf(1).tv_slices,2));
+set(gui_data.atlas_aligned_atlas_boundaries, ...
+    'CData',atlas_aligned_atlas_boundaries_init, ...
+    'AlphaData',atlas_aligned_atlas_boundaries_init);
 
 % Upload gui data
 guidata(gui_fig, gui_data);
