@@ -1,9 +1,16 @@
-function bd_checkAndCorrectAlign(tv,av,st,regIm, saveDir, screenOrientation)
+function bd_checkAndCorrectAlign(tv, av, st, registeredIm, saveDir, screenToUse)
 % largely based on:
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
 % Align histology slices and matched CCF slices
 % Andy Peters (peters.andrew.j@gmail.com)
+% things to add: 
+% - smoothing
+% - brigthness
+% - slider
+% - raw original image (and trnasformed atlas)
+% - structure "selection" and border moving 
+% - non-affine transform? 
 
 % Initialize guidata
 gui_data = struct;
@@ -12,12 +19,14 @@ gui_data.av = av;
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = regIm;
+gui_data.slice_im_path = registeredIm;
 
+SCRSZ = screensize(screenToUse);   %Get user's screen size
+screenPortrait = SCRSZ(4)>SCRSZ(3);
    
-gui_data.slice_im = cell(size(regIm,3),1);
-for curr_slice = 1:size(regIm,3)
-    gui_data.slice_im{curr_slice} = regIm(:,:,curr_slice);
+gui_data.slice_im = cell(size(registeredIm,3),1);
+for curr_slice = 1:size(registeredIm,3)
+    gui_data.slice_im{curr_slice} = registeredIm(:,:,curr_slice);
 end
 
 % Load corresponding CCF slices
@@ -38,12 +47,9 @@ gui_data.curr_slice = 1;
 
 % Set up axis for histology image
 
-if screenOrientation == 1
+if screenPortrait
     gui_data.histology_ax = subplot(2,1,2,'YDir','reverse'); 
     set(gui_data.histology_ax,'Position',[0,0,1.0,0.5]);
-elseif screenOrientation == 2
-    gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
-    set(gui_data.histology_ax,'Position',[0,0,0.5,0.9]);
 else %assume portrait mode 
     gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
     set(gui_data.histology_ax,'Position',[0,0,0.5,0.9]);
@@ -62,13 +68,16 @@ gui_data.histology_aligned_atlas_boundaries = ...
     imagesc(histology_aligned_atlas_boundaries_init,'Parent',gui_data.histology_ax, ...
     'AlphaData',histology_aligned_atlas_boundaries_init,'PickableParts','none');
 
+structure_aligned_atlas_boundaries_init = ...
+    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{1},2));
+gui_data.structure_aligned_atlas_boundaries = ...
+    imagesc(structure_aligned_atlas_boundaries_init,'Parent',gui_data.histology_ax, ...
+    'AlphaData',structure_aligned_atlas_boundaries_init,'PickableParts','none');
+
 % Set up axis for atlas slice
-if screenOrientation == 1
+if screenPortrait
     gui_data.atlas_ax = subplot(2,1,1,'YDir','reverse'); 
     set(gui_data.atlas_ax,'Position',[0,0.5,1.0,0.5]);
-elseif screenOrientation == 2
-    gui_data.atlas_ax = subplot(1,2,2,'YDir','reverse'); 
-    set(gui_data.atlas_ax,'Position',[0.5,0,0.5,0.9]);
 else %assume portrait mode 
     gui_data.atlas_ax = subplot(1,2,2,'YDir','reverse'); 
     set(gui_data.atlas_ax,'Position',[0.5,0,0.5,0.9]);
@@ -94,6 +103,17 @@ gui_data.histology_control_points_plot = plot(gui_data.histology_ax,nan,nan,'.w'
 gui_data.atlas_control_points_plot = plot(gui_data.atlas_ax,nan,nan,'.r','MarkerSize',20);
 
 gui_data.histology_ccf_manual_alignment = gui_data.histology_ccf_auto_alignment;
+
+% Structure selection 
+gui_data.structure = 0;
+gui_data.structureText = uicontrol('style','text',...                              %Textbox "size" to set filter size. 
+    'unit','pix',...      
+    'position',[SCRSZ(3)-250 SCRSZ(4)-SCRSZ(2)-250 220 100],...
+    'fontsize',16,...
+    'string',st.name(gui_data.st.id == gui_data.structure),...
+    'BackgroundColor', 'k',...
+    'ForegroundColor', [1, 0, 1]);
+%set(gui_data.structureText,'Callback',{@selectStructure,gui_data});
 
 % Upload gui data
 guidata(gui_fig,gui_data);
@@ -183,13 +203,37 @@ end
 
 end
 
-
+% function selectStructure(varargin)
+% % Get guidata
+% [h,gui_data] = varargin{[1,3]};
+% 
+% 
+% end
 function mouseclick_histology(gui_fig,eventdata)
 % Draw new point for alignment
 
 % Get guidata
 gui_data = guidata(gui_fig);
 
+if eventdata.Button == 3 %right click, toggle nearest structure/global
+        selectedStructure = gui_data.histology_ccf(gui_data.curr_slice).av_slices(round(eventdata.IntersectionPoint(2)), ...
+            round(eventdata.IntersectionPoint(1)));
+        set(gui_data.structureText, 'String', gui_data.st.name(gui_data.st.id ==selectedStructure)) 
+        gui_data.st.name(gui_data.st.id == selectedStructure)
+
+        curr_av_slice = gui_data.histology_ccf(gui_data.curr_slice).av_slices;
+        curr_av_slice(isnan(curr_av_slice)) = 1;
+        
+        av_boundaries = curr_av_slice== selectedStructure;
+        av_warp_boundaries_orange(:,:,1) = av_boundaries;
+        av_warp_boundaries_orange(:,:,2) = zeros(size(av_boundaries));
+        av_warp_boundaries_orange(:,:,3) = av_boundaries;
+        
+        set(gui_data.structure_aligned_atlas_boundaries, ...
+            'CData',av_warp_boundaries_orange, ...
+            'AlphaData',av_boundaries*0.3);
+        
+else %eventdata.Button == 1 => left click 
 % Add clicked location to control points
 gui_data.histology_control_points{gui_data.curr_slice} = ...
     vertcat(gui_data.histology_control_points{gui_data.curr_slice}, ...
@@ -209,7 +253,7 @@ if size(gui_data.histology_control_points{gui_data.curr_slice},1) == ...
         size(gui_data.atlas_control_points{gui_data.curr_slice},1) > 3)
     align_ccf_to_histology(gui_fig)
 end
-
+end
 end
 
 
@@ -254,13 +298,13 @@ if size(gui_data.histology_control_points{gui_data.curr_slice},1) == ...
     % If same number of >= 3 control points, use control point alignment
     tform = fitgeotrans(gui_data.atlas_control_points{gui_data.curr_slice}, ...
         gui_data.histology_control_points{gui_data.curr_slice},'affine');
-    title(gui_data.histology_ax,'New alignment');
+    title(gui_data.histology_ax,'New alignment', 'color', 'w');
     
       
 elseif size(gui_data.histology_control_points{gui_data.curr_slice},1) >= 1 ||  ...
         size(gui_data.atlas_control_points{gui_data.curr_slice},1) >= 1
     % If less than 3 or nonmatching points, use auto but don't draw
-    title(gui_data.histology_ax,'New alignment');
+    title(gui_data.histology_ax,'New alignment', 'color', 'w');
     
     % Upload gui data
     guidata(gui_fig, gui_data);
@@ -271,7 +315,7 @@ else
     if isfield(gui_data,'histology_ccf_auto_alignment')
         tform = affine2d;
         tform.T = gui_data.histology_ccf_auto_alignment{gui_data.curr_slice};
-        title(gui_data.histology_ax,'Previous alignment');
+        title(gui_data.histology_ax,'Previous alignment', 'color', 'w');
     end
 end
 
@@ -339,6 +383,12 @@ histology_aligned_atlas_boundaries_init = ...
 set(gui_data.histology_aligned_atlas_boundaries, ...
     'CData',histology_aligned_atlas_boundaries_init, ...
     'AlphaData',histology_aligned_atlas_boundaries_init);
+
+structure_aligned_atlas_boundaries_init = ...
+    zeros(size(gui_data.histology_ccf(1).tv_slices,1),size(gui_data.histology_ccf(1).tv_slices,2));
+set(gui_data.structure_aligned_atlas_boundaries, ...
+    'CData',structure_aligned_atlas_boundaries_init, ...
+    'AlphaData',structure_aligned_atlas_boundaries_init);
 
 atlas_aligned_atlas_boundaries_init = ...
     zeros(size(gui_data.histology_ccf(1).tv_slices,1),size(gui_data.histology_ccf(1).tv_slices,2));

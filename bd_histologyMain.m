@@ -1,4 +1,7 @@
 %% ~~ Histology main ~~ %% 
+% - add option to use elastix 
+% - don't fit some parts that are prone to being moved (eg olf bulbs, pposterior cortex (eg retrospenial
+% ect) ?
 
 %% Images info %% 
 myPaths; % see JF_scripts_cortexlab
@@ -17,7 +20,11 @@ allen_atlas_path = [allenAtlasPath 'allenCCF'];
 % av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
 tv = loadtiff([atlasLocation, filesep, 'reference.tiff']);
 av = loadtiff([atlasLocation, filesep, 'annotation.tiff']);
-st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
+st = readtable([atlasLocation, filesep, 'structures.csv']);
+st(size(st,1)+1,1) = {'all'};
+st(size(st,1),2) = {0};
+st(size(st,1),3) = {'all'};
+
 bregma = [540,0,570];
 %allenAtlas10um = readNPY([allenAtlasPath 'allenCCF' filesep 'template_volume_10um.npy']);
 
@@ -31,7 +38,7 @@ registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
 %% Manually check and adjust registration %% 
-bd_checkAndCorrectAlign(tv,av,st,registeredImage,outputDir,1)
+bd_checkAndCorrectAlign(tv,av,st,registeredImage,outputDir,2)
 
 %% Draw probes %% 
 
