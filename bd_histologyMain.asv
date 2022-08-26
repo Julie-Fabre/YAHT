@@ -28,9 +28,6 @@ bd_brainreg([channelToRegister.folder, filesep, channelToRegister.name], outputD
 registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
-%% Apply registration transform to other channel %% 
-bd_applyBrainReg()
-
 %% Manually check and adjust registration %%
 screenToUse = 2;
 bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
@@ -39,5 +36,6 @@ bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
 
 %% Draw probes %%
 bd_drawProbes(tv, av, st, registeredImage, outputDir)
+% assign probes to days/sites
 
-%% Assign probes to days/sites and save data %%
+%% Assing probes to Save data %%
