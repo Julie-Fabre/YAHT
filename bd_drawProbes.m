@@ -1,4 +1,5 @@
 function bd_drawProbes(tv, av, st, registeredImage, outputDir)
+% based on:
 % AP_get_probe_histology(tv,av,st,slice_im_path)
 %
 % Get probe trajectory in histology and convert to ccf

@@ -1,5 +1,5 @@
 function bd_checkAndCorrectAlign(tv, av, st, registeredIm, saveDir, screenToUse)
-% largely based on:
+% based on:
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
 % Align histology slices and matched CCF slices
