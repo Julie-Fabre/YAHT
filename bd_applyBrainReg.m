@@ -12,7 +12,7 @@ function bd_applyBrainReg(imgToTransform, atlasResolution_um, atlasSize, outputD
 %     Find the first coordinate (this is based on the atlas, but typically anterior-posterior) by 
 % finding the value of deformation_field_0.tiff at `(100,100,100).
 %     Find the second coordinate (this is based on the atlas, but typically superior-inferior) by 
-% finding the value of deformation_field_1.tiff at `(100,100,100).
+% finding the value of deformation_fieAP_grab_histology_ccfJFld_1.tiff at `(100,100,100).
 %     Find the third coordinate (this is based on the atlas, but typically right-left) by finding 
 % the value of deformation_field_2.tiff at `(100,100,100).
 % 
@@ -55,7 +55,7 @@ for iPixelX = 1:size(imgTr,1) % QQ make this faster ...
         for iPixelZ = 1:size(imgTr,3)
             locationV = round(1000/ atlasResolution_um * [deformation1(iPixelX, iPixelY, iPixelZ) + 1,...
     deformation2(iPixelX, iPixelY, iPixelZ) + 1, deformation3(iPixelX, iPixelY, iPixelZ) + 1]); % + 1 python -> matlab indexing convention
-            if ~any(locationV < 1) %&& ~any(locationV > [atlasSize(3), atlasSize(1), atlasSize(2)])
+            if ~any(locationV < 1) && ~any(locationV > [atlasSize(3), atlasSize(1), atlasSize(2)])
                 transformedImage(locationV(1), locationV(2), locationV(3)) = imgTr(iPixelX, iPixelY, iPixelZ);
                 %transformedImagePoints(iPixelX, iPixelY, iPixelZ) = [locationV(1), locationV(2), locationV(3)];
             end

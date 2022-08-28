@@ -1,10 +1,10 @@
 
-%% ~~ Histology main ~~ %%
+%% Histology main
 % - add option to use elastix
 % - don't fit some parts that are prone to being moved (eg olf bulbs, pposterior cortex (eg retrospenial
 % ect) ?
 
-%% Images info %%
+%% ~ Images info
 myPaths; % see JF_scripts_cortexlab
 animal = 'JF070';
 
@@ -22,25 +22,29 @@ atlasLocation = dir(['/home/julie/.brainglobe/', atlasType, '_', atlasSpecies, '
 imgToRegister = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
 outputDir = [imgToRegister.folder, filesep, 'brainReg'];
 
-%% Load in images and template %%
+%% ~ Load in images and template ~
 [tv, av, st, bregma] = bd_loadAllenAtlas(atlasLocation.folder);
 
-%% Register %%
+%% ~ Register ~
 bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, orientationType, atlasResolution_um)
 registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
-%% [WIP] Apply registration transform to other channel %% 
+%% ~ [WIP] Apply registration transform to other channel ~
 % imgToTransform = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 % bd_applyBrainReg([imgToTransform.folder, filesep, imgToTransform.name], atlasResolution_um, atlasSize, outputDir)
 
-%% Manually check and adjust registration %%
+%% ~ Manually check and adjust registration ~
+%% ~~ Check and adjust orientation ~~
+bd_checkAndCorrectOrientation(tv, av, st, slice_path);
+
+%% ~~ Check adjust border alignement/scaling ~~
 screenToUse = 2;
 bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : histology/ccf alignement/warp
 
-%% Draw probes %%
+%% ~ Draw probes ~
 bd_drawProbes(tv, av, st, registeredImage, outputDir)
 
-%% Assign probes to days/sites and save data %%
+%% ~ Assign probes to days/sites and save data ~
