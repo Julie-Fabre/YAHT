@@ -1,5 +1,5 @@
 function bd_applyBrainReg(imgToTransform, atlasResolution_um, atlasSize, outputDir)
-% QQ this doesn't work very well - need to trouble shoot more 
+% QQ I don't understand why this doesn't work arghhhhh
 
 % from https://forum.image.sc/t/whats-in-the-deformation-files/66409:
 % The deformation field files represent the mapping from one coordinate space (in brainregfs case, 
@@ -48,28 +48,30 @@ deformation1 = loadtiff([outputDir, filesep, 'deformation_field_0.tiff']);
 deformation2 = loadtiff([outputDir, filesep, 'deformation_field_1.tiff']);
 deformation3 = loadtiff([outputDir, filesep, 'deformation_field_2.tiff']);
 
+
 transformedImage = nan([atlasSize(3), atlasSize(1), atlasSize(2)]); 
-%transformedImage = nan
 for iPixelX = 1:size(imgTr,1) % QQ make this faster ...
     for iPixelY = 1:size(imgTr,2)
         for iPixelZ = 1:size(imgTr,3)
-            locationV = round(1000/ atlasResolution_um * [deformation1(iPixelX, iPixelY, iPixelZ),...
-    deformation2(iPixelX, iPixelY, iPixelZ), deformation3(iPixelX, iPixelY, iPixelZ)]);
-            if ~any(locationV < 1) && ~any(locationV > [atlasSize(3), atlasSize(1), atlasSize(2)])
+            locationV = round(1000/ atlasResolution_um * [deformation1(iPixelX, iPixelY, iPixelZ) + 1,...
+    deformation2(iPixelX, iPixelY, iPixelZ) + 1, deformation3(iPixelX, iPixelY, iPixelZ) + 1]); % + 1 python -> matlab indexing convention
+            if ~any(locationV < 1) %&& ~any(locationV > [atlasSize(3), atlasSize(1), atlasSize(2)])
                 transformedImage(locationV(1), locationV(2), locationV(3)) = imgTr(iPixelX, iPixelY, iPixelZ);
+                %transformedImagePoints(iPixelX, iPixelY, iPixelZ) = [locationV(1), locationV(2), locationV(3)];
             end
         end
     end
 end
-saveFile = transformedImage;
-%saveastiff(saveFile , [outputDir, filesep, 'downsampled_transformed_312p.tiff']); 
-
-figure(); 
-subplot(311); imagesc(squeeze(imgTr(:, :, 100))); axis equal;
-
-subplot(312); imagesc(squeeze(transformedImage(100, :, :))); axis equal;
-%subplot(412); imagesc(squeeze(transformedImage(:, 100, :))); axis equal;
-%subplot(413); imagesc(squeeze(transformedImage(:, :, 100))); axis equal;
-subplot(313); imagesc(squeeze(imgOr(:, :, 528-100))); axis equal;
+% saveFile = rot90(permute(transformedImage(end:-1:1,:,:),[2,1,3]),0);
+% %saveastiff(saveFile , [outputDir, filesep, 'downsampled_transformed_1_213.tiff']); 
+% 
+% figure(); 
+% imgToDisp = 350;
+% subplot(311); imagesc(squeeze(imgTr(:, :,imgToDisp))); axis equal;
+% 
+% subplot(312); imagesc(squeeze(saveFile(:, :, imgToDisp))); axis equal;
+% %subplot(412); imagesc(squeeze(transformedImage(:, 100, :))); axis equal;
+% %subplot(413); imagesc(squeeze(transformedImage(:, :, 100))); axis equal;
+% subplot(313); imagesc(squeeze(imgOr(:, :, 528-imgToDisp+16))); axis equal;
 
 end

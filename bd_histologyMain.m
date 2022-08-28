@@ -30,7 +30,7 @@ bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, orie
 registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
-%% Apply registration transform to other channel %% 
+%% [WIP] Apply registration transform to other channel %% 
 % imgToTransform = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 % bd_applyBrainReg([imgToTransform.folder, filesep, imgToTransform.name], atlasResolution_um, atlasSize, outputDir)
 
