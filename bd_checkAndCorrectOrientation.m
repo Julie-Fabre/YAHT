@@ -1,42 +1,57 @@
-function bd_checkAndCorrectOrientation(tv,av,st,slice_im_path)
+function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, screenToUse)
 % Grab CCF slices corresponding to histology slices
 % Andy Peters (peters.andrew.j@gmail.com)
 
 % Initialize guidata
 gui_data = struct;
-gui_data.tv = tv;
-gui_data.av = av;
+gui_data.tv = permute(rot90(tv,1), [3,2,1]);
+gui_data.av = permute(rot90(av,1), [3,2,1]);
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = slice_im_path;
-slice_im_dir = dir([slice_im_path filesep '*.tif']);
-slice_im_fn = natsortfiles(cellfun(@(path,fn) [path filesep fn], ...
-    {slice_im_dir.folder},{slice_im_dir.name},'uni',false));
-gui_data.slice_im = cell(length(slice_im_fn),1);
-for curr_slice = 1:length(slice_im_fn)
-    gui_data.slice_im{curr_slice} = imread(slice_im_fn{curr_slice});
+gui_data.slice_im_path = registeredIm;
+
+SCRSZ = screensize(screenToUse);   %Get user's screen size
+screenPortrait = SCRSZ(4)>SCRSZ(3);
+   
+gui_data.slice_im = cell(size(registeredIm,3),1);
+for curr_slice = 1:size(registeredIm,3)
+    gui_data.slice_im{curr_slice} = registeredIm(:,:,curr_slice);
 end
 
 % Create figure, set button functions
 gui_fig = figure( ...
     'WindowScrollWheelFcn',@scroll_atlas_slice, ...
-    'KeyPressFcn',@keypress);
+    'KeyPressFcn',@keypress, 'Color', 'k');
 
 % Set up axis for histology image
-gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
+if screenPortrait
+    gui_data.histology_ax = subplot(2,1,1,'YDir','reverse'); 
+else
+    gui_data.histology_ax = subplot(1,2,1,'YDir','reverse'); 
+end
 hold on; axis image off;
 gui_data.histology_im_h = imagesc(gui_data.slice_im{1},'Parent',gui_data.histology_ax);
 colormap(gray)
-gui_data.curr_histology_slice = 1;
-title(gui_data.histology_ax,'No saved atlas position');
+gui_data.curr_histology_slice = 200;
+title(gui_data.histology_ax,'Automatic saved atlas position', 'Color', 'w');
 
 % Set up 3D atlas axis
-gui_data.atlas_ax = subplot(1,2,2, ...
-    'ZDir','reverse','color','k', ...
-    'XTick',[1,size(av,1)],'XTickLabel',{'Front','Back'}, ...
-    'YTick',[1,size(av,3)],'YTickLabel',{'Left','Right'}, ...
-    'ZTick',[1,size(av,2)],'ZTickLabel',{'Top','Bottom'});
+if screenPortrait
+    gui_data.atlas_ax = subplot(2,1,2, ...
+        'ZDir','reverse','color','k', ...
+        'XTick',[1,size(av,1)],'XTickLabel',{'Front','Back'}, ...
+        'YTick',[1,size(av,3)],'YTickLabel',{'Left','Right'}, ...
+        'ZTick',[1,size(av,2)],'ZTickLabel',{'Top','Bottom'}, ...
+        'XColor','w', 'YColor','w', 'ZColor', 'w');
+else
+    gui_data.atlas_ax = subplot(1,2,2, ...
+        'ZDir','reverse','color','k', ...
+        'XTick',[1,size(av,1)],'XTickLabel',{'Front','Back'}, ...
+        'YTick',[1,size(av,3)],'YTickLabel',{'Left','Right'}, ...
+        'ZTick',[1,size(av,2)],'ZTickLabel',{'Top','Bottom'}, ...
+        'XColor','w', 'YColor','w', 'ZColor', 'w');
+end
 hold on
 axis vis3d equal manual
 view([90,0]);
@@ -236,8 +251,26 @@ gui_data.atlas_slice_point = gui_data.atlas_slice_point + ...
 % Upload gui data
 guidata(gui_fig, gui_data);
 
+
 % Update slice
 update_atlas_slice(gui_fig)
+
+end
+
+function initialize_slice(gui_fig)
+% Draw atlas slice through plane perpendicular to camera through set point
+
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get slice (larger spacing for faster pulling)
+[tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,3);
+
+% Update the slice display
+set(gui_data.atlas_slice_plot,'XData',plane_ap,'YData',plane_ml,'ZData',plane_dv,'CData',tv_slice);
+
+% Upload gui_data
+guidata(gui_fig, gui_data);
 
 end
 
