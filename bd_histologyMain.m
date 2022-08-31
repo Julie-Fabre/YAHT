@@ -5,7 +5,8 @@
 % ect) ?
 
 %% ~ Images info
-myPaths; % see JF_scripts_cortexlab. loads in a bunch of paths, of which only one is used in this script: brainsawPath
+myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
+% loads in a bunch of paths, of which only one is used in this script: brainsawPath
 animal = 'JF070';
 
 % registration parameters
@@ -36,7 +37,11 @@ bd_convertToAPFormat(registeredImage, tv, av, outputDir) % get and save atlas da
 screenToUse = 2; % on which of your displays to create the following plots. 1 = main display, 2 = secondary and so on
 
 %% ~~ Check and adjust orientation ~~
-bd_checkAndCorrectOrientation(tv, av, st, registeredImage, outputDir, screenToUse); % adjust and save orientation if necessary
+% Adjust the atlas to one slice (using arrow keys to navigate in the allen ccf and pressing eneter once you're happy) 
+% and this transformation will then be applied to all other slices and saved in histology_ccf.mat file.
+% If you register several slices, the average transform will be applied to
+% all other slices and saved. 
+bd_checkAndCorrectOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
 
 %% ~~ [WIP] Check adjust border alignement/scaling ~~
 bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
