@@ -73,7 +73,8 @@ gui_data.key = 'NaN';
 guidata(gui_fig,gui_data);
 
 % Draw the first slice
-update_atlas_slice(gui_fig);
+%update_atlas_slice(gui_fig);
+initialize_slice(gui_fig);
 
 % Print controls
 CreateStruct.Interpreter = 'tex';
@@ -121,6 +122,7 @@ switch eventdata.Key
 
         gui_data.curr_atlas_slice = ...
             min(gui_data.curr_atlas_slice + 1,length(gui_data.slice_im));
+        gui_data.atlas_slice_point = gui_data.atlas_slice_point + [-1, 0, 0];
         guidata(gui_fig,gui_data);
         update_atlas_slice(gui_fig);
         
@@ -132,18 +134,21 @@ switch eventdata.Key
 
         gui_data.curr_atlas_slice = ...
             min(gui_data.curr_atlas_slice - 1,length(gui_data.slice_im));
+        gui_data.atlas_slice_point = gui_data.atlas_slice_point + [1, 0, 0];
         guidata(gui_fig,gui_data);
         update_atlas_slice(gui_fig);
 
     case 'pageup'
          gui_data.curr_atlas_slice = ...
             min(gui_data.curr_atlas_slice + 1,length(gui_data.slice_im));
+         gui_data.atlas_slice_point = gui_data.atlas_slice_point + [1, 0, 0];
         guidata(gui_fig,gui_data);
         update_atlas_slice(gui_fig);
 
     case 'pagedown'
           gui_data.curr_atlas_slice = ...
             min(gui_data.curr_atlas_slice - 1,length(gui_data.slice_im));
+          gui_data.atlas_slice_point = gui_data.atlas_slice_point + [-1, 0, 0];
         guidata(gui_fig,gui_data);
         update_atlas_slice(gui_fig);
         
@@ -230,8 +235,8 @@ else
     else
          sliceDiff = 1;
     end
-   gui_data.curr_atlas_slice = gui_data.curr_atlas_slice + sliceDiff;    gui_data.atlas_slice_point = ...
-        gui_data.slice_points(gui_data.curr_atlas_slice + sliceDiff,:);
+   gui_data.curr_atlas_slice = gui_data.curr_atlas_slice + sliceDiff;    
+   gui_data.atlas_slice_point = gui_data.atlas_slice_point + [sliceDiff, 0, 0];
     title(gui_data.histology_ax,'Registered atlas position')
     guidata(gui_fig,gui_data);
     update_atlas_slice(gui_fig);
@@ -289,15 +294,17 @@ end
 % end
 
 function initialize_slice(gui_fig)
-% Draw atlas slice through plane perpendicular to camera through set point
-
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Get slice (larger spacing for faster pulling)
+% Histology slice 
+set(gui_data.histology_im_h,'CData',gui_data.slice_im{gui_data.curr_histology_slice})
+
+% Get atlas slice (larger spacing for faster pulling)
+gui_data.atlas_slice_point = [gui_data.curr_atlas_slice+0.5, 264.5, 228.5];
 [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,3);
 
-% Update the slice display
+% Update the atlas slice display
 set(gui_data.atlas_slice_plot,'XData',plane_ap,'YData',plane_ml,'ZData',plane_dv,'CData',tv_slice);
 
 % Upload gui_data
@@ -323,6 +330,7 @@ guidata(gui_fig, gui_data);
 end
 
 function [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,slice_px_space)
+
 % Grab anatomical and labelled atlas within slice
 
 % Get plane normal to the camera -> center axis, grab voxels on plane
@@ -396,15 +404,6 @@ av_slice = nan(size(use_idx));
 av_slice(curr_slice_isbrain) = gui_data.av(grab_pix_idx);
 
 end
-
-
-
-
-
-
-
-
-
 
 
 

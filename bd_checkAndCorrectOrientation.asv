@@ -73,7 +73,8 @@ gui_data.key = 'NaN';
 guidata(gui_fig,gui_data);
 
 % Draw the first slice
-update_atlas_slice(gui_fig);
+%update_atlas_slice(gui_fig);
+initialize_slice(gui_fig);
 
 % Print controls
 CreateStruct.Interpreter = 'tex';
@@ -230,9 +231,8 @@ else
     else
          sliceDiff = 1;
     end
-   
-    gui_data.atlas_slice_point = ...
-        gui_data.slice_points(gui_data.curr_atlas_slice + sliceDiff,:);
+   gui_data.curr_atlas_slice = gui_data.curr_atlas_slice + sliceDiff;    
+   gui_data.atlas_slice_point = gui_data.atlas_slice_point + [0, 0, sliceDiff];
     title(gui_data.histology_ax,'Registered atlas position')
     guidata(gui_fig,gui_data);
     update_atlas_slice(gui_fig);
@@ -290,15 +290,17 @@ end
 % end
 
 function initialize_slice(gui_fig)
-% Draw atlas slice through plane perpendicular to camera through set point
-
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Get slice (larger spacing for faster pulling)
+% Histology slice 
+set(gui_data.histology_im_h,'CData',gui_data.slice_im{gui_data.curr_histology_slice})
+
+% Get atlas slice (larger spacing for faster pulling)
+gui_data.atlas_slice_point = [160.5, 264.5, gui_data.curr_atlas_slice+0.5];
 [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,3);
 
-% Update the slice display
+% Update the atlas slice display
 set(gui_data.atlas_slice_plot,'XData',plane_ap,'YData',plane_ml,'ZData',plane_dv,'CData',tv_slice);
 
 % Upload gui_data
@@ -324,6 +326,7 @@ guidata(gui_fig, gui_data);
 end
 
 function [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,slice_px_space)
+
 % Grab anatomical and labelled atlas within slice
 
 % Get plane normal to the camera -> center axis, grab voxels on plane
@@ -400,6 +403,80 @@ end
 
 
 
+function [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = initialize_grab_atlas_slice(gui_data,slice_px_space)
+% Grab anatomical and labelled atlas within slice
+
+% Get plane normal to the camera -> center axis, grab voxels on plane
+cam_vector = get_camera_vector(gui_data);
+plane_offset = -(cam_vector*[1, 1, gui_data.curr_atlas_slice]');
+
+% Define a plane of points to index
+% (the plane grid is defined based on the which cardinal plan is most
+% orthogonal to the plotted plane. this is janky but it works)
+
+[~,cam_plane] = max(abs(cam_vector./norm(cam_vector)));
+
+switch cam_plane
+    
+    % Note: ML and DV directions are flipped to match 2D histology and 3D
+    % atlas axes, so make ML and DV coordinates go backwards for true CCF
+    % coordinates
+    
+    case 1
+        [plane_ml,plane_dv] = ...
+            meshgrid(1:slice_px_space:size(gui_data.tv,3), ...
+            1:slice_px_space:size(gui_data.tv,2));
+        plane_ap = ...
+            (cam_vector(2)*plane_ml+cam_vector(3)*plane_dv + plane_offset)/ ...
+            -cam_vector(1);
+        
+    case 2
+        [plane_ap,plane_dv] = ...
+            meshgrid(1:slice_px_space:size(gui_data.tv,1), ...
+            1:slice_px_space:size(gui_data.tv,2));
+        plane_ml = ...
+            (cam_vector(1)*plane_ap+cam_vector(3)*plane_dv + plane_offset)/ ...
+            -cam_vector(2);
+        
+    case 3
+        [plane_ap,plane_ml] = ...
+            meshgrid(size(gui_data.tv,3):-slice_px_space:1, ...
+            1:slice_px_space:size(gui_data.tv,3));
+        plane_dv = ...
+            (cam_vector(1)*plane_ap+cam_vector(2)*plane_ml + plane_offset)/ ...
+            -cam_vector(3);
+        
+end
+
+% Get the coordiates on the plane
+ap_idx = round(plane_ap);
+ml_idx = round(plane_ml);
+dv_idx = round(plane_dv);
+
+% Find plane coordinates in bounds with the volume
+% (CCF coordinates: [AP,DV,ML])
+use_ap = ap_idx > 0 & ap_idx < size(gui_data.tv,1);
+use_dv = dv_idx > 0 & dv_idx < size(gui_data.tv,2);
+use_ml = ml_idx > 0 & ml_idx < size(gui_data.tv,3);
+use_idx = use_ap & use_ml & use_dv;
+
+curr_slice_idx = sub2ind(size(gui_data.tv),ap_idx(use_idx),dv_idx(use_idx),ml_idx(use_idx));
+
+% Find plane coordinates that contain brain
+curr_slice_isbrain = false(size(use_idx));
+curr_slice_isbrain(use_idx) = gui_data.av(curr_slice_idx) > 0;
+
+% Index coordinates in bounds + with brain
+grab_pix_idx = sub2ind(size(gui_data.tv),ap_idx(curr_slice_isbrain),dv_idx(curr_slice_isbrain),ml_idx(curr_slice_isbrain));
+
+% Grab pixels from (selected) volume
+tv_slice = nan(size(use_idx));
+tv_slice(curr_slice_isbrain) = gui_data.tv(grab_pix_idx);
+
+av_slice = nan(size(use_idx));
+av_slice(curr_slice_isbrain) = gui_data.av(grab_pix_idx);
+
+end
 
 
 
