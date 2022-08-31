@@ -39,12 +39,14 @@ screenToUse = 2;
 %% ~~ Check and adjust orientation ~~
 bd_checkAndCorrectOrientation(tv, av, st, registeredImage, screenToUse);
 
-%% ~~ Check adjust border alignement/scaling ~~
+%% ~~ [WIP] Check adjust border alignement/scaling ~~
 bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : histology/ccf alignement/warp
 
 %% ~ Draw probes ~
+% QQ to add: draw both bspine fit and affine, choose which to use for each
+% probe 
 bd_drawProbes(tv, av, st, registeredImage, outputDir)
 
-%% ~ Assign probes to days/sites and save data ~
+%% ~ [WIP] Assign probes to days/sites and save data ~

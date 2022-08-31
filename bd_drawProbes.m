@@ -54,7 +54,7 @@ for curr_slice = 1:length(gui_data.histology_ccf)
 end
 
 % Create figure, set button functions
-gui_fig = figure('KeyPressFcn',@keypress);
+gui_fig = figure('KeyPressFcn',@keypress, 'Color', 'k');
     
 gui_data.curr_slice = 1;
 
