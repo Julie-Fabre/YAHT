@@ -230,7 +230,8 @@ else
     else
          sliceDiff = 1;
     end
-   gui_data.curr_atlas_slice = gui_data.curr_atlas_slice + sliceDiff;    gui_data.atlas_slice_point = ...
+   
+    gui_data.atlas_slice_point = ...
         gui_data.slice_points(gui_data.curr_atlas_slice + sliceDiff,:);
     title(gui_data.histology_ax,'Registered atlas position')
     guidata(gui_fig,gui_data);

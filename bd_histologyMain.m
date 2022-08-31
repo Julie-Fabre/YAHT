@@ -23,6 +23,7 @@ imgToRegister = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micro
 imgToTransform = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 outputDir = [imgToRegister.folder, filesep, 'brainReg'];
 
+
 %% ~ Load in images and template ~
 [tv, av, st, bregma] = bd_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
 
@@ -34,6 +35,7 @@ bd_convertToAPFormat(registeredImage, tv, av, outputDir)
 
 %% ~ Manually check and adjust registration ~
 screenToUse = 2;
+
 %% ~~ Check and adjust orientation ~~
 bd_checkAndCorrectOrientation(tv, av, st, registeredImage, screenToUse);
 
