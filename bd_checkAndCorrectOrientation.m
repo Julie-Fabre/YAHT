@@ -171,18 +171,21 @@ switch eventdata.Key
         user_confirm = questdlg('\fontsize{15} Save and quit?','Confirm exit',opts);
         if strcmp(user_confirm,'Yes')
             
-            % Check that a CCF slice point exists for each histology slice
-            if any(isnan(gui_data.slice_points(:)))
-                createmode = struct;
-                createmode.Interpreter = 'tex';
-                createmode.WindowStyle = 'modal';
-                msgbox('\fontsize{12} Some histology slice(s) not assigned CCF slice', ...
-                    'Not saving','error',createmode);
-                return
-            end
+%             % Check that a CCF slice point exists for each histology slice
+%             if any(isnan(gui_data.slice_points(:)))
+%                 createmode = struct;
+%                 createmode.Interpreter = 'tex';
+%                 createmode.WindowStyle = 'modal';
+%                 msgbox('\fontsize{12} Some histology slice(s) not assigned CCF slice', ...
+%                     'Not saving','error',createmode);
+%                 return
+%             end
             
-            % Go through each slice, pull full-resolution atlas slice and
-            % corrsponding coordinates       
+            % Go through each slice, find updated full-resolution atlas slice and
+            % corrsponding coordinates 
+            averageTransform = nanmean(gui_data.slice_points -...
+                [1:size(gui_data.slice_points,1); zeros(1,size(gui_data.slice_points,1)); zeros(1, size(gui_data.slice_points,1))]');
+
             histology_ccf_init = cell(length(gui_data.slice_im),1);
             histology_ccf = struct( ...
                 'tv_slices',histology_ccf_init, ...
@@ -193,7 +196,7 @@ switch eventdata.Key
             
             h = waitbar(0,'Saving atlas slices...');
             for curr_slice = 1:length(gui_data.slice_im)
-                gui_data.atlas_slice_point = gui_data.slice_points(curr_slice,:);
+                gui_data.atlas_slice_point = averageTransform + [curr_slice, 0, 0];
                 [histology_ccf(curr_slice).tv_slices, ...
                     histology_ccf(curr_slice).av_slices, ...
                     histology_ccf(curr_slice).plane_ap, ...
