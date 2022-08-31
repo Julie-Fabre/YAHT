@@ -1,4 +1,4 @@
-function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, screenToUse)
+function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, outputDir, screenToUse)
 % Grab CCF slices corresponding to histology slices
 % Andy Peters (peters.andrew.j@gmail.com)
 
@@ -9,7 +9,7 @@ gui_data.av = permute(rot90(av,1), [3,2,1]);
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = registeredIm;
+gui_data.slice_im_path = [outputDir, filesep, 'manual'];
 
 SCRSZ = screensize(screenToUse);   %Get user's screen size
 screenPortrait = SCRSZ(4)>SCRSZ(3);

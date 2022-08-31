@@ -1,4 +1,4 @@
-function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, screenToUse)
+function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, screenToUse, outputDir)
 % Grab CCF slices corresponding to histology slices
 % Andy Peters (peters.andrew.j@gmail.com)
 
@@ -9,7 +9,7 @@ gui_data.av = permute(rot90(av,1), [3,2,1]);
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = registeredIm;
+gui_data.slice_im_path = [outputDir, filesep, 'manual'];;
 
 SCRSZ = screensize(screenToUse);   %Get user's screen size
 screenPortrait = SCRSZ(4)>SCRSZ(3);
@@ -183,9 +183,9 @@ switch eventdata.Key
             
             % Go through each slice, find updated full-resolution atlas slice and
             % corrsponding coordinates 
-            gui_data_averageTransform = nanmean(gui_data.slice_points -...
+            averageTransform = nanmean(gui_data.slice_points -...
                 [1:size(gui_data.slice_points,1); zeros(1,size(gui_data.slice_points,1)); zeros(1, size(gui_data.slice_points,1))]');
-            
+
             histology_ccf_init = cell(length(gui_data.slice_im),1);
             histology_ccf = struct( ...
                 'tv_slices',histology_ccf_init, ...
@@ -196,7 +196,7 @@ switch eventdata.Key
             
             h = waitbar(0,'Saving atlas slices...');
             for curr_slice = 1:length(gui_data.slice_im)
-                gui_data.atlas_slice_point = gui_data.slice_points(curr_slice,:);
+                gui_data.atlas_slice_point = averageTransform + [curr_slice, 0, 0];
                 [histology_ccf(curr_slice).tv_slices, ...
                     histology_ccf(curr_slice).av_slices, ...
                     histology_ccf(curr_slice).plane_ap, ...
