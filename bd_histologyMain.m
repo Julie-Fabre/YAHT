@@ -21,7 +21,7 @@ brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data li
 
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] =...
-    bd_getLocations(brainglobeLocation, atlasType, atlasSpecies, atlasResolution_um);
+    bd_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
 
 %% ~ Load in images and template ~
 [tv, av, st, bregma] = bd_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
@@ -41,10 +41,10 @@ screenToUse = 2; % on which of your displays to create the following plots. 1 = 
 % and this transformation will then be applied to all other slices and saved in histology_ccf.mat file.
 % If you register several slices, the average transform will be applied to
 % all other slices and saved. 
-bd_checkAndCorrectOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
+bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
 
 %% ~~ [WIP] Check adjust border alignement/scaling ~~
-bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
+bd_checkAndCorrectAtasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : ccf to histology alignement/warp
 
@@ -57,3 +57,14 @@ bd_drawProbes(tv, av, st, transformedImage, outputDir) % draw probes. it you hav
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
 %% ~ [WIP] Assign probes to days/sites and save data ~
+probe2ephys = struct; 
+probe2ephys(1).day = 4;
+probe2ephys(1).site = 2;
+probe2ephys(1).shank = 4;
+
+save([im_path, '/probe2ephys.mat'], 'probe2ephys')
+
+bd_alignEphysAndHistology(st, slice_path, ...
+                spike_times, spike_templates, template_depths, ...
+                lfp, channel_positions(:, 2), ...
+                use_probe);

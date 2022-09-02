@@ -1,4 +1,4 @@
-function bd_checkAndCorrectOrientation(tv, av, st, registeredIm, outputDir, screenToUse)
+function bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredIm, outputDir, screenToUse)
 % Grab CCF slices corresponding to histology slices
 % Andy Peters (peters.andrew.j@gmail.com)
 
@@ -35,6 +35,12 @@ gui_data.curr_histology_slice = 200;
 gui_data.curr_atlas_slice = 200;
 title(gui_data.histology_ax,'Automatic saved atlas position', 'Color', 'w');
 
+histology_aligned_atlas_boundaries_init = ...
+    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{1},2));
+gui_data.histology_aligned_atlas_boundaries = ...
+    imagesc(histology_aligned_atlas_boundaries_init,'Parent',gui_data.histology_ax, ...
+    'AlphaData',histology_aligned_atlas_boundaries_init,'PickableParts','none');
+
 % Set up 3D atlas axis
 if screenPortrait
     gui_data.atlas_ax = subplot(2,1,2, ...
@@ -60,6 +66,13 @@ ylim([1,ml_max]);
 zlim([1,dv_max]);
 colormap(gui_data.atlas_ax,'gray');
 caxis([0,400]);
+
+atlas_aligned_atlas_boundaries_init = ...
+    zeros(size(tv,1),size(tv,2));
+gui_data.atlas_aligned_atlas_boundaries = ...
+    imagesc(atlas_aligned_atlas_boundaries_init,'Parent',gui_data.atlas_ax, ...
+    'AlphaData',atlas_aligned_atlas_boundaries_init,'PickableParts','none');
+
 
 % Create slice object and first slice point
 gui_data.atlas_slice_plot = surface(gui_data.atlas_ax,'EdgeColor','none'); % Slice on 3D atlas
@@ -151,6 +164,17 @@ switch eventdata.Key
           gui_data.atlas_slice_point = gui_data.atlas_slice_point + [-1, 0, 0];
         guidata(gui_fig,gui_data);
         update_atlas_slice(gui_fig);
+
+    case 'space'
+        curr_visibility = ...
+            get(gui_data.histology_aligned_atlas_boundaries,'Visible');
+        set(gui_data.histology_aligned_atlas_boundaries,'Visible', ...
+            cell2mat(setdiff({'on','off'},curr_visibility)))
+
+        curr_visibility_atlas = ...
+            get(gui_data.atlas_aligned_atlas_boundaries,'Visible');
+        set(gui_data.atlas_aligned_atlas_boundaries,'Visible', ...
+            cell2mat(setdiff({'on','off'},curr_visibility_atlas)))
         
     % Enter: save slice coordinates
     case 'return'        
@@ -225,6 +249,11 @@ gui_data = guidata(gui_fig);
 % Set next histology slice
 set(gui_data.histology_im_h,'CData',gui_data.slice_im{gui_data.curr_histology_slice})
 
+
+
+
+
+
 % If there's a saved atlas position, move atlas to there
 if all(~isnan(gui_data.slice_points(gui_data.curr_histology_slice,:)))
     gui_data.atlas_slice_point = ...
@@ -232,6 +261,10 @@ if all(~isnan(gui_data.slice_points(gui_data.curr_histology_slice,:)))
     title(gui_data.histology_ax,'Updated atlas position')
     guidata(gui_fig,gui_data);
     update_atlas_slice(gui_fig);
+
+    % draw boundaries 
+
+
 else
     if str2num(gui_data.key)==1
          sliceDiff = -1;
@@ -243,7 +276,27 @@ else
     title(gui_data.histology_ax,'Registered atlas position')
     guidata(gui_fig,gui_data);
     update_atlas_slice(gui_fig);
+
+
+
 end
+    %draw boundaries
+     [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,1);
+    
+     av_slice(isnan(av_slice)) =0;
+    av_warp_boundaries = round(conv2(av_slice,ones(3)./9,'same')) ~= av_slice;
+    av_warp_boundaries_red(:,:,1) = av_warp_boundaries;
+    av_warp_boundaries_red(:,:,2) = zeros(size(av_warp_boundaries));
+    av_warp_boundaries_red(:,:,3) = zeros(size(av_warp_boundaries));
+    
+    set(gui_data.histology_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData',av_warp_boundaries*0.3);
+
+   
+    set(gui_data.atlas_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData', av_warp_boundaries*0.3);
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -310,6 +363,24 @@ gui_data.atlas_slice_point = [gui_data.curr_atlas_slice+0.5, 264.5, 228.5];
 % Update the atlas slice display
 set(gui_data.atlas_slice_plot,'XData',plane_ap,'YData',plane_ml,'ZData',plane_dv,'CData',tv_slice);
 
+% boudaries
+ [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,1);
+    
+     av_slice(isnan(av_slice)) =0;
+    av_warp_boundaries = round(conv2(av_slice,ones(3)./9,'same')) ~= av_slice;
+    av_warp_boundaries_red(:,:,1) = av_warp_boundaries;
+    av_warp_boundaries_red(:,:,2) = zeros(size(av_warp_boundaries));
+    av_warp_boundaries_red(:,:,3) = zeros(size(av_warp_boundaries));
+    
+    set(gui_data.histology_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData',av_warp_boundaries*0.3);
+
+   
+    set(gui_data.atlas_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData', av_warp_boundaries*0.3);
+
 % Upload gui_data
 guidata(gui_fig, gui_data);
 
@@ -326,6 +397,28 @@ gui_data = guidata(gui_fig);
 
 % Update the slice display
 set(gui_data.atlas_slice_plot,'XData',plane_ap,'YData',plane_ml,'ZData',plane_dv,'CData',tv_slice);
+
+% Boundaries 
+% boudaries
+ [tv_slice,av_slice,plane_ap,plane_ml,plane_dv] = grab_atlas_slice(gui_data,1);
+    
+     av_slice(isnan(av_slice)) =0;
+    av_warp_boundaries = round(conv2(av_slice,ones(3)./9,'same')) ~= av_slice;
+    av_warp_boundaries_red(:,:,1) = av_warp_boundaries;
+    av_warp_boundaries_red(:,:,2) = zeros(size(av_warp_boundaries));
+    av_warp_boundaries_red(:,:,3) = zeros(size(av_warp_boundaries));
+    
+    set(gui_data.histology_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData',av_warp_boundaries*0.3);
+
+   
+    set(gui_data.atlas_aligned_atlas_boundaries, ...
+        'CData',av_warp_boundaries_red, ...
+        'AlphaData', av_warp_boundaries*0.3);
+
+% Upload gui_data
+guidata(gui_fig, gui_data);
 
 % Upload gui_data
 guidata(gui_fig, gui_data);

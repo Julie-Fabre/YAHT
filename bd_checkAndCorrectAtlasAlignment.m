@@ -1,4 +1,4 @@
-function bd_checkAndCorrectAlign(tv, av, st, registeredIm, saveDir, screenToUse)
+function bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredIm, saveDir, screenToUse)
 % based on:
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
