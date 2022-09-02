@@ -6,4 +6,4 @@ See `bd_histologyMain` to get started.
 
 Based on [AP_histology](https://github.com/petersaj/AP_histology) and [allenCCF](https://github.com/cortex-lab/allenCCF).
 
-<img style="float: right;" src="https://github.com/Julie-Fabre/braindraw/tree/master/image/20220902_151339_65.png" width=100% height=100%>
+<img style="float: right;" src="https://github.com/Julie-Fabre/braindraw/blob/master/images/20220902_151339_65.png" width=100% height=100%>
