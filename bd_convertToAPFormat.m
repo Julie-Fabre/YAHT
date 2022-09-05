@@ -7,8 +7,8 @@ for iSlice = 1:size(regIm,3)
     %histology_ccf(iSlice).plane_ml = repmat(1:2:1140, [size(reg,1),1]);
     %histology_ccf(iSlice).plane_dv = repmat(1:2:800, [ size(reg,2),1])';
     %histology_ccf(iSlice).tv_slices = squeeze(tv((iSlice-1)*2 + cropAllenLimits(1),:,:));
-    histology_ccf(iSlice).tv_slices = tv(:, :, iSlice);
-    histology_ccf(iSlice).av_slices = av(:, :, iSlice);
+    histology_ccf(iSlice).tv_slices = tv(iSlice, :, :);
+    histology_ccf(iSlice).av_slices = av(iSlice, :, :);
     %histology_ccf(iSlice).av_slices = squeeze(av((iSlice-1)*2 + cropAllenLimits(1),:,:));
     atlas2histology_tform{iSlice} = [1 0 0; 0 1 0; 0 0 1]; % no scaling 
 end

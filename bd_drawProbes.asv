@@ -380,12 +380,11 @@ for curr_probe = 1:length(probe_ccf)
         [1;find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0);length(probe_ccf(curr_probe).trajectory_areas)];    
     trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2;
    
-%     trajectory_area_labels = gui_data.st.acronym(...
-%         ismember(gui_data.st.id, probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers))));
-%      
-    for iArea = 1:size(trajectory_area_centers,1)
-        trajectory_area_labels(iArea) = gui_data.st.acronym(gui_data.st.id == ...
-            probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers(iArea))));
+    trajectory_area_labels = gui_data.st.acronym(...
+        ismember(gui_data.st.id, probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers))));
+     
+    for iArea = 1:size()
+        trajectory_area_labels{iArea} = 
     end
     image(probe_ccf(curr_probe).trajectory_areas);
     colormap(curr_axes,cmap);
