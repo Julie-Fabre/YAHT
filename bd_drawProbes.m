@@ -1,4 +1,4 @@
-function bd_drawProbes(tv, av, st, registeredImage, outputDir)
+function bd_drawProbes(tv, av, st, registeredImage, outputDir, screenToUse)
 % based on:
 % AP_get_probe_histology(tv,av,st,slice_im_path)
 %
@@ -55,11 +55,38 @@ end
 
 % Create figure, set button functions
 gui_fig = figure('KeyPressFcn',@keypress, 'Color', 'k');
-    
+
+SCRSZ = screensize(screenToUse); %Get user's screen size
+set(gui_fig, 'Position', SCRSZ);
+screenPortrait = SCRSZ(4) > SCRSZ(3);
+if screenPortrait
+    gui_data.histology_ax = axes('Position', [0.05, 0.5, 0.9, 0.45], 'YDir','reverse');
+    gui_button_position = [SCRSZ(3)*0.1, SCRSZ(4)*0.45, 100, 40];
+else
+    gui_data.histology_ax = axes('Position', [0.1, 0.1, 0.5, 0.5], 'YDir','reverse');
+    gui_button_position = [SCRSZ(3)*0.1, SCRSZ(4)*0.45, 100, 40]; %QQ change
+
+end
+
+% 'add probe' button 
+gui_data.add_probe_btn = uicontrol('Style', 'pushbutton',...
+'String', 'Add a probe',...
+'Position',gui_button_position,...
+'BackgroundColor', rgb('SpringGreen'),...
+'CallBack', @(varargin) addProbeButtonPushed(gui_fig));
+
+% 'toggle visibility all' button 
+gui_data.toggle_probe_btn = uicontrol('Style', 'pushbutton',...
+'String', 'Hide all other probes',...
+'Position',gui_button_position + [200, 0, 50, 0],...
+'BackgroundColor', rgb('LightCyan'),...
+'CallBack', @(varargin) toggleAllProbeButtonPushed(gui_fig));
+
+
 gui_data.curr_slice = 1;
 
 % Set up axis for histology image
-gui_data.histology_ax = axes('YDir','reverse');
+%gui_data.histology_ax = axes();
 hold on; colormap(gray); axis image off;
 gui_data.slice_im{1}(gui_data.slice_im{1}>1200) = 0;
 img = imadjust(gui_data.slice_im{1}, [0.1, 0.8]);
@@ -76,6 +103,41 @@ gui_data.histology_ax_title = title(gui_data.histology_ax,'','FontSize',14,'Colo
 gui_data.probe_color = lines(gui_data.n_probes);
 gui_data.probe_points_histology = cell(length(gui_data.slice_im),gui_data.n_probes);
 gui_data.probe_lines = gobjects(gui_data.n_probes,1);
+
+
+% initialize probe buttons
+nProbes_fit = floor((SCRSZ(4) - gui_button_position(2)) / 50);
+nCols = ceil(gui_data.n_probes/ nProbes_fit);
+colSpacing = (SCRSZ(3)-100) / nCols;
+for iProbe = 1:gui_data.n_probes
+    %if iProbe <= nProbes_fit
+    nextCol = ceil((iProbe)/(nProbes_fit));
+    gui_data.select_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', ['Probe', num2str(iProbe)],...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing , 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 0,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', @(varargin) selectProbeButtonPushed(gui_fig));
+
+    gui_data.resest_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', 'reset',...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing - 100, 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 50,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', @(varargin) resetProbeButtonPushed(gui_fig));
+
+    gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', 'hide',...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing - 150, 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 60,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack',  @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
+    
+     gui_data.fourShank_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', '4shank with n+3',...
+    'Position',gui_button_position - [60 - (nextCol -1) * colSpacing - 190, 40*(iProbe - ((nProbes_fit) * (nextCol -1))), -20,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack',  @(varargin) fourShankProbeButtonPushed(gui_fig));
+
+end
+
 
 % Upload gui data
 guidata(gui_fig,gui_data);
@@ -122,25 +184,12 @@ switch eventdata.Key
            disp(['Probe ' eventdata.Key ' selected, only ' num2str(gui_data.n_probes) ' available']);
            return
         end
-        
-        set(gui_data.histology_ax_title,'String',['Draw probe ' num2str(curr_probe)]);
-        curr_line = imline;
-        % If the line is just a click, don't include
-        curr_line_length = sqrt(sum(abs(diff(curr_line.getPosition,[],1)).^2));
-        if curr_line_length == 0
-            return
+
+        if curr_probe == 0 %quirk in my keyboard
+            curr_probe = 4;
         end
-        gui_data.probe_points_histology{gui_data.curr_slice,curr_probe} = ...
-            curr_line.getPosition;
-        set(gui_data.histology_ax_title,'String', ...
-            ['Arrows to move, Number to draw probe [' num2str(1:gui_data.n_probes) '], Esc to save/quit']);
         
-        % Delete movable line, draw line object
-        curr_line.delete;
-        gui_data.probe_lines(curr_probe) = ...
-            line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
-            'linewidth',3,'color',gui_data.probe_color(curr_probe,:));
+        update_curr_probe(gui_fig, curr_probe)
         
         % Upload gui data
         guidata(gui_fig,gui_data);
@@ -148,37 +197,9 @@ switch eventdata.Key
         
         probeN = str2num(cell2mat(inputdlg('Probe #: ')));
         curr_probe = probeN;
-        
-        if curr_probe > gui_data.n_probes
-           disp(['Probe ' eventdata.Key ' selected, only ' num2str(gui_data.n_probes) ' available']);
-           return
-           
-        end
-        if curr_probe == 0
-               curr_probe = 4;
-           end
-        
-        set(gui_data.histology_ax_title,'String',['Draw probe ' num2str(curr_probe)]);
-        curr_line = imline;
-        % If the line is just a click, don't include
-        curr_line_length = sqrt(sum(abs(diff(curr_line.getPosition,[],1)).^2));
-        if curr_line_length == 0
-            return
-        end
-        gui_data.probe_points_histology{gui_data.curr_slice,curr_probe} = ...
-            curr_line.getPosition;
-        set(gui_data.histology_ax_title,'String', ...
-            ['Arrows to move, Number to draw probe [' num2str(1:gui_data.n_probes) '], Esc to save/quit']);
-        
-        % Delete movable line, draw line object
-        curr_line.delete;
-        gui_data.probe_lines(curr_probe) = ...
-            line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
-            'linewidth',3,'color',gui_data.probe_color(curr_probe,:));
-        
-        % Upload gui data
-        guidata(gui_fig,gui_data);
+        gui_data.curr_probe = curr_probe;
+        update_curr_probe(gui_fig, curr_probe)
+       
         
     case 'escape'
         opts.Default = 'Yes';
@@ -299,6 +320,170 @@ end
 
 end
 
+function update_curr_probe(gui_fig, curr_probe)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+        set(gui_data.histology_ax_title,'String',['Draw probe ' num2str(curr_probe)]);
+        curr_line = imline;
+        % If the line is just a click, don't include
+        curr_line_length = sqrt(sum(abs(diff(curr_line.getPosition,[],1)).^2));
+        if curr_line_length == 0
+            return
+        end
+        gui_data.probe_points_histology{gui_data.curr_slice,curr_probe} = ...
+            curr_line.getPosition;
+        set(gui_data.histology_ax_title,'String', ...
+            ['Arrows to move, Number to draw probe [' num2str(1:gui_data.n_probes) '], Esc to save/quit']);
+        
+        % Delete movable line, draw line object
+        curr_line.delete;
+        if size(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe},2)>1 % delete any previous line
+            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(1,:) = [];
+        end
+        gui_data.probe_lines(curr_probe) = ...
+            line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
+            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
+            'linewidth',3,'color',gui_data.probe_color(curr_probe,:));
+        gui_data.curr_probe = curr_probe;
+        % Upload gui data
+        guidata(gui_fig,gui_data);
+end
+
+function addProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Add a probe
+gui_data.n_probes = gui_data.n_probes + 1;
+gui_data.probe_color = lines(gui_data.n_probes);
+gui_data.probe_points_histology(:,gui_data.n_probes) = cell(length(gui_data.slice_im),1);
+gui_data.probe_lines(gui_data.n_probes) = gobjects(1,1);
+
+% Update all buttons 
+
+nProbes_fit = floor((SCRSZ(4) - gui_button_position(2)) / 50);
+nCols = ceil(gui_data.n_probes/ nProbes_fit);
+colSpacing = (SCRSZ(3)-100) / nCols;
+for iProbe = 1:gui_data.n_probes
+    %if iProbe <= nProbes_fit
+    nextCol = ceil((iProbe)/(nProbes_fit));
+    gui_data.select_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', ['Probe', num2str(iProbe)],...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing , 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 0,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', @(varargin) selectProbeButtonPushed(gui_fig));
+
+    gui_data.resest_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', 'reset',...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing - 100, 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 50,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', {@resetProbeButtonPushed, gui_fig});
+
+    gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', 'del',...
+    'Position', gui_button_position - [60 - (nextCol -1) * colSpacing - 150, 40*(iProbe - ((nProbes_fit) * (nextCol-1))), 60,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', {@delProbeButtonPushed, gui_fig});
+    
+     gui_data.fourShank_probe_btns(iProbe) = uicontrol('Style', 'pushbutton',...
+    'String', '4shank with n+3',...
+    'Position',gui_button_position - [60 - (nextCol -1) * colSpacing - 190, 40*(iProbe - ((nProbes_fit) * (nextCol -1))), -20,10],...
+    'BackgroundColor', gui_data.probe_color(iProbe,:),...
+    'CallBack', {@fourShankProbeButtonPushed, gui_fig});
+
+end
+
+% Upload gui data
+guidata(gui_fig,gui_data);
+
+end
+
+function toggleAllProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% hide/show 
+if contains(gui_data.toggle_probe_btn.String, 'Hide')
+    gui_data.toggle_probe_btn.String = 'Show all other probes';
+    other_probes = logical(ones(gui_data.n_probes,1));
+    other_probes(gui_data.curr_probe) = 0;
+    other_probes = find(other_probes); 
+    gui_data.visibility = 0;
+    for iProbe = 1:size(other_probes,1)
+        gui_data.probe_lines(iProbe).Color(4) = 0;
+    end
+else
+    gui_data.toggle_probe_btn.String = 'Hide all other probes';
+    other_probes = logical(ones(gui_data.n_probes,1));
+    other_probes(gui_data.curr_probe) = 0;
+    other_probes = find(other_probes); 
+    gui_data.visibility = 1;
+    for iProbe = 1:size(other_probes,1)
+        gui_data.probe_lines(iProbe).Color(4) = 1;
+    end
+end
+% Upload gui data
+guidata(gui_fig,gui_data);
+end
+
+function selectProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get current probe 
+curr_probe = find([gui_data.select_probe_btns(:).Value]);
+gui_data.curr_probe = curr_probe;
+% Change curr probe 
+update_curr_probe(gui_fig, curr_probe)
+
+% Upload gui data
+guidata(gui_fig,gui_data);
+
+end
+
+function fourShankProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get current probe 
+curr_probe = find([gui_data.select_probe_btns(:).Value]);
+
+% Change curr probe 
+update_curr_probe(gui_fig, curr_probe)
+
+% Upload gui data
+guidata(gui_fig,gui_data);
+end
+
+function toggleVisiblityProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% hide/show 
+if contains(gui_data.toggle_probe_btn.String, 'Hide')
+    gui_data.toggle_probe_btn.String = 'Show all other probes';
+    other_probes = logical(ones(gui_data.n_probes,1));
+    other_probes(gui_data.curr_probe) = 0;
+    other_probes = find(other_probes); 
+    gui_data.visibility = 0;
+    for iProbe = 1:size(other_probes,1)
+        gui_data.probe_lines(iProbe).Color(4) = 0;
+    end
+else
+    gui_data.toggle_probe_btn.String = 'Hide all other probes';
+    other_probes = logical(ones(gui_data.n_probes,1));
+    other_probes(gui_data.curr_probe) = 0;
+    other_probes = find(other_probes); 
+    gui_data.visibility = 1;
+    for iProbe = 1:size(other_probes,1)
+        gui_data.probe_lines(iProbe).Color(4) = 1;
+    end
+end
+% Upload gui data
+guidata(gui_fig,gui_data);
+
+end
 
 function update_slice(gui_fig)
 % Draw histology and CCF slice
@@ -312,10 +497,18 @@ set(gui_data.histology_im_h,'CData',gui_data.slice_im{gui_data.curr_slice})
 % Clear any current lines, draw probe lines
 gui_data.probe_lines.delete;
 for curr_probe = find(~cellfun(@isempty,gui_data.probe_points_histology(gui_data.curr_slice,:)))
-    gui_data.probe_lines(curr_probe) = ...
-        line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
-        gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
-        'linewidth',3,'color',gui_data.probe_color(curr_probe,:));
+    if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
+        gui_data.probe_lines(curr_probe) = ...
+            line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
+            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
+            'linewidth',3,'color',[gui_data.probe_color(curr_probe,:),0]);
+    else
+
+        gui_data.probe_lines(curr_probe) = ...
+            line(gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,1), ...
+            gui_data.probe_points_histology{gui_data.curr_slice,curr_probe}(:,2), ...
+            'linewidth',3,'color',[gui_data.probe_color(curr_probe,:),1]);
+    end
 end
 
 set(gui_data.histology_ax_title,'String', ...

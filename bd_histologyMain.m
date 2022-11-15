@@ -27,10 +27,13 @@ brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data li
 [tv, av, st, bregma] = bd_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
 
 %% ~ Register ~
-bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, ...
-    [imgToTransform.folder, filesep, imgToTransform.name],orientationType, atlasResolution_um)% run brainreg
+if isempty(dir([outputDir, filesep, 'downsampled_standard.tiff']))
+    bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, ...
+        [imgToTransform.folder, filesep, imgToTransform.name],orientationType, atlasResolution_um)% run brainreg
+end
 registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 bd_convertToAPFormat(registeredImage, tv, av, outputDir) % get and save atlas data in standard
+
 % AP format to be able to use AP functions
 
 %% ~ Manually check and adjust registration ~
@@ -38,13 +41,16 @@ screenToUse = 2; % on which of your displays to create the following plots. 1 = 
 
 %% ~~ Check and adjust orientation ~~
 % Adjust the atlas to one slice (using arrow keys to navigate in the allen ccf and pressing eneter once you're happy) 
-% and this transformation will then be applied to all other slices and saved in histology_ccf.mat file.
+% and this transformation will then be applied to all other slices and saved in a histology_ccf.mat file.
 % If you register several slices, the average transform will be applied to
 % all other slices and saved. 
-bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
-
+if isempty(dir([outputDir, filesep, 'manual', filesep, 'histology_ccf.mat']))
+    bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
+end
 %% ~~ [WIP] Check adjust border alignement/scaling ~~
-bd_checkAndCorrectAtasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
+if isempty(dir([outputDir, filesep, 'manual', filesep, 'atlas2histology_tform.mat']))
+    bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
+end
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : ccf to histology alignement/warp
 

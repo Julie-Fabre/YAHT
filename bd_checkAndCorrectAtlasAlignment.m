@@ -19,7 +19,7 @@ gui_data.av = av;
 gui_data.st = st;
 
 % Load in slice images
-gui_data.slice_im_path = registeredIm;
+gui_data.slice_im_path = saveDir;
 
 SCRSZ = screensize(screenToUse);   %Get user's screen size
 screenPortrait = SCRSZ(4)>SCRSZ(3);

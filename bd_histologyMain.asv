@@ -5,51 +5,72 @@
 % ect) ?
 
 %% ~ Images info
-myPaths; % see JF_scripts_cortexlab. loads in a bunch of paths, of which only one is used in this script: brainsawPath
+myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
+% loads in a bunch of paths, of which only one is used in this script: brainsawPath
 animal = 'JF070';
 
 % registration parameters
-orientationType = 'psl'; % psl 
+orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
+% is the most posterior, superior, left part of the brain
 channelColToRegister = 'green'; % channel you want to register 
 channelColToTransform = 'red'; % channel you want to use to draw probes
-atlasResolution_um = 25; % voxel size 
+atlasResolution_um = 25; % voxel size. currently in all dimensions, both for atlas and acquired image
 atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
-atlasSize = [320, 456, 528]; % atlas size QQ hardcoded
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives 
 
 % registration location/files
-[atlasLocation, imgToRegister, imgToTransform, outputDir] = bd_getLocations(brainglobeLocation, atlasType, atlasSpecies, atlasResolution_um)
-atlasLocation = dir([brainglobeLocation, atlasType, '_',...
-    atlasSpecies, '_', num2str(atlasResolution_um), 'um*']); % atlas location
-imgToRegister = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
-imgToTransform = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
-outputDir = [imgToRegister.folder, filesep, 'brainReg'];
-
+[atlasLocation, imgToRegister, imgToTransform, outputDir] =...
+    bd_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
 
 %% ~ Load in images and template ~
 [tv, av, st, bregma] = bd_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
 
 %% ~ Register ~
-bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, ...
-    [imgToTransform.folder, filesep, imgToTransform.name],orientationType, atlasResolution_um)
+if isempty(dir([outputDir, filesep, 'downsampled_standard.tiff']))
+    bd_brainreg([imgToRegister.folder, filesep, imgToRegister.name], outputDir, ...
+        [imgToTransform.folder, filesep, imgToTransform.name],orientationType, atlasResolution_um)% run brainreg
+end
 registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
-bd_convertToAPFormat(registeredImage, tv, av, outputDir)
+bd_convertToAPFormat(registeredImage, tv, av, outputDir) % get and save atlas data in standard
+
+% AP format to be able to use AP functions
 
 %% ~ Manually check and adjust registration ~
-screenToUse = 2;
+screenToUse = 2; % on which of your displays to create the following plots. 1 = main display, 2 = secondary and so on
 
 %% ~~ Check and adjust orientation ~~
-bd_checkAndCorrectOrientation(tv, av, st, registeredImage, screenToUse);
-
+% Adjust the atlas to one slice (using arrow keys to navigate in the allen ccf and pressing eneter once you're happy) 
+% and this transformation will then be applied to all other slices and saved in a histology_ccf.mat file.
+% If you register several slices, the average transform will be applied to
+% all other slices and saved. 
+if isempty(dir([outputDir, filesep, 'manual', filesep, 'histology_ccf.mat']))
+    bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
+end
 %% ~~ [WIP] Check adjust border alignement/scaling ~~
-bd_checkAndCorrectAlign(tv, av, st, registeredImage, outputDir, screenToUse)
+if isempty(dir([outputDir, filesep, 'manual', filesep, 'atlas2histology_tform.mat']))
+    bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
+end
 % histology_ccf.mat : corresponding CCF slices
-% atlas2histology_tform.mat : histology/ccf alignement/warp
+% atlas2histology_tform.mat : ccf to histology alignement/warp
 
 %% ~ Draw probes ~
 % QQ to add: draw both bspine fit and affine, choose which to use for each
 % probe 
-bd_drawProbes(tv, av, st, registeredImage, outputDir)
+transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
+transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
+bd_drawProbes(tv, av, st, transformedImage, outputDir) % draw probes. it you have more than 9 probes, 
+% use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
 %% ~ [WIP] Assign probes to days/sites and save data ~
+probe2ephys = struct; 
+probe2ephys(1).day = 4;
+probe2ephys(1).site = 2;
+probe2ephys(1).shank = 4;
+
+save([im_path, '/probe2ephys.mat'], 'probe2ephys')
+
+bd_alignEphysAndHistology(st, slice_path, ...
+                spike_times, spike_templates, template_depths, ...
+                lfp, channel_positions(:, 2), ...
+                use_probe);
