@@ -59,7 +59,7 @@ end
 % probe 
 transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
 transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
-bd_drawProbes(tv, av, st, transformedImage, outputDir) % draw probes. it you have more than 9 probes, 
+bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
 %% ~ [WIP] Assign probes to days/sites and save data - add "5min histology recs look at"~

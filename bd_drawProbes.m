@@ -92,6 +92,7 @@ gui_data.reset_btn = uicontrol('Style', 'pushbutton', ...
 
 
 gui_data.curr_slice = 1;
+gui_data.visibility = 1;
 
 % Set up axis for histology image
 %gui_data.histology_ax = axes();
