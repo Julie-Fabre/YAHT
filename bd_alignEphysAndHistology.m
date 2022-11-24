@@ -9,7 +9,7 @@ if ~exist('use_probe','var') || isempty(use_probe)
 end
 
 % Load probe CCF
-probe_ccf_fn = [outputDir filesep 'brainReg' filesep 'probe_ccf.mat'];
+probe_ccf_fn = [outputDir filesep 'probe_ccf.mat'];
 load(probe_ccf_fn);
 
 if ~isnan(curr_shank)
@@ -49,7 +49,6 @@ if isSpikeGlx %2.0 probes, shorter shank
     max_depths = 384*7.5;
     min_depths = 0;
     depth_group_edges = linspace(min_depths,max_depths,n_corr_groups+1);
-    addThis = 3840-min(lfp_channel_positions);
 else
     min_depths = 0;
     max_depths = 3840; % (hardcode, sometimes kilosort2 drops channels)
@@ -120,14 +119,14 @@ load(cmap_filename);
 
 probe_areas_ax = subplot('Position',[0.8,0.1,0.05,0.8]);
 
-% Convert probe CCF coordinates to linear depth (*10 to convert to um)
+% Convert probe CCF coordinates to linear depth (*25 to convert to um)
 % (use the dorsal-most coordinate as the reference point)
 [~,dv_sort_idx] = sort(probe_ccf(use_probe).trajectory_coords(:,2));
 
 
 probe_trajectory_depths = ...
     pdist2(probe_ccf(use_probe).trajectory_coords, ...
-    probe_ccf(use_probe).trajectory_coords((dv_sort_idx == 1),:))*10;
+    probe_ccf(use_probe).trajectory_coords((dv_sort_idx == 1),:))*25;
 
 trajectory_area_boundary_idx = ...
     [1;find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0)+1];
