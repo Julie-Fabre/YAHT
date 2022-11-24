@@ -62,7 +62,7 @@ transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedIma
 bd_drawProbes(tv, av, st, transformedImage, outputDir) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
-%% ~ [WIP] Assign probes to days/sites and save data ~
+%% ~ [WIP] Assign probes to days/sites and save data - add "5min histology recs look at"~
 probe2ephys = struct; 
 probe2ephys(1).day = 4;
 probe2ephys(1).site = 2;

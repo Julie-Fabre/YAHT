@@ -42,7 +42,7 @@ gui_data.histology_ccf_alignment = atlas2histology_tform;
 % Warp area labels by histology alignment
 gui_data.histology_aligned_av_slices = cell(length(gui_data.slice_im), 1);
 for curr_slice = 1:length(gui_data.histology_ccf)
-    curr_av_slice = gui_data.histology_ccf(curr_slice).av_slices;
+    curr_av_slice = squeeze(gui_data.histology_ccf(curr_slice).av_slices);
     curr_av_slice(isnan(curr_av_slice)) = 1;
     curr_slice_im = gui_data.slice_im{curr_slice};
 

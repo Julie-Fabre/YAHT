@@ -2,8 +2,8 @@ function bd_drawProbes(tv, av, st, registeredImage, outputDir, screenToUse)
 % based on:
 % AP_get_probe_histology(tv,av,st,slice_im_path)
 %
-% Get probe trajectory in histology and convert to ccf
-% Andy Peters (peters.andrew.j@gmail.com)
+% QQ: hide / reset don't work yet; add save for indiv probes and load in
+% previously saved probes 
 
 if ~exist('im_type', 'var')
     im_type = '';
@@ -42,11 +42,13 @@ gui_data.histology_ccf_alignment = atlas2histology_tform;
 % Warp area labels by histology alignment
 gui_data.histology_aligned_av_slices = cell(length(gui_data.slice_im), 1);
 for curr_slice = 1:length(gui_data.histology_ccf)
+    %curr_slice = curr_slice + 1
     curr_av_slice = gui_data.histology_ccf(curr_slice).av_slices;
     curr_av_slice(isnan(curr_av_slice)) = 1;
     curr_slice_im = gui_data.slice_im{curr_slice};
 
     tform = affine2d;
+    gui_data.histology_ccf_alignment{curr_slice}
     tform.T = gui_data.histology_ccf_alignment{curr_slice};
     tform_size = imref2d([size(curr_slice_im, 1), size(curr_slice_im, 2)]);
     gui_data.histology_aligned_av_slices{curr_slice} = ...
@@ -57,6 +59,7 @@ end
 gui_fig = figure('KeyPressFcn', @keypress, 'Color', 'k');
 
 SCRSZ = screensize(screenToUse); %Get user's screen size
+gui_data.SCRSZ = SCRSZ;
 set(gui_fig, 'Position', SCRSZ);
 screenPortrait = SCRSZ(4) > SCRSZ(3);
 if screenPortrait
@@ -67,7 +70,7 @@ else
     gui_button_position = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40]; %QQ change
 
 end
-
+gui_data.gui_button_position  = gui_button_position ;
 % 'add probe' button
 gui_data.add_probe_btn = uicontrol('Style', 'pushbutton', ...
     'String', 'Add a probe', ...
@@ -377,37 +380,45 @@ gui_data.probe_lines(gui_data.n_probes) = gobjects(1, 1);
 
 % Update all buttons
 
-nProbes_fit = floor((SCRSZ(4) - gui_button_position(2))/50);
+nProbes_fit = floor((gui_data.SCRSZ(4) - gui_data.gui_button_position(2))/50);
 nCols = ceil(gui_data.n_probes/nProbes_fit);
-colSpacing = (SCRSZ(3) - 100) / nCols;
+colSpacing = (gui_data.SCRSZ(3) - 100) / nCols;
 for iProbe = 1:gui_data.n_probes
     %if iProbe <= nProbes_fit
     nextCol = ceil((iProbe)/(nProbes_fit));
     gui_data.select_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', ['Probe', num2str(iProbe)], ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 0, 10], ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 0, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) selectProbeButtonPushed(gui_fig));
 
-    gui_data.resest_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
+    gui_data.reset_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'reset', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 100, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 50, 10], ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 100, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 50, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', {@resetProbeButtonPushed, gui_fig});
+        'CallBack', @(varargin) resetProbeSliceButtonPushed(gui_fig));
+
+    gui_data.reset_all_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', 'reset all', ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 150, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) resetProbeGlobalButtonPushed(gui_fig));
+
 
     gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', 'del', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 150, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
+        'String', 'hide', ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 210, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', {@delProbeButtonPushed, gui_fig});
+        'CallBack', @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
 
     gui_data.fourShank_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', '4shank with n+3', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 190, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), -20, 10], ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), -20, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', {@fourShankProbeButtonPushed, gui_fig});
+        'CallBack', @(varargin) fourShankProbeButtonPushed(gui_fig));
 
 end
+
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -517,8 +528,8 @@ gui_data = guidata(gui_fig);
 curr_probe = find([gui_data.reset_all_probe_btns(:).Value]);
 
 % Delete current probe histology points and line
-for iSlice = 1:length()
-    gui_data.probe_points_histology{:, curr_probe} = [];
+for iSlice = 1:length(gui_data.slice_im)
+    gui_data.probe_points_histology{iSlice, curr_probe} = [];
 end
 delete(gui_data.probe_lines(curr_probe))
 
@@ -531,11 +542,13 @@ function resetGlobalButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Get current probe
-curr_probe = find([gui_data.select_probe_btns(:).Value]);
 
 % Delete current probe histology points and line
-gui_data.probe_points_histology{:, :} = [];
+for iSlice = 1:length(gui_data.slice_im)
+    for iProbe = 1:gui_data.n_probes
+    gui_data.probe_points_histology{iSlice, iProbe} = [];
+    end
+end
 delete(gui_data.probe_lines(:))
 
 % Upload gui data
