@@ -3,7 +3,7 @@ function bd_drawProbes(tv, av, st, registeredImage, outputDir, screenToUse)
 % AP_get_probe_histology(tv,av,st,slice_im_path)
 %
 % QQ: hide / reset don't work yet; add save for indiv probes and load in
-% previously saved probes 
+% previously saved probes
 
 if ~exist('im_type', 'var')
     im_type = '';
@@ -62,36 +62,86 @@ set(gui_fig, 'Position', SCRSZ);
 screenPortrait = SCRSZ(4) > SCRSZ(3);
 if screenPortrait
     gui_data.histology_ax = axes('Position', [0.05, 0.5, 0.9, 0.45], 'YDir', 'reverse');
-    gui_button_position = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40];
+    gui_button_position1 = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40];
+    gui_button_position2 = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.9, 100, 40];
 else
     gui_data.histology_ax = axes('Position', [0.1, 0.1, 0.5, 0.5], 'YDir', 'reverse');
-    gui_button_position = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40]; %QQ change
+    gui_button_position1 = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40]; %QQ change
+    gui_button_position2 = [SCRSZ(3) * 0.1, SCRSZ(4) * 0.45, 100, 40]; %QQ change
 
 end
-gui_data.gui_button_position  = gui_button_position ;
+gui_data.gui_button_position = gui_button_position1;
+% auto contrast/brightness button 
+gui_data.auto_contrast_btn = uicontrol('Style', 'pushbutton', ...
+    'String', '<HTML><center><FONT color="white"><b>Auto brightness/ contrast</b></Font>', ...
+    'Position', gui_button_position2+[0, 0, 0, 20], ...
+    'BackgroundColor', rgb('DeepPink'), ...
+    'CallBack', @(varargin) autoContrastButtonPushed(gui_fig));
+
+% brightness slider
+gui_data.brightness_beta = 0;
+gui_data.brightness_slider = uicontrol('Style', 'slider', ...
+    'String', 'Brightness', ...
+    'Position', gui_button_position2 +[150, 0, 50, -20], ...
+    'BackgroundColor', rgb('White'), ...
+    'Min',-100,'Max',100,'Value', gui_data.brightness_beta,...
+    'CallBack', @(varargin) brightnessButtonPushed(gui_fig));
+
+gui_data.brightness_text = uicontrol('Style', 'text', ...
+    'String', 'Brightness %', ...
+    'Position', gui_button_position2 +[150, 20, 50, -20], ...
+    'BackgroundColor', rgb('White'));
+
+% contrast slider 
+gui_data.contrast_alpha = 1;
+gui_data.contrast_slider = uicontrol('Style', 'slider', ...
+    'String', 'Contrast', ...
+    'Position', gui_button_position2 +[300, 0, 50, -20], ...
+    'BackgroundColor', rgb('White'), ...
+    'Min',-100,'Max',100,'Value', gui_data.contrast_alpha,...
+    'CallBack', @(varargin) contrastButtonPushed(gui_fig));
+
+gui_data.contrast_text = uicontrol('Style', 'text', ...
+    'String', 'Contrast %', ...
+    'Position', gui_button_position2 +[300, 20, 50, -20], ...
+    'BackgroundColor', rgb('White'));
+
 % 'add probe' button
 gui_data.add_probe_btn = uicontrol('Style', 'pushbutton', ...
-    'String', 'Add a probe', ...
-    'Position', gui_button_position, ...
-    'BackgroundColor', rgb('SpringGreen'), ...
+    'String', '<HTML><center><FONT color="white"><b>Add a probe</b></Font>', ...
+    'Position', gui_button_position1 +[0, 30, 0, 0], ...
+    'BackgroundColor', rgb('DarkGreen'), ...
     'CallBack', @(varargin) addProbeButtonPushed(gui_fig));
 
 % 'toggle visibility all' button
 gui_data.toggle_probe_btn = uicontrol('Style', 'pushbutton', ...
-    'String', 'Hide all other probes', ...
-    'Position', gui_button_position+[200, 0, 50, 0], ...
-    'BackgroundColor', rgb('LightCyan'), ...
+    'String', '<HTML><center><FONT color="white"><b>Hide all other probes</b></Font>', ...
+    'Position', gui_button_position1+[150, 30, 50, 0], ...
+    'BackgroundColor', rgb('SlateGray'), ...
     'CallBack', @(varargin) toggleAllProbeButtonPushed(gui_fig));
 
 % reset all datapoints
 gui_data.reset_btn = uicontrol('Style', 'pushbutton', ...
-    'String', 'Reset all probes accross slices', ...
-    'Position', gui_button_position+[400, 0, 150, 0], ...
-    'BackgroundColor', rgb('FireBrick'), ...
+    'String', '<HTML><center><FONT color="white"><b>Reset all probes across slices</b></Font>', ...
+    'Position', gui_button_position1+[350, 30, 50, 0], ...
+    'BackgroundColor', rgb('DarkRed'), ...
     'CallBack', @(varargin) resetGlobalButtonPushed(gui_fig));
 
+% save current datapoints
+gui_data.save_btn = uicontrol('Style', 'pushbutton', ...
+    'String', '<HTML><center><FONT color="white"><b>Save</b></Font>', ...
+    'Position', gui_button_position1+[550, 30, 0, 0], ...
+    'BackgroundColor', rgb('DarkOrange'), ...
+    'CallBack', @(varargin) saveButtonPushed(gui_fig));
 
-gui_data.curr_slice = 1;
+% load previous datapoints
+gui_data.load_btn = uicontrol('Style', 'pushbutton', ...
+    'String', '<HTML><center><FONT color="white"><b>Load</b></Font>', ...
+    'Position', gui_button_position1+[700, 30, 0, 0], ...
+    'BackgroundColor', rgb('DarkMagenta'), ...
+    'CallBack', @(varargin) loadButtonPushed(gui_fig));
+
+gui_data.curr_slice = 20;
 gui_data.visibility = 1;
 
 % Set up axis for histology image
@@ -100,7 +150,7 @@ hold on; colormap(gray); axis image off;
 gui_data.slice_im{1}(gui_data.slice_im{1} > 1200) = 0;
 img = imadjust(gui_data.slice_im{1}, [0.1, 0.8]);
 img(img == 1) = 0;
-gui_data.histology_im_h = imagesc(img, ...
+gui_data.histology_im_h = image(img, ...
     'Parent', gui_data.histology_ax);
 
 %caxis([min(min(gui_data.histology_im_h.CData )), max(max(gui_data.histology_im_h.CData ))])
@@ -115,7 +165,7 @@ gui_data.probe_lines = gobjects(gui_data.n_probes, 1);
 
 
 % initialize probe buttons
-nProbes_fit = floor((SCRSZ(4) - gui_button_position(2))/50);
+nProbes_fit = floor((SCRSZ(4) - gui_button_position1(2))/50);
 nCols = ceil(gui_data.n_probes/nProbes_fit);
 colSpacing = (SCRSZ(3) - 100) / nCols;
 for iProbe = 1:gui_data.n_probes
@@ -123,32 +173,32 @@ for iProbe = 1:gui_data.n_probes
     nextCol = ceil((iProbe)/(nProbes_fit));
     gui_data.select_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', ['Probe', num2str(iProbe)], ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 0, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 0, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) selectProbeButtonPushed(gui_fig));
 
     gui_data.reset_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'reset', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 100, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 50, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 100, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 50, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) resetProbeSliceButtonPushed(gui_fig));
 
     gui_data.reset_all_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'reset all', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 150, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 150, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) resetProbeGlobalButtonPushed(gui_fig));
 
 
     gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'hide', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 210, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 210, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
 
     gui_data.fourShank_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', '4shank with n+3', ...
-        'Position', gui_button_position-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), -20, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), -20, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) fourShankProbeButtonPushed(gui_fig));
 
@@ -331,6 +381,266 @@ switch eventdata.Key
 
         end
 end
+
+end
+
+function saveButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Save current data
+% Initialize structure to save
+probe_ccf = struct( ...
+    'points', cell(gui_data.n_probes, 1), ...
+    'trajectory_coords', cell(gui_data.n_probes, 1), ... .
+    'trajectory_areas', cell(gui_data.n_probes, 1));
+
+% Convert probe points to CCF points by alignment and save
+for curr_probe = 1:gui_data.n_probes
+    for curr_slice = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'))
+
+        % Transform histology to atlas slice
+        tform = affine2d;
+        tform.T = gui_data.histology_ccf_alignment{curr_slice};
+        % (transform is CCF -> histology, invert for other direction)
+        tform = invert(tform);
+
+        % Transform and round to nearest index
+        [probe_points_atlas_x, probe_points_atlas_y] = ...
+            transformPointsForward(tform, ...
+            gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
+            gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+
+        probe_points_atlas_x = round(probe_points_atlas_x);
+        probe_points_atlas_y = round(probe_points_atlas_y);
+
+        % Get CCF coordinates corresponding to atlas slice points
+        % (CCF coordinates are in [AP,DV,ML])
+        use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
+        for curr_point = 1:length(use_points)
+            ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                plane_ap(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            ccf_ml = gui_data.histology_ccf(curr_slice). ...
+                plane_dv(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            ccf_dv = gui_data.histology_ccf(curr_slice). ...
+                plane_ml(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            probe_ccf(curr_probe).points = ...
+                vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+        end
+    end
+
+    % Sort probe points by DV (probe always top->bottom)
+    [~, dv_sort_idx] = sort(probe_ccf(curr_probe).points(:, 2));
+    probe_ccf(curr_probe).points = probe_ccf(curr_probe).points(dv_sort_idx, :);
+
+end
+
+% Get areas along probe trajectory
+for curr_probe = 1:gui_data.n_probes
+
+    % Get best fit line through points as probe trajectory
+    r0 = mean(probe_ccf(curr_probe).points, 1);
+    xyz = bsxfun(@minus, probe_ccf(curr_probe).points, r0);
+    [~, ~, V] = svd(xyz, 0);
+    histology_probe_direction = V(:, 1);
+    % (make sure the direction goes down in DV - flip if it's going up)
+    if histology_probe_direction(2) < 0
+        histology_probe_direction = -histology_probe_direction;
+    end
+
+    line_eval = [-1000, 1000];
+    probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
+
+    % Get the positions of the probe trajectory
+    trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
+    [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
+        round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
+        round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)), ...
+        round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)));
+
+    trajectory_coords_outofbounds = ...
+        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
+        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
+
+    trajectory_coords = ...
+        [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
+        trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
+        trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
+
+    trajectory_coords_idx = sub2ind(size(gui_data.av), ...
+        trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3));
+
+    trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
+
+    % Get rid of NaN's and start/end 1's (non-parsed)
+    trajectory_areas_parsed = find(trajectory_areas_uncut > 1);
+    use_trajectory_areas = trajectory_areas_parsed(1): ...
+        trajectory_areas_parsed(end);
+    trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
+
+    probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
+    probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
+
+end
+
+% Save probe CCF points
+save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
+save(save_fn, 'probe_ccf');
+disp(['Saved probe locations in ', save_fn])
+
+% Close GUI
+%close(gui_fig)
+
+% Plot probe trajectories
+plot_probe(gui_data, probe_ccf);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+end
+
+function loadButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Save current data
+% Initialize structure to save
+probe_ccf = struct( ...
+    'points', cell(gui_data.n_probes, 1), ...
+    'trajectory_coords', cell(gui_data.n_probes, 1), ... .
+    'trajectory_areas', cell(gui_data.n_probes, 1));
+
+% Convert probe points to CCF points by alignment and save
+for curr_probe = 1:gui_data.n_probes
+    for curr_slice = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'))
+
+        % Transform histology to atlas slice
+        tform = affine2d;
+        tform.T = gui_data.histology_ccf_alignment{curr_slice};
+        % (transform is CCF -> histology, invert for other direction)
+        tform = invert(tform);
+
+        % Transform and round to nearest index
+        [probe_points_atlas_x, probe_points_atlas_y] = ...
+            transformPointsForward(tform, ...
+            gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
+            gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+
+        probe_points_atlas_x = round(probe_points_atlas_x);
+        probe_points_atlas_y = round(probe_points_atlas_y);
+
+        % Get CCF coordinates corresponding to atlas slice points
+        % (CCF coordinates are in [AP,DV,ML])
+        use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
+        for curr_point = 1:length(use_points)
+            ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                plane_ap(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            ccf_ml = gui_data.histology_ccf(curr_slice). ...
+                plane_dv(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            ccf_dv = gui_data.histology_ccf(curr_slice). ...
+                plane_ml(probe_points_atlas_y(curr_point), ...
+                probe_points_atlas_x(curr_point));
+            probe_ccf(curr_probe).points = ...
+                vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+        end
+    end
+
+    % Sort probe points by DV (probe always top->bottom)
+    [~, dv_sort_idx] = sort(probe_ccf(curr_probe).points(:, 2));
+    probe_ccf(curr_probe).points = probe_ccf(curr_probe).points(dv_sort_idx, :);
+
+end
+
+% Get areas along probe trajectory
+for curr_probe = 1:gui_data.n_probes
+
+    % Get best fit line through points as probe trajectory
+    r0 = mean(probe_ccf(curr_probe).points, 1);
+    xyz = bsxfun(@minus, probe_ccf(curr_probe).points, r0);
+    [~, ~, V] = svd(xyz, 0);
+    histology_probe_direction = V(:, 1);
+    % (make sure the direction goes down in DV - flip if it's going up)
+    if histology_probe_direction(2) < 0
+        histology_probe_direction = -histology_probe_direction;
+    end
+
+    line_eval = [-1000, 1000];
+    probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
+
+    % Get the positions of the probe trajectory
+    trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
+    [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
+        round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
+        round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)), ...
+        round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)));
+
+    trajectory_coords_outofbounds = ...
+        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
+        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
+
+    trajectory_coords = ...
+        [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
+        trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
+        trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
+
+    trajectory_coords_idx = sub2ind(size(gui_data.av), ...
+        trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3));
+
+    trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
+
+    % Get rid of NaN's and start/end 1's (non-parsed)
+    trajectory_areas_parsed = find(trajectory_areas_uncut > 1);
+    use_trajectory_areas = trajectory_areas_parsed(1): ...
+        trajectory_areas_parsed(end);
+    trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
+
+    probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
+    probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
+
+end
+
+% Save probe CCF points
+save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
+save(save_fn, 'probe_ccf');
+disp(['Saved probe locations in ', save_fn])
+
+% Close GUI
+%close(gui_fig)
+
+% Plot probe trajectories
+plot_probe(gui_data, probe_ccf);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+end
+
+function autoContrastButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Set contrast and brightness 
+% Auto based on this function : 
+% g(i,j) = α * f(i,j) + β - we want to find α (contrast) and β
+% (brightness)
+% α = 255 / (maximum_gray - minimum_gray)
+% solve β by plugging it into the formula where g(i, j)=0 and 
+% f(i, j)=minimum_gray
+
+gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice},[], 'all') -...
+    min(gui_data.slice_im{gui_data.curr_slice},[], 'all'));
+gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice},[], 'all')));
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice 
+update_slice(gui_fig)
 
 end
 
@@ -545,7 +855,7 @@ gui_data = guidata(gui_fig);
 % Delete current probe histology points and line
 for iSlice = 1:length(gui_data.slice_im)
     for iProbe = 1:gui_data.n_probes
-    gui_data.probe_points_histology{iSlice, iProbe} = [];
+        gui_data.probe_points_histology{iSlice, iProbe} = [];
     end
 end
 delete(gui_data.probe_lines(:))
@@ -591,7 +901,7 @@ function update_slice(gui_fig)
 gui_data = guidata(gui_fig);
 
 % Set next histology slice
-set(gui_data.histology_im_h, 'CData', gui_data.slice_im{gui_data.curr_slice})
+set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha + gui_data.brightness_beta)
 
 % Clear any current lines, draw probe lines
 gui_data.probe_lines.delete;
