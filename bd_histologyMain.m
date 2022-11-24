@@ -1,8 +1,10 @@
 
 %% Histology main
+% QQ to do: 
 % - add option to use elastix
-% - don't fit some parts that are prone to being moved (eg olf bulbs, pposterior cortex (eg retrospenial
+% - don't fit some parts that are prone to being moved (eg olf bulbs, posterior cortex (eg retrospenial
 % ect) ?
+% - add option to change atlas orientation post automatic alignement
 
 %% ~ Images info
 myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
@@ -21,7 +23,8 @@ brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data li
 
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] =...
-    bd_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
+    bd_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, ...
+    channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
 
 %% ~ Load in images and template ~
 [tv, av, st, bregma] = bd_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
@@ -62,15 +65,32 @@ transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedIma
 bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
-%% ~ [WIP] Assign probes to days/sites and save data - add "5min histology recs look at"~
+%% ~ Assign probes to days/sites ~
 probe2ephys = struct; 
-probe2ephys(1).day = 4;
-probe2ephys(1).site = 2;
-probe2ephys(1).shank = 4;
+probe2ephys(1).day = 1;
+probe2ephys(1).site = 1;
+probe2ephys(1).shank = NaN;
 
-save([im_path, '/probe2ephys.mat'], 'probe2ephys')
+save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 
-bd_alignEphysAndHistology(st, slice_path, ...
+%% ~ Align ephys and histology - add "5 min histology recs" look at ~
+iProbe = 1;
+site = probe2ephys(iProbe).site;
+experiments = AP_find_experimentsJF(animal, '', true);
+experiments = experiments([experiments.ephys]);
+day = experiments(probe2ephys(iProbe).day).day;
+shank = probe2ephys(iProbe).shank;
+experiment = 1;
+lfp=NaN;
+JF_load_experiment;
+
+(st,outputDir, ...
+    spike_times,spike_templates,template_depths, spike_xdepths, template_xdepths,...
+    lfp,lfp_channel_positions,lfp_channel_xpositions,use_probe,isSpikeGlx, curr_shank)
+
+bd_alignEphysAndHistology(st, outputDir, ...
                 spike_times, spike_templates, template_depths, ...
-                lfp, channel_positions(:, 2), ...
-                use_probe);
+                spike_xdepths, template_xdepths,lfp, channel_positions(:,2),channel_positions(:,1), ...
+                iProbe,isSpikeGlx, shank);
+
+%% ~ Various useful plotting functions ~ 

@@ -9,7 +9,7 @@ if ~exist('use_probe','var') || isempty(use_probe)
 end
 
 % Load probe CCF
-probe_ccf_fn = [outputDir filesep 'manual/probe_ccf.mat'];
+probe_ccf_fn = [outputDir filesep 'brainReg' filesep 'probe_ccf.mat'];
 load(probe_ccf_fn);
 
 if ~isnan(curr_shank)
@@ -133,7 +133,11 @@ trajectory_area_boundary_idx = ...
     [1;find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0)+1];
 trajectory_area_boundaries = probe_trajectory_depths(trajectory_area_boundary_idx);
 trajectory_area_centers = (trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2);
-trajectory_area_labels = st.safe_name(probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx));
+for iArea = 1:size(trajectory_area_boundary_idx, 1)
+    trajectory_area_labels(iArea) = st.acronym(st.id == ...
+                probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx(iArea)));
+end
+%trajectory_area_labels = st.name(probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx));
 
 [~,area_dv_sort_idx] = sort(trajectory_area_centers);
 
