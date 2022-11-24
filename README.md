@@ -15,9 +15,14 @@ Based on [AP_histology](https://github.com/petersaj/AP_histology) and [allenCCF]
 
 #### Step 3: Draw probes
 
+![atlasDrawProbes](image/atlasDrawProbes.png)
+
 
 #### Step 4: Assign probes to ephys days/sites
 
+
 #### Step 5: Align probes and ephys
 
-![20220902_190953_27](image/atlasDrawProbes.png)
+
+
+
