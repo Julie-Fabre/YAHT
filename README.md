@@ -20,4 +20,4 @@ Based on [AP_histology](https://github.com/petersaj/AP_histology) and [allenCCF]
 
 #### Step 5: Align probes and ephys
 
-![20220902_190953_27](image/20220902_190953_27.png)
+![20220902_190953_27](image/atlasDrawProbes.png)
