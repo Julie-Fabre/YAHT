@@ -239,7 +239,7 @@ switch eventdata.Key
             curr_probe = str2num(eventdata.Key(end));
         elseif strcmp(keyData.Modifier{:}, 'shift') == 1
             curr_probe = str2num(eventdata.Key(end)) + 10;
-        elseif strcmp(keyData.Modifier{:}, 'alt') == 1
+        elseif strcmp(keyData.Modifier{:}, 'alt') == 1 
             curr_probe = str2num(eventdata.Key(end)) + 20;
         elseif strcmp(keyData.Modifier{:}, 'control') == 1
             curr_probe = str2num(eventdata.Key(end)) + 30;
@@ -565,7 +565,7 @@ set(gui_data.histology_ax_title, 'String', ...
 
 % delete any previous lines
 delete(gui_data.probe_lines(curr_probe))
-
+curr_line.delete;
 % update probe line
 gui_data.probe_lines(curr_probe) = ...
     line(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
@@ -573,7 +573,7 @@ gui_data.probe_lines(curr_probe) = ...
     'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
 
 % Delete movable line, draw line object
-curr_line.delete;
+
 gui_data.curr_probe = curr_probe;
 
 % Upload gui data
@@ -672,11 +672,9 @@ gui_data = guidata(gui_fig);
 % Get current probe
 curr_probe = find([gui_data.select_probe_btns(:).Value]);
 gui_data.curr_probe = curr_probe;
+
 % Change curr probe
 update_curr_probe(gui_fig, curr_probe)
-
-% Upload gui data
-guidata(gui_fig, gui_data);
 
 end
 
