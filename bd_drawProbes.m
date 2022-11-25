@@ -531,11 +531,13 @@ for iProbe = 1:size(probe_ccf,1)
     
     curr_probe_points = probe_ccf(iProbe).points;
     if ~isempty(curr_probe_points)
-    for iSlice = 1:2:size(curr_probe_points,1)
+        if size(curr_probe_points,1) >= 2
+    for iSlice = 1:2:2*floor(size(curr_probe_points,1)/2)
         curr_slice =find(ap_all ==  probe_ccf(iProbe).points(iSlice,1));
         gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice,2:3);...
             probe_ccf(iProbe).points(iSlice+1,2:3)];
     end
+        end
     end
 end
 

@@ -68,9 +68,9 @@ bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probe
 %% ~ Assign probes to days/sites ~
 % combine all probe ccfs 
 probe_ccf = struct;
-probe_ccf(30).points = probe_ccf(25).points;
-probe_ccf(30).trajectory_coords = probe_ccf(25).trajectory_coords;
-probe_ccf(30).trajectory_areas = probe_ccf(25).trajectory_areas;
+probe_ccf_full(4).points = probe_ccf(4).points;
+probe_ccf_full(4).trajectory_coords = probe_ccf(4).trajectory_coords;
+probe_ccf_full(4).trajectory_areas = probe_ccf(4).trajectory_areas;
 % load([outputDir, filesep, 'probe_ccf1.mat'])
 % probe_ccf_full = probe_ccf;
 % load([outputDir, filesep, 'probe_ccf2.mat'])
@@ -106,14 +106,23 @@ probe2ephys = struct;
 probe2ephys(1).day = 1;
 probe2ephys(1).site = 1;
 probe2ephys(1).shank = NaN;
+probe2ephys(2).day = 2;
+probe2ephys(2).site = 1;
+probe2ephys(2).shank = NaN;
+probe2ephys(3).day = 3;
+probe2ephys(3).site = 1;
+probe2ephys(3).shank = NaN;
+probe2ephys(4).day = 4;
+probe2ephys(4).site = 1;
+probe2ephys(4).shank = NaN;
 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
-
+save([outputDir, '/probe2ephys_safe.mat'], 'probe2ephys')
 %% ~ Align ephys and histology ~
 % - add "5 min histology recs" look at
 % - check out imro file , plot 
 % - plot probe in image overlay (rotated on probe axis)
-iProbe = 1;
+iProbe = 2;
 site = probe2ephys(iProbe).site;
 experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);
