@@ -66,6 +66,42 @@ bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probe
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
 %% ~ Assign probes to days/sites ~
+% combine all probe ccfs 
+probe_ccf = struct;
+probe_ccf_full(4).points = probe_ccf(4).points;
+probe_ccf_full(4).trajectory_coords = probe_ccf(4).trajectory_coords;
+probe_ccf_full(4).trajectory_areas = probe_ccf(4).trajectory_areas;
+% load([outputDir, filesep, 'probe_ccf1.mat'])
+% probe_ccf_full = probe_ccf;
+% load([outputDir, filesep, 'probe_ccf2.mat'])
+% theseP = find(logical(abs(cellfun(@isempty,{probe_ccf.points})-1)));
+% for iProbe = theseP
+% probe_ccf_full(iProbe).points = probe_ccf(iProbe).points;
+% probe_ccf_full(iProbe).trajectory_coords = probe_ccf(iProbe).trajectory_coords;
+% probe_ccf_full(iProbe).trajectory_areas = probe_ccf(iProbe).trajectory_areas;
+% end
+% load([outputDir, filesep, 'probe_ccf3.mat'])
+% theseP = find(logical(abs(cellfun(@isempty,{probe_ccf.points})-1)));
+% for iProbe = theseP
+% probe_ccf_full(iProbe).points = probe_ccf(iProbe).points;
+% probe_ccf_full(iProbe).trajectory_coords = probe_ccf(iProbe).trajectory_coords;
+% probe_ccf_full(iProbe).trajectory_areas = probe_ccf(iProbe).trajectory_areas;
+% end
+% 4 shank-ify 
+% fourShankStarts = [5,9,13,17,21,25,29];
+% iProbe = fourShankStarts(7);
+% max_points = min(size(probe_ccf_full(iProbe).points,1), size(probe_ccf_full(iProbe+1).points,1));
+% four_shank_breadth = nanmean((probe_ccf_full(iProbe).points(1:max_points,:)  - ...
+%            probe_ccf_full(iProbe+1).points(1:max_points,:)) / 2);
+%        
+% probe_ccf_full(iProbe+1).points = probe_ccf_full(iProbe).points - four_shank_breadth;
+% probe_ccf_full(iProbe+2).points = probe_ccf_full(iProbe+1).points - (four_shank_breadth);
+% probe_ccf_full(iProbe+3).points = probe_ccf_full(iProbe+1).points - (2*four_shank_breadth);
+
+
+bd_plotHistoPerMouse(animal);
+
+% plot and assign
 probe2ephys = struct; 
 probe2ephys(1).day = 1;
 probe2ephys(1).site = 1;
@@ -73,7 +109,10 @@ probe2ephys(1).shank = NaN;
 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 
-%% ~ Align ephys and histology - add "5 min histology recs" look at ~
+%% ~ Align ephys and histology ~
+% - add "5 min histology recs" look at
+% - check out imro file , plot 
+% - plot probe in image overlay (rotated on probe axis)
 iProbe = 1;
 site = probe2ephys(iProbe).site;
 experiments = AP_find_experimentsJF(animal, '', true);
@@ -84,13 +123,9 @@ experiment = 1;
 lfp=NaN;
 JF_load_experiment;
 
-(st,outputDir, ...
-    spike_times,spike_templates,template_depths, spike_xdepths, template_xdepths,...
-    lfp,lfp_channel_positions,lfp_channel_xpositions,use_probe,isSpikeGlx, curr_shank)
-
 bd_alignEphysAndHistology(st, outputDir, ...
                 spike_times, spike_templates, template_depths, ...
                 spike_xdepths, template_xdepths,lfp, channel_positions(:,2),channel_positions(:,1), ...
-                iProbe,isSpikeGlx, shank);
+                iProbe, isSpikeGlx, shank);
 
 %% ~ Various useful plotting functions ~ 

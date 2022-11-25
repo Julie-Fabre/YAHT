@@ -401,17 +401,20 @@ for curr_probe = 1:gui_data.n_probes
     if ~isempty(slice_points)
         for curr_slice = slice_points
     
-            % Transform histology to atlas slice
-            tform = affine2d;
-            tform.T = gui_data.histology_ccf_alignment{curr_slice};
-            % (transform is CCF -> histology, invert for other direction)
-            tform = invert(tform);
+%             % Transform histology to atlas slice
+%             tform = affine2d;
+%             tform.T = gui_data.histology_ccf_alignment{curr_slice};
+%             % (transform is CCF -> histology, invert for other direction)
+%             tform = invert(tform);
     
             % Transform and round to nearest index
-            [probe_points_atlas_x, probe_points_atlas_y] = ...
-                transformPointsForward(tform, ...
-                gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
-                gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+%             [probe_points_atlas_x, probe_points_atlas_y] = ...
+%                 transformPointsForward(tform, ...
+%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
+%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+
+probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
+probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
     
             probe_points_atlas_x = round(probe_points_atlas_x);
             probe_points_atlas_y = round(probe_points_atlas_y);
@@ -452,7 +455,7 @@ for curr_probe = 1:gui_data.n_probes
         [~, ~, V] = svd(xyz, 0);
         histology_probe_direction = V(:, 1);
         % (make sure the direction goes down in DV - flip if it's going up)
-        if histology_probe_direction(2) < 0
+        if histology_probe_direction(3) < 0
             histology_probe_direction = -histology_probe_direction;
         end
     
@@ -463,8 +466,8 @@ for curr_probe = 1:gui_data.n_probes
         trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
         [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
             round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
-            round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)), ...
-            round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)));
+            round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
+            round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
     
         trajectory_coords_outofbounds = ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
@@ -672,7 +675,6 @@ gui_data = guidata(gui_fig);
 % Get current probe
 curr_probe = find([gui_data.select_probe_btns(:).Value]);
 gui_data.curr_probe = curr_probe;
-
 % Change curr probe
 update_curr_probe(gui_fig, curr_probe)
 
@@ -772,7 +774,7 @@ gui_data = guidata(gui_fig);
 
 % hide/show
 if contains(gui_data.toggle_probe_btn.String, 'Hide')
-    gui_data.toggle_probe_btn.String = 'Show all other probes';
+    gui_data.toggle_probe_btn.String = 'Show all other probes';%<HTML><center><FONT color="white"><b>
     other_probes = logical(ones(gui_data.n_probes, 1));
     other_probes(gui_data.curr_probe) = 0;
     other_probes = find(other_probes);
@@ -806,6 +808,10 @@ set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*g
 
 % Clear any current lines, draw probe lines
 gui_data.probe_lines.delete;
+% slices AP 
+for iSlice = 1:size(gui_data.histology_ccf,1)
+    ap_all(iSlice) = gui_data.histology_ccf(iSlice).plane_ap(1);
+end
 for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
     if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
         gui_data.probe_lines(curr_probe) = ...

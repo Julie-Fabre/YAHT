@@ -1,18 +1,18 @@
 
-animal = 'JF043';
+animal = 'JF070';
 myPaths;
 
-slice_spacing = 10;
+slice_spacing = 25;
     structure_alpha = 0.2;
-%load probe2epphys eect, plot eqch probe trrqck 
-allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
-tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
-av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
-st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);    
+% %load probe2epphys eect, plot eqch probe trrqck 
+% allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
+% tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
+% av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
+% st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);    
 
-load([extraHDPath, filesep, animal, '/slices/probe_ccf.mat'])
-load([extraHDPath, filesep, animal, '/probe2ephys.mat'])
-cmap_filename = [allen_atlas_path filesep 'allen_ccf_colormap_2017.mat'];
+load([outputDir '/probe_ccf.mat'])
+load([outputDir '/probe2ephys.mat'])
+cmap_filename = [allenAtlasPath filesep 'allenCCF/allen_ccf_colormap_2017.mat'];
 
 figure();
 load(cmap_filename);
@@ -22,14 +22,19 @@ for curr_probe = 1:length(probe_ccf)
     trajectory_area_boundaries = ...
         [1;find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0);length(probe_ccf(curr_probe).trajectory_areas)];    
     trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries)/2;
-    trajectory_area_labels = st.safe_name(probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers)));
+        for iArea = 1:size(trajectory_area_centers, 1)
+        trajectory_area_labels(iArea) = st.acronym(st.id == ...
+            probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers(iArea))));
+        end
+
+    %trajectory_area_labels = st.acronym(probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers)));
       
     image(probe_ccf(curr_probe).trajectory_areas);
     colormap(curr_axes,cmap);
     caxis([1,size(cmap,1)])
     set(curr_axes,'YTick',trajectory_area_centers,'YTickLabels',trajectory_area_labels);
     set(curr_axes,'XTick',[]);
-    title([num2str(probe2ephys(curr_probe).day) num2str(probe2ephys(curr_probe).site)]);
+%    title([num2str(probe2ephys(curr_probe).day) num2str(probe2ephys(curr_probe).site)]);
     
 end
 

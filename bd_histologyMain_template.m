@@ -54,7 +54,7 @@ end
 if isempty(dir([outputDir, filesep, 'manual', filesep, 'atlas2histology_tform.mat']))
     bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
 end
-% histology_ccf.mat : corresponding CCF slices
+% histology_ccf.maopen bxt : corresponding CCF slices
 % atlas2histology_tform.mat : ccf to histology alignement/warp
 
 %% ~ Draw probes ~
