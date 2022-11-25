@@ -518,10 +518,31 @@ gui_data = guidata(gui_fig);
 % load 
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
 load(save_fn);
-gui_data.probe_points_histology = ...
-    probe_ccf.points;
+
+% slices AP 
+for iSlice = 1:size(gui_data.histology_ccf,1)
+    ap_all(iSlice) = gui_data.histology_ccf(iSlice).plane_ap(1);
+end
+previous_string = gui_data.histology_ax_title.String;
+set(gui_data.histology_ax_title, 'String', 'loading...')
+
+% match points with AP, index in and store in gui_data
+for iProbe = 1:size(probe_ccf,1)
+    
+    curr_probe_points = probe_ccf(iProbe).points;
+    if ~isempty(curr_probe_points)
+    for iSlice = 1:2:size(curr_probe_points,1)
+        curr_slice =find(ap_all ==  probe_ccf(iProbe).points(iSlice,1));
+        gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice,2:3);...
+            probe_ccf(iProbe).points(iSlice+1,2:3)];
+    end
+    end
+end
+
+set(gui_data.histology_ax_title, 'String', 'successfully loaded')
 
 % Upload gui data
+set(gui_data.histology_ax_title, 'String', previous_string)
 guidata(gui_fig, gui_data);
 
 end
@@ -808,10 +829,7 @@ set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*g
 
 % Clear any current lines, draw probe lines
 gui_data.probe_lines.delete;
-% slices AP 
-for iSlice = 1:size(gui_data.histology_ccf,1)
-    ap_all(iSlice) = gui_data.histology_ccf(iSlice).plane_ap(1);
-end
+
 for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
     if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
         gui_data.probe_lines(curr_probe) = ...
