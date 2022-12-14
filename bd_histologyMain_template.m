@@ -77,7 +77,7 @@ save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 % - add "5 min histology recs" look at
 % - check out imro file , plot 
 % - plot probe in image overlay (rotated on probe axis)
-iProbe = 1;
+iProbe = 3;
 site = probe2ephys(iProbe).site;
 experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);

@@ -9,7 +9,7 @@
 %% ~ Images info
 myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF070';
+animal = 'JF067';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -67,10 +67,12 @@ bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probe
 
 %% ~ Assign probes to days/sites ~
 % combine all probe ccfs 
-probe_ccf = struct;
-probe_ccf(3).points = probe_ccf(2).points;
-probe_ccf(3).trajectory_coords = probe_ccf(2).trajectory_coords;
-probe_ccf(3).trajectory_areas = probe_ccf(2).trajectory_areas;
+probe_ccf_full = probe_ccf;
+load([outputDir, '/probe_ccf.mat'])
+probe_ccf_full(1).points = probe_ccf(1).points;
+probe_ccf_full(1).trajectory_coords = probe_ccf(1).trajectory_coords;
+probe_ccf_full(1).trajectory_areas = probe_ccf(1).trajectory_areas;
+save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
 % load([outputDir, filesep, 'probe_ccf1.mat'])
 % probe_ccf_full = probe_ccf;
 % load([outputDir, filesep, 'probe_ccf2.mat'])
@@ -103,18 +105,61 @@ bd_plotHistoPerMouse(animal);
 
 % plot and assign
 probe2ephys = struct; 
-probe2ephys(1).day = 1;
-probe2ephys(1).site = 1;
-probe2ephys(1).shank = NaN;
-probe2ephys(2).day = 2;
-probe2ephys(2).site = 1;
-probe2ephys(2).shank = NaN;
-probe2ephys(3).day = 3;
-probe2ephys(3).site = 1;
-probe2ephys(3).shank = NaN;
-probe2ephys(4).day = 4;
+load([outputDir, '/probe2ephys.mat'])
+probe2ephys(21).day = 1;
+probe2ephys(21).site = 2;
+probe2ephys(21).shank = NaN;
+probe2ephys(21).recording = [1,2];
+
+probe2ephys(4).day = 1;
 probe2ephys(4).site = 1;
 probe2ephys(4).shank = NaN;
+probe2ephys(4).recording = [1,2];
+
+probe2ephys(1).day = 3;
+probe2ephys(1).site = 1;
+probe2ephys(1).shank = NaN;
+
+probe2ephys(2).day = 2;
+probe2ephys(2).site = 3;
+probe2ephys(2).shank = NaN;
+
+
+probe2ephys(3).day = 2;
+probe2ephys(3).site = 1;
+probe2ephys(3).shank = NaN;
+
+probe2ephys(5).day = 4;
+probe2ephys(5).site = 1;
+probe2ephys(5).shank = 1;
+
+probe2ephys(6).day = 4;
+probe2ephys(6).site = 1;
+probe2ephys(6).shank = 2;
+
+
+probe2ephys(7).day = 4;
+probe2ephys(7).site = 1;
+probe2ephys(7).shank = 3;
+
+
+probe2ephys(8).day = 4;
+probe2ephys(8).site = 1;
+probe2ephys(8).shank = 4;
+
+
+probe2ephys(9).day = 3;
+probe2ephys(9).site = 2;
+probe2ephys(9).shank = 1;
+
+probe2ephys(13).day = 2;
+probe2ephys(13).site = 4;
+probe2ephys(13).shank = 1;
+
+probe2ephys(17).day = 2;
+probe2ephys(17).site = 2;
+probe2ephys(17).shank = 1;
+
 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 save([outputDir, '/probe2ephys_safe.mat'], 'probe2ephys')
@@ -127,9 +172,15 @@ site = probe2ephys(iProbe).site;
 experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);
 day = experiments(probe2ephys(iProbe).day).day;
+if isfield(probe2ephys, 'recording') && ~isempty(probe2ephys(iProbe).recording)
+    recording = probe2ephys(iProbe).recording(1);
+else
+    recording = [];
+end
 shank = probe2ephys(iProbe).shank;
-experiment = 1;
+experiment = 2;
 lfp=NaN;
+load_sync=true;
 JF_load_experiment;
 
 bd_alignEphysAndHistology(st, outputDir, ...

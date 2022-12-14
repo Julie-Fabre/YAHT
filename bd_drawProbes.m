@@ -394,6 +394,14 @@ probe_ccf = struct( ...
     'points', cell(gui_data.n_probes, 1), ...
     'trajectory_coords', cell(gui_data.n_probes, 1), ... .
     'trajectory_areas', cell(gui_data.n_probes, 1));
+ccf_slice_fn = ['/home/netshare/znas-brainsaw/JF026_JF029/JF026/downsampled_stacks/025_micron/brainReg/manual/histology_ccf.mat'];
+load(ccf_slice_fn);
+gui_data.histology_ccf = histology_ccf;
+
+% Load histology/CCF alignment
+ccf_alignment_fn = ['/home/netshare/znas-brainsaw/JF026_JF029/JF026/downsampled_stacks/025_micron/brainReg/manual/atlas2histology_tform.mat'];
+load(ccf_alignment_fn);
+gui_data.histology_ccf_alignment = atlas2histology_tform;
 
 % Convert probe points to CCF points by alignment and save
 for curr_probe = 1:gui_data.n_probes
