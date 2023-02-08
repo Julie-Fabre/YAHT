@@ -13,22 +13,30 @@ probe_ccf_fn = [outputDir filesep 'probe_ccf.mat'];
 load(probe_ccf_fn);
 
 if ~isnan(curr_shank)
-    theseChannelPositions = [(curr_shank-1) * 250, (curr_shank-1)*250 + 32];
-    theseChannels = ismember(lfp_channel_xpositions, theseChannelPositions);
-    theseTemplates = ismember(template_xdepths, theseChannelPositions);
-    theseSpikes = ismember(spike_xdepths, theseChannelPositions);
-    spike_times = spike_times(theseSpikes);
-    spike_templates = spike_templates(theseSpikes);
-    %rename 
-    good_templates_idx = unique(spike_templates);
-    new_spike_idx = nan(max(spike_templates), 1);
-    new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
-    spike_templates = new_spike_idx(spike_templates);
-    
-     template_depths = template_depths(theseTemplates);
-    [~,~,spike_templates_reidx] = unique(spike_templates);
-    norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
-
+    if length(unique(lfp_channel_xpositions))==2
+        warning('single shank recorded, keeping all units')
+        theseChannels = ones(size(lfp_channel_xpositions,1),1);
+        theseTemplates = ones(size(template_xdepths,1),1);
+        theseSpikes = ones(size(spike_xdepths,1),1);
+        [~,~,spike_templates_reidx] = unique(spike_templates);
+        norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
+    else
+        theseChannelPositions = [(curr_shank-1) * 250, (curr_shank-1)*250 + 32];
+        theseChannels = ismember(lfp_channel_xpositions, theseChannelPositions);
+        theseTemplates = ismember(template_xdepths, theseChannelPositions);
+        theseSpikes = ismember(spike_xdepths, theseChannelPositions);
+        spike_times = spike_times(theseSpikes);
+        spike_templates = spike_templates(theseSpikes);
+        %rename 
+        good_templates_idx = unique(spike_templates);
+        new_spike_idx = nan(max(spike_templates), 1);
+        new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
+        spike_templates = new_spike_idx(spike_templates);
+        
+         template_depths = template_depths(theseTemplates);
+        [~,~,spike_templates_reidx] = unique(spike_templates);
+        norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
+    end
 else
     theseChannels = ones(size(lfp_channel_xpositions,1),1);
     theseTemplates = ones(size(template_xdepths,1),1);
@@ -231,14 +239,14 @@ switch eventdata.Key
             % Close the figure
             close(gui_fig);
         end
-     case 'n' % stretch
+     case 'n' % stretch - narrow
            new_ylim = [gui_data.probe_areas_ax_ylim(1), gui_data.probe_areas_ax_ylim(2) .*(1-s_change)];
            ylim(gui_data.probe_areas_ax,new_ylim);
            gui_data.probe_areas_ax_ylim = new_ylim;
            % Upload gui data
            guidata(gui_fig,gui_data);
 
-     case 'w' % stretch
+    case 'w' % stretch - widden
             probe_ccf = gui_data.probe_ccf;
             
             % Get the probe depths corresponding to the trajectory areas

@@ -167,7 +167,7 @@ save([outputDir, '/probe2ephys_safe.mat'], 'probe2ephys')
 % - add "5 min histology recs" look at
 % - check out imro file , plot 
 % - plot probe in image overlay (rotated on probe axis)
-iProbe = 4;
+iProbe = 9
 site = probe2ephys(iProbe).site;
 experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);
@@ -188,4 +188,7 @@ bd_alignEphysAndHistology(st, outputDir, ...
                 spike_xdepths, template_xdepths,lfp, channel_positions(:,2),channel_positions(:,1), ...
                 iProbe, isSpikeGlx, shank);
 
+
+% add comments
+save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 %% ~ Various useful plotting functions ~ 
