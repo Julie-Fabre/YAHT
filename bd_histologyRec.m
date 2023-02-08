@@ -3,11 +3,11 @@
 
 %% preprocess for npx 2.0 probes : run kilosort, extract sync and lfp channels
 function [channel_spikeCounts,channel_id] = bd_histologyRec(animal, date, site, shank, rerunHistCount)
-animal = 'JF090';
-date = '2022-11-17';
-site = 1;
-shank = 0;
-rerunHistCount = 1;
+% animal = 'JF090';
+% date = '2022-11-17';
+% site = 1;
+% shank = 0;
+% rerunHistCount = 0;
 
 %% convert raw data from .cbin to .bin and get channel map
 myPaths;
