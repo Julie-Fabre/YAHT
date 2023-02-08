@@ -1,15 +1,13 @@
 
-%% you need to change most of the paths in this block
-
-%% preprocess for npx 2.0 probes : run kilosort, extract sync and lfp channels
 function [channel_spikeCounts,channel_id] = bd_histologyRec(animal, date, site, shank, rerunHistCount)
+% get crude estimate of spike counts per channel, based on kilosort 2 preprocessing steps 
+
 % animal = 'JF090';
 % date = '2022-11-17';
 % site = 1;
 % shank = 0;
 % rerunHistCount = 0;
 
-%% convert raw data from .cbin to .bin and get channel map
 myPaths;
 [ephysAPfile, ~] = AP_cortexlab_filenameJF(animal, date, [], 'ephys_histology', site, [], shank);
 if size(ephysAPfile, 2) > 1 && iscell(ephysAPfile) %keep only ap
@@ -20,10 +18,10 @@ rootZ = fileparts(ephysAPfile);
 metaFile = strrep(ephysAPfile, '.bin', '.meta');
 [~, channelMapIMRO] = bc_readSpikeGLXMetaFile(metaFile);
 
-%% get channel map file
+
 chanMapFile = JF_imroToChannelMapLoc(channelMapIMRO);
 
-%% kilosort
+
 rootH = [extraHDPath, '/data_temp/'];
 pathToYourConfigFile = [dropboxPath, 'MATLAB/onPaths/Kilosort2/configFiles'];
 chanMapFilePath = [dropboxPath, 'MATLAB/onPaths/Kilosort2/configFiles', chanMapFile];
