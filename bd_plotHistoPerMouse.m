@@ -1,5 +1,5 @@
-
-animal = 'JF070';
+function bd_plotHistoPerMouse(probe_ccf)
+%animal = 'JF070';
 myPaths;
 
 slice_spacing = 25;
@@ -85,4 +85,4 @@ for thisthisProbe = 1:length(probe_ccf)
 end
 
 
-
+end

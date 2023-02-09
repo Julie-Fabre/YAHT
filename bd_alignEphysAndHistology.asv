@@ -122,12 +122,8 @@ elseif ~isnan(curr_shank)
     lfp_moving_median = 10; % channels to take sliding median
     lfp_ax = subplot('Position',[0.5,0.1,0.3,0.8]);
    
-    plot(smoothdata(channel_spikeCounts, 'movmedian', 5), channel_id)
-     set(lfp_ax,'YTick',[]);
-    title(['5'' shank' num2str(curr_shank) ' spike count' ]);
-    set(lfp_ax,'FontSize',12)
-    xlabel(lfp_ax,'# threshold crossings'); 
-    makepretty;
+    plot(channel_spikeCounts, channel_id)
+    
 end
 
 % Plot probe areas (interactive)

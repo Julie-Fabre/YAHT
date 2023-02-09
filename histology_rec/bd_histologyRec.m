@@ -1,5 +1,5 @@
 
-function [channel_spikeCounts,channel_id] = bd_histologyRec(animal, date, site, shank, rerunHistCount)
+function [channel_spikeCounts, channel_id] = bd_histologyRec(animal, date, site, shank, rerunHistCount)
 % get crude estimate of spike counts per channel, based on kilosort 2 preprocessing steps 
 
 % animal = 'JF090';

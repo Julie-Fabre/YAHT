@@ -1,14 +1,15 @@
 
-%% you need to change most of the paths in this block
+function [channel_spikeCounts, channel_id] = bd_histologyRec(animal, date, site, shank, rerunHistCount)
+% get crude estimate of spike counts per channel, based on kilosort 2 preprocessing steps 
 
-%% preprocess for npx 2.0 probes : run kilosort, extract sync and lfp channels
-function [igood, ich] = bd_histologyRec(animal, date, site)
+% animal = 'JF090';
+% date = '2022-11-17';
+% site = 1;
+% shank = 0;
+% rerunHistCount = 0;
 
-experiment = [];
-
-%% convert raw data from .cbin to .bin and get channel map
 myPaths;
-[ephysAPfile, ~] = AP_cortexlab_filenameJF(animal, date, experiment, 'ephys_histology', site, recording);
+[ephysAPfile, ~] = AP_cortexlab_filenameJF(animal, date, [], 'ephys_histology', site, [], shank);
 if size(ephysAPfile, 2) > 1 && iscell(ephysAPfile) %keep only ap
     ephysAPfile = ephysAPfile{1};
 end
@@ -17,10 +18,10 @@ rootZ = fileparts(ephysAPfile);
 metaFile = strrep(ephysAPfile, '.bin', '.meta');
 [~, channelMapIMRO] = bc_readSpikeGLXMetaFile(metaFile);
 
-%% get channel map file
+
 chanMapFile = JF_imroToChannelMapLoc(channelMapIMRO);
 
-%% kilosort
+
 rootH = [extraHDPath, '/data_temp/'];
 pathToYourConfigFile = [dropboxPath, 'MATLAB/onPaths/Kilosort2/configFiles'];
 chanMapFilePath = [dropboxPath, 'MATLAB/onPaths/Kilosort2/configFiles', chanMapFile];
@@ -33,7 +34,7 @@ if isempty(saveDir)
 end
 %pyKS_saveFile = [toot, filesep, 'pykilosort' filesep, 'site', num2str(site), filesep, 'output', filesep];
 histologyCountExists = dir(fullfile(saveFile, 'channels.spike_count.npy'));
-if isempty(histologyCountExists) || rerunKS
+if isempty(histologyCountExists) || rerunHistCount
 
     %addpath(genpath('D:\GitHub\KiloSort2')) % path to kilosort folder
     %addpath('D:\GitHub\npy-matlab') % for converting to Phy
@@ -69,7 +70,17 @@ if isempty(histologyCountExists) || rerunKS
     end
 
     % preprocess data to create temp_wh.dat
-    [rez, igood, ich] = bd_preprocessDataSub(ops);
+    [igood, ich] = bd_preprocessDataSub(ops);
+    [channel_spikeCounts,channel_id] = groupcounts(ich) ;
+    channel_spikeCounts = gather(channel_spikeCounts); %gpu array to regular;
+    channel_id = gather(channel_id); %gpu array to regular;
+
+    writeNPY(channel_spikeCounts, fullfile(saveFile, 'channels.spike_count.npy'))
+    writeNPY(channel_id, fullfile(saveFile, 'channels.id.npy'))
+    %writeNPY()
 else
+    channel_spikeCounts = readNPY(fullfile(saveFile, 'channels.spike_count.npy'));
+    channel_id = readNPY(fullfile(saveFile, 'channels.id.npy'));
 end
+
 end
