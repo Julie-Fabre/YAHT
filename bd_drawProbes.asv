@@ -836,12 +836,11 @@ end
 % find line on this slice 
 slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
     gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice,2:3);
-if ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice)
-        
+
 gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
     [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
     'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
-end
+
 
 else
     gui_data.viewFit(curr_probe).String = 'View fit';
@@ -967,15 +966,7 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
             'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
     end
-    if gui_data.fit_visibility == 1 &&  ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice)
-        slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
-        gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice,2:3);
-    
-    gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
-        [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
-        'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
-
-    end
+    if gui_data.fit_visibility = 0
 end
 
 set(gui_data.histology_ax_title, 'String', ...
