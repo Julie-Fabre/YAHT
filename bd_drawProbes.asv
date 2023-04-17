@@ -831,12 +831,14 @@ end
 % find line on this slice 
 slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
     gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice,2:3);
+gui_data.probe_fit_lines(curr_probe), 'XData', [slice_coords_fit(1,2), slice_coords_fit(end,2)],...
+     'YData', [slice_coords_fit(1,1), slice_coords_fit(end,1)]);
 
 gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
     [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
-    'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
-% % Plot probe trajectories
-% plot_probe(gui_data, probe_ccf);
+    'linewidth', 3, 'Line Style', '--' ,'color', [gui_data.probe_color(curr_probe, :), 1]);
+% Plot probe trajectories
+plot_probe(gui_data, probe_ccf);
 
 % Upload gui data
 guidata(gui_fig, gui_data);
