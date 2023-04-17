@@ -722,9 +722,12 @@ end
 function viewFitButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
-
-% Get current probe
 curr_probe = find([gui_data.viewFit(:).Value]);
+% hide/show
+if contains(gui_data.viewFit(curr_probe).String, 'iew')
+    gui_data.viewFit(curr_probe).String = 'Hide fit';%<HTML><center><FONT color="white"><b>
+    % Get current probe
+
 
 % Convert probe points to CCF points by alignment 
 gui_data.probe_ccf = struct( ...
@@ -835,6 +838,16 @@ slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
 gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
     [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
     'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
+
+
+else
+    gui_data.viewFit(curr_probe).String = 'View fit';
+    
+        gui_data.probe_fit_lines(curr_probe).Color(4) = 0;
+    
+end
+
+
 % % Plot probe trajectories
 % plot_probe(gui_data, probe_ccf);
 
