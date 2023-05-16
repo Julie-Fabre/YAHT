@@ -65,48 +65,18 @@ transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedIma
 bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
 
-%% ~ Assign probes to days/sites ~
-% combine all probe ccfs 
-% probe_ccf_full = probe_ccf;
-% load([outputDir, '/probe_ccf.mat'])
-% probe_ccf_full(1).points = probe_ccf(1).points;
-% probe_ccf_full(1).trajectory_coords = probe_ccf(1).trajectory_coords;
-% probe_ccf_full(1).trajectory_areas = probe_ccf(1).trajectory_areas;
-% save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
-% load([outputDir, filesep, 'probe_ccf1.mat'])
-% probe_ccf_full = probe_ccf;
-% load([outputDir, filesep, 'probe_ccf2.mat'])
-% theseP = find(logical(abs(cellfun(@isempty,{probe_ccf.points})-1)));
-% for iProbe = theseP
-% probe_ccf_full(iProbe).points = probe_ccf(iProbe).points;
-% probe_ccf_full(iProbe).trajectory_coords = probe_ccf(iProbe).trajectory_coords;
-% probe_ccf_full(iProbe).trajectory_areas = probe_ccf(iProbe).trajectory_areas;
-% end
-% load([outputDir, filesep, 'probe_ccf3.mat'])
-% theseP = find(logical(abs(cellfun(@isempty,{probe_ccf.points})-1)));
-% for iProbe = theseP
-% probe_ccf_full(iProbe).points = probe_ccf(iProbe).points;
-% probe_ccf_full(iProbe).trajectory_coords = probe_ccf(iProbe).trajectory_coords;
-% probe_ccf_full(iProbe).trajectory_areas = probe_ccf(iProbe).trajectory_areas;
-% end
-% 4 shank-ify 
-% fourShankStarts = [5,9,13,17,21,25,29];
-% iProbe = fourShankStarts(7);
-% max_points = min(size(probe_ccf_full(iProbe).points,1), size(probe_ccf_full(iProbe+1).points,1));
-% four_shank_breadth = nanmean((probe_ccf_full(iProbe).points(1:max_points,:)  - ...
-%            probe_ccf_full(iProbe+1).points(1:max_points,:)) / 2);
-%        
-% probe_ccf_full(iProbe+1).points = probe_ccf_full(iProbe).points - four_shank_breadth;
-% probe_ccf_full(iProbe+2).points = probe_ccf_full(iProbe+1).points - (four_shank_breadth);
-% probe_ccf_full(iProbe+3).points = probe_ccf_full(iProbe+1).points - (2*four_shank_breadth);
+%% ~ Check and adjust probe fits ~
+bd_fitProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 
+
+%% ~ Assign probes to days/sites ~
 load([outputDir, '/probe_ccf.mat'])
-bd_plotHistoPerMouse(probe_ccf);
+bd_plotHistoPerMouse(outputDir);
 
 % plot and assign
 probe2ephys = struct; 
 %load([outputDir, '/probe2ephys.mat'])
-probe2ephys(1).day = 2;
+probe2ephys(1).day = 1;
 probe2ephys(1).site = 1;
 probe2ephys(1).shank = 1;
 

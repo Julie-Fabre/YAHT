@@ -1,4 +1,4 @@
-function bd_plotHistoPerMouse(probe_ccf)
+function bd_plotHistoPerMouse(outputDir)
 %animal = 'JF070';
 myPaths;
 

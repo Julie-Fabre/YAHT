@@ -71,7 +71,7 @@ else
 
 end
 gui_data.gui_button_position = gui_button_position1;
-% auto contrast/brightness button 
+% auto contrast/brightness button
 gui_data.auto_contrast_btn = uicontrol('Style', 'pushbutton', ...
     'String', '<HTML><center><FONT color="white"><b>Auto brightness/ contrast</b></Font>', ...
     'Position', gui_button_position2+[0, 0, 0, 20], ...
@@ -82,34 +82,36 @@ gui_data.auto_contrast_btn = uicontrol('Style', 'pushbutton', ...
 gui_data.brightness_beta = 0;
 gui_data.brightness_slider = uicontrol('Style', 'slider', ...
     'String', 'Brightness', ...
-    'Position', gui_button_position2 +[150, 0, 50, -20], ...
-    'BackgroundColor', rgb('White'), ...
-    'Min',-100,'Max',100,'Value', gui_data.brightness_beta,...
+    'Position', gui_button_position2+[150, 0, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'Min', -100, 'Max', 100, 'Value', gui_data.brightness_beta, ...
     'CallBack', @(varargin) brightnessButtonPushed(gui_fig));
 
 gui_data.brightness_text = uicontrol('Style', 'text', ...
     'String', 'Brightness %', ...
-    'Position', gui_button_position2 +[150, 20, 50, -20], ...
-    'BackgroundColor', rgb('White'));
+    'Position', gui_button_position2+[150, 20, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'ForegroundColor', rgb('White'));
 
-% contrast slider 
+% contrast slider
 gui_data.contrast_alpha = 1;
 gui_data.contrast_slider = uicontrol('Style', 'slider', ...
     'String', 'Contrast', ...
-    'Position', gui_button_position2 +[300, 0, 50, -20], ...
-    'BackgroundColor', rgb('White'), ...
-    'Min',-100,'Max',100,'Value', gui_data.contrast_alpha,...
+    'Position', gui_button_position2+[300, 0, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'Min', -100, 'Max', 100, 'Value', gui_data.contrast_alpha, ...
     'CallBack', @(varargin) contrastButtonPushed(gui_fig));
 
 gui_data.contrast_text = uicontrol('Style', 'text', ...
     'String', 'Contrast %', ...
-    'Position', gui_button_position2 +[300, 20, 50, -20], ...
-    'BackgroundColor', rgb('White'));
+    'Position', gui_button_position2+[300, 20, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'ForegroundColor', rgb('White'));
 
 % 'add probe' button
 gui_data.add_probe_btn = uicontrol('Style', 'pushbutton', ...
     'String', '<HTML><center><FONT color="white"><b>Add a probe</b></Font>', ...
-    'Position', gui_button_position1 +[0, 30, 0, 0], ...
+    'Position', gui_button_position1+[0, 30, 0, 0], ...
     'BackgroundColor', rgb('DarkGreen'), ...
     'CallBack', @(varargin) addProbeButtonPushed(gui_fig));
 
@@ -190,18 +192,30 @@ for iProbe = 1:gui_data.n_probes
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) resetProbeGlobalButtonPushed(gui_fig));
 
-
     gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'hide', ...
         'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 210, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
 
+    gui_data.fitType(iProbe) = uicontrol('Style', 'popupmenu', ...
+        'String', {'linear fit', 'spline fit'}, ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) fitTypeToggleButtonPushed(gui_fig));
+
+    gui_data.piecewiseN(iProbe) = uicontrol('Style', 'edit', ...
+        'String', {'piecewise #'}, ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 310, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) fitTypeToggleButtonPushed(gui_fig));
+
     gui_data.viewFit(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'view fit', ...
-        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), -20, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 400, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) viewFitButtonPushed(gui_fig));
+
 
 end
 
@@ -240,7 +254,7 @@ switch eventdata.Key
             curr_probe = str2num(eventdata.Key(end));
         elseif strcmp(keyData.Modifier{:}, 'shift') == 1
             curr_probe = str2num(eventdata.Key(end)) + 10;
-        elseif strcmp(keyData.Modifier{:}, 'alt') == 1 
+        elseif strcmp(keyData.Modifier{:}, 'alt') == 1
             curr_probe = str2num(eventdata.Key(end)) + 20;
         elseif strcmp(keyData.Modifier{:}, 'control') == 1
             curr_probe = str2num(eventdata.Key(end)) + 30;
@@ -409,25 +423,25 @@ for curr_probe = 1:gui_data.n_probes
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
         for curr_slice = slice_points
-    
-%             % Transform histology to atlas slice
-%             tform = affine2d;
-%             tform.T = gui_data.histology_ccf_alignment{curr_slice};
-%             % (transform is CCF -> histology, invert for other direction)
-%             tform = invert(tform);
-    
+
+            %             % Transform histology to atlas slice
+            %             tform = affine2d;
+            %             tform.T = gui_data.histology_ccf_alignment{curr_slice};
+            %             % (transform is CCF -> histology, invert for other direction)
+            %             tform = invert(tform);
+
             % Transform and round to nearest index
-%             [probe_points_atlas_x, probe_points_atlas_y] = ...
-%                 transformPointsForward(tform, ...
-%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
-%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+            %             [probe_points_atlas_x, probe_points_atlas_y] = ...
+            %                 transformPointsForward(tform, ...
+            %                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
+            %                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
 
             probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
             probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
-    
+
             probe_points_atlas_x = round(probe_points_atlas_x);
             probe_points_atlas_y = round(probe_points_atlas_y);
-    
+
             % Get CCF coordinates corresponding to atlas slice points
             % (CCF coordinates are in [AP,DV,ML])
             use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
@@ -445,7 +459,7 @@ for curr_probe = 1:gui_data.n_probes
                     vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
             end
         end
-    
+
         % Sort probe points by DV (probe always top->bottom)
         [~, dv_sort_idx] = sort(probe_ccf(curr_probe).points(:, 2));
         probe_ccf(curr_probe).points = probe_ccf(curr_probe).points(dv_sort_idx, :);
@@ -457,7 +471,7 @@ end
 for curr_probe = 1:gui_data.n_probes
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
-       
+
         % Get best fit line through points as probe trajectory
         r0 = mean(probe_ccf(curr_probe).points, 1);
 
@@ -468,38 +482,38 @@ for curr_probe = 1:gui_data.n_probes
         if histology_probe_direction(3) < 0
             histology_probe_direction = -histology_probe_direction;
         end
-    
+
         line_eval = [-1000, 1000];
         probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
-    
+
         % Get the positions of the probe trajectory
         trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
         [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
             round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
             round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
             round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
-    
+
         trajectory_coords_outofbounds = ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
-    
+
         trajectory_coords = ...
             [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
             trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
             trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
-    
+
         trajectory_coords_idx = sub2ind(size(gui_data.av), ...
             trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3));
-    
+
         trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
         %sum(trajectory_areas_uncut)
-    
+
         % Get rid of NaN's and start/end 1's (non-parsed)
-        trajectory_areas_parsed = find(trajectory_areas_uncut > 1);%ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
+        trajectory_areas_parsed = find(trajectory_areas_uncut > 1); %ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
         use_trajectory_areas = trajectory_areas_parsed(1): ...
             trajectory_areas_parsed(end);
         trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
-    
+
         probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
         probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
     end
@@ -531,28 +545,28 @@ function loadButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% load 
+% load
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
 load(save_fn);
 
-% slices AP 
-for iSlice = 1:size(gui_data.histology_ccf,1)
+% slices AP
+for iSlice = 1:size(gui_data.histology_ccf, 1)
     ap_all(iSlice) = gui_data.histology_ccf(iSlice).plane_ap(1);
 end
 previous_string = gui_data.histology_ax_title.String;
 set(gui_data.histology_ax_title, 'String', 'loading...')
 
 % match points with AP, index in and store in gui_data
-for iProbe = 1:size(probe_ccf,1)
-    
+for iProbe = 1:size(probe_ccf, 1)
+
     curr_probe_points = probe_ccf(iProbe).points;
     if ~isempty(curr_probe_points)
-        if size(curr_probe_points,1) >= 2
-    for iSlice = 1:2:2*floor(size(curr_probe_points,1)/2)
-        curr_slice =find(ap_all ==  probe_ccf(iProbe).points(iSlice,1));
-        gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice,2:3);...
-            probe_ccf(iProbe).points(iSlice+1,2:3)];
-    end
+        if size(curr_probe_points, 1) >= 2
+            for iSlice = 1:2:2 * floor(size(curr_probe_points, 1)/2)
+                curr_slice = find(ap_all == probe_ccf(iProbe).points(iSlice, 1));
+                gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice, 2:3); ...
+                    probe_ccf(iProbe).points(iSlice+1, 2:3)];
+            end
         end
     end
 end
@@ -563,28 +577,28 @@ set(gui_data.histology_ax_title, 'String', 'successfully loaded')
 set(gui_data.histology_ax_title, 'String', previous_string)
 guidata(gui_fig, gui_data);
 
-end 
+end
 
 function autoContrastButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Set contrast and brightness 
-% Auto based on this function : 
+% Set contrast and brightness
+% Auto based on this function :
 % g(i,j) = α * f(i,j) + β - we want to find α (contrast) and β
 % (brightness)
 % α = 255 / (maximum_gray - minimum_gray)
-% solve β by plugging it into the formula where g(i, j)=0 and 
+% solve β by plugging it into the formula where g(i, j)=0 and
 % f(i, j)=minimum_gray
 
-gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice},[], 'all') -...
-    min(gui_data.slice_im{gui_data.curr_slice},[], 'all'));
-gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice},[], 'all')));
+gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all')- ...
+    min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
+gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
 
 % Upload gui data
 guidata(gui_fig, gui_data);
 
-% Update slice 
+% Update slice
 update_slice(gui_fig)
 
 end
@@ -720,135 +734,220 @@ update_curr_probe(gui_fig, curr_probe)
 
 end
 
+function fitTypeToggleButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get current probe
+curr_probe = gui_data.curr_probe;
+
+% piecewise number
+if strcmp(gui_data.piecewiseN(curr_probe).String{:}, 'piecewise #')
+    piecewiseN(curr_probe) = 1;
+else
+    piecewiseN(curr_probe) = str2num(gui_data.piecewiseN(curr_probe).String{:});
+end
+
+% set fit to linear / spline
+if contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'linear')
+    fitType = 1;
+elseif contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'spline')
+    fitType = 2;
+end
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
 function viewFitButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 curr_probe = find([gui_data.viewFit(:).Value]);
+
+% piecewise number
+if strcmp(gui_data.piecewiseN(curr_probe).String{:}, 'piecewise #')
+    piecewiseN(curr_probe) = 1;
+else
+    piecewiseN(curr_probe) = str2num(gui_data.piecewiseN(curr_probe).String{:});
+end
+
+% set fit to linear / spline
+if contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'linear')
+    fitType = 1;
+elseif contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'spline')
+    fitType = 2;
+end
+
 % hide/show
 if contains(gui_data.viewFit(curr_probe).String, 'iew')
-    gui_data.viewFit(curr_probe).String = 'Hide fit';%<HTML><center><FONT color="white"><b>
+    gui_data.viewFit(curr_probe).String = 'Hide fit'; %<HTML><center><FONT color="white"><b>
     gui_data.fit_visibility = 1;
     % Get current probe
 
 
-% Convert probe points to CCF points by alignment 
-gui_data.probe_ccf = struct( ...
-    'points', cell(gui_data.n_probes, 1), ...
-    'trajectory_coords', cell(gui_data.n_probes, 1), ... .
-    'trajectory_areas', cell(gui_data.n_probes, 1));
+    % Convert probe points to CCF points by alignment
+    gui_data.probe_ccf = struct( ...
+        'points', cell(gui_data.n_probes, 1), ...
+        'trajectory_coords', cell(gui_data.n_probes, 1), ... .
+        'trajectory_areas', cell(gui_data.n_probes, 1));
 
-slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
-if ~isempty(slice_points)
-    for curr_slice = slice_points
-
-%             % Transform histology to atlas slice
-%             tform = affine2d;
-%             tform.T = gui_data.histology_ccf_alignment{curr_slice};
-%             % (transform is CCF -> histology, invert for other direction)
-%             tform = invert(tform);
-
-        % Transform and round to nearest index
-%             [probe_points_atlas_x, probe_points_atlas_y] = ...
-%                 transformPointsForward(tform, ...
-%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
-%                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
-
-        probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
-        probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
-
-        probe_points_atlas_x = round(probe_points_atlas_x);
-        probe_points_atlas_y = round(probe_points_atlas_y);
-
-        % Get CCF coordinates corresponding to atlas slice points
-        % (CCF coordinates are in [AP,DV,ML])
-        use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
-        for curr_point = 1:length(use_points)
-            ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                plane_ap(probe_points_atlas_y(curr_point), ...
-                probe_points_atlas_x(curr_point));
-            ccf_ml = gui_data.histology_ccf(curr_slice). ...
-                plane_dv(probe_points_atlas_y(curr_point), ...
-                probe_points_atlas_x(curr_point));
-            ccf_dv = gui_data.histology_ccf(curr_slice). ...
-                plane_ml(probe_points_atlas_y(curr_point), ...
-                probe_points_atlas_x(curr_point));
-            gui_data.probe_ccf(curr_probe).points = ...
-                vertcat(gui_data.probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
-        end
-    end
-
-    % Sort probe points by DV (probe always top->bottom)
-    [~, dv_sort_idx] = sort(gui_data.probe_ccf(curr_probe).points(:, 2));
-    gui_data.probe_ccf(curr_probe).points = gui_data.probe_ccf(curr_probe).points(dv_sort_idx, :);
-end
-
-
-
-% Get areas along probe trajectory
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
-       
-        % Get best fit line through points as probe trajectory
-        r0 = mean( gui_data.probe_ccf(curr_probe).points, 1);
+        for curr_slice = slice_points
 
-        xyz = bsxfun(@minus, gui_data.probe_ccf(curr_probe).points, r0);
-        [~, ~, V] = svd(xyz, 0);
-        histology_probe_direction = V(:, 1);
-        % (make sure the direction goes down in DV - flip if it's going up)
-        if histology_probe_direction(3) < 0
-            histology_probe_direction = -histology_probe_direction;
+            %             % Transform histology to atlas slice
+            %             tform = affine2d;
+            %             tform.T = gui_data.histology_ccf_alignment{curr_slice};
+            %             % (transform is CCF -> histology, invert for other direction)
+            %             tform = invert(tform);
+
+            % Transform and round to nearest index
+            %             [probe_points_atlas_x, probe_points_atlas_y] = ...
+            %                 transformPointsForward(tform, ...
+            %                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
+            %                 gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
+
+            probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
+            probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
+
+            probe_points_atlas_x = round(probe_points_atlas_x);
+            probe_points_atlas_y = round(probe_points_atlas_y);
+
+            % Get CCF coordinates corresponding to atlas slice points
+            % (CCF coordinates are in [AP,DV,ML])
+            use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
+            for curr_point = 1:length(use_points)
+                ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                    plane_ap(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_ml = gui_data.histology_ccf(curr_slice). ...
+                    plane_dv(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_dv = gui_data.histology_ccf(curr_slice). ...
+                    plane_ml(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                gui_data.probe_ccf(curr_probe).points = ...
+                    vertcat(gui_data.probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+            end
         end
-    
-        line_eval = [-1000, 1000];
-        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
-    
-        % Get the positions of the probe trajectory
-        trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
-        [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
-            round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
-            round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
-            round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
-    
+
+        % Sort probe points by DV (probe always top->bottom)
+        [~, dv_sort_idx] = sort(gui_data.probe_ccf(curr_probe).points(:, 2));
+        gui_data.probe_ccf(curr_probe).points = gui_data.probe_ccf(curr_probe).points(dv_sort_idx, :);
+    end
+
+
+    % Get areas along probe trajectory
+    slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
+    if ~isempty(slice_points)
+
+        % Get best fit line through points as probe trajectory
+        if fitType == 1 && piecewiseN == 1 % simple linear fit
+            r0 = mean(gui_data.probe_ccf(curr_probe).points, 1);
+            xyz = bsxfun(@minus, gui_data.probe_ccf(curr_probe).points, r0);
+            [~, ~, V] = svd(xyz, 0);
+            histology_probe_direction = V(:, 1);
+            % (make sure the direction goes down in DV - flip if it's going up)
+            if histology_probe_direction(3) < 0
+               histology_probe_direction = -histology_probe_direction;
+            end
+
+            line_eval = [-1000, 1000];
+            probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
+            % Get the positions of the probe trajectory
+            trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
+            [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
+                round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
+                round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
+                round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
+
+
+        elseif fitType == 1 % piece-wise linear fit 
+            % get max, min and divide into piecewiseN chunks 
+            probeChunkSize = (max(gui_data.probe_ccf(curr_probe).points) - min(gui_data.probe_ccf(curr_probe).points))./piecewiseN;
+            probeChunks(:,1) = min(gui_data.probe_ccf(curr_probe).points(:,1)):probeChunkSize(1):max(gui_data.probe_ccf(curr_probe).points(:,1));
+            probeChunks(:,2) = min(gui_data.probe_ccf(curr_probe).points(:,2)):probeChunkSize(2):max(gui_data.probe_ccf(curr_probe).points(:,2));
+            probeChunks(:,3) = min(gui_data.probe_ccf(curr_probe).points(:,3)):probeChunkSize(3):max(gui_data.probe_ccf(curr_probe).points(:,3));
+            xyz = [];
+            trajectory_ap_ccf = [];
+            trajectory_ml_ccf = [];
+            trajectory_dv_ccf = [];
+            for iPiece = 1:piecewiseN-1
+                
+                thesePoints = find(...
+                    gui_data.probe_ccf(curr_probe).points(:, 2) >= probeChunks(iPiece, 2) & ...
+                    gui_data.probe_ccf(curr_probe).points(:, 2) <= probeChunks(iPiece+1,2));
+                r0(iPiece,:) = mean(gui_data.probe_ccf(curr_probe).points(thesePoints, :), 1);
+                xyz = [xyz; bsxfun(@minus, gui_data.probe_ccf(curr_probe).points(thesePoints, :), r0(iPiece, :))];
+                [~, ~, V] = svd(xyz, 0);
+                histology_probe_direction = V(:, 1);
+                % (make sure the direction goes down in DV - flip if it's going up)
+                if histology_probe_direction(3) < 0
+                    histology_probe_direction = - histology_probe_direction;
+                end
+
+                line_eval = [-1000./piecewiseN, 1000./piecewiseN];
+                probe_fit_line(iPiece,:,:) = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0(iPiece,:,:))';
+          
+                % Get the positions of the probe trajectory
+                trajectory_n_coords(iPiece) = squeeze(max(abs(diff(probe_fit_line(iPiece,:,:), [], 3))));
+                [trajectory_ap_ccf_piece, trajectory_dv_ccf_piece, trajectory_ml_ccf_piece] = deal( ...
+                    round(linspace(probe_fit_line(iPiece,1, 1), probe_fit_line(iPiece,1, 2), trajectory_n_coords(iPiece))), ...
+                    round(linspace(probe_fit_line(iPiece,3, 1), probe_fit_line(iPiece,3, 2), trajectory_n_coords(iPiece))), ...
+                    round(linspace(probe_fit_line(iPiece,2, 1), probe_fit_line(iPiece,2, 2), trajectory_n_coords(iPiece))));
+                trajectory_ap_ccf = [trajectory_ap_ccf, trajectory_ap_ccf_piece];
+                trajectory_dv_ccf = [trajectory_dv_ccf, trajectory_dv_ccf_piece];
+                trajectory_ml_ccf = [trajectory_ml_ccf, trajectory_ml_ccf_piece];
+            end
+           
+
+        else
+        end
+
+        
+       
+
+
+
         trajectory_coords_outofbounds = ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
-    
+
         trajectory_coords = ...
             [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
             trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
             trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
-    
+
         trajectory_coords_idx = sub2ind(size(gui_data.av), ...
             trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3));
-    
+
         trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
         %sum(trajectory_areas_uncut)
-    
+
         % Get rid of NaN's and start/end 1's (non-parsed)
-        trajectory_areas_parsed = find(trajectory_areas_uncut > 1);%ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
+        trajectory_areas_parsed = find(trajectory_areas_uncut > 1); %ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
         use_trajectory_areas = trajectory_areas_parsed(1): ...
             trajectory_areas_parsed(end);
         trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
-    
+
         gui_data.probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
         gui_data.probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
     end
-% find line on this slice 
-slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
-    gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice,2:3);
-if ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice)
-        
-gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
-    [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
-    'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
-end
+    % find line on this slice
+    slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
+        gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice, 2:3);
+    if ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
+
+        gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
+            [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
+            'linewidth', 2, 'LineStyle', '--', 'color', [rgb('HotPink'), 1]);
+    end
 
 else
     gui_data.viewFit(curr_probe).String = 'View fit';
     gui_data.fit_visibility = 0;
-    
-        gui_data.probe_fit_lines(curr_probe).Color(4) = 0;
-    
+
+    gui_data.probe_fit_lines(curr_probe).Color(4) = 0;
+
 end
 
 
@@ -918,7 +1017,7 @@ gui_data = guidata(gui_fig);
 
 % hide/show
 if contains(gui_data.toggle_probe_btn.String, 'Hide')
-    gui_data.toggle_probe_btn.String = 'Show all other probes';%<HTML><center><FONT color="white"><b>
+    gui_data.toggle_probe_btn.String = 'Show all other probes'; %<HTML><center><FONT color="white"><b>
     other_probes = logical(ones(gui_data.n_probes, 1));
     other_probes(gui_data.curr_probe) = 0;
     other_probes = find(other_probes);
@@ -948,7 +1047,7 @@ function update_slice(gui_fig)
 gui_data = guidata(gui_fig);
 
 % Set next histology slice
-set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha + gui_data.brightness_beta)
+set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
 
 % Clear any current lines, draw probe lines
 gui_data.probe_lines.delete;
@@ -967,13 +1066,13 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
             'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
     end
-    if gui_data.fit_visibility == 1 &&  ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice)
-        slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords(...
-        gui_data.probe_ccf(curr_probe).trajectory_coords(:,1) == gui_data.curr_slice,2:3);
-    
-    gui_data.probe_fit_lines(curr_probe) =  line([slice_coords_fit(1,2), slice_coords_fit(end,2)], ...
-        [slice_coords_fit(1,1), slice_coords_fit(end,1)], ...
-        'linewidth', 2, 'LineStyle', '--' ,'color', [rgb('HotPink'), 1]);
+    if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
+        slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
+            gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice, 2:3);
+
+        gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
+            [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
+            'linewidth', 2, 'LineStyle', '--', 'color', [rgb('HotPink'), 1]);
 
     end
 end
@@ -1008,26 +1107,26 @@ for curr_probe = 1:length(probe_ccf)
     % Plot points and line of best fit
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
-   
-    thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
-    r0 = mean(thesePoints, 1);
-    xyz = bsxfun(@minus, thesePoints, r0);
-    [~, ~, V] = svd(xyz, 0);
-    %V= permute(V, [3, 2, 1]);
-    histology_probe_direction = V(:, 1);
-    % (make sure the direction goes down in DV - flip if it's going up)
-    if histology_probe_direction(2) < 0
-        histology_probe_direction = -histology_probe_direction;
-    end
 
-    line_eval = [-1000, 1000];
-    probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
-    plot3(thesePoints(:, 1), ...
-        thesePoints(:, 2), ...
-        thesePoints(:, 3), ...
-        '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
-    line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-        'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
+        thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
+        r0 = mean(thesePoints, 1);
+        xyz = bsxfun(@minus, thesePoints, r0);
+        [~, ~, V] = svd(xyz, 0);
+        %V= permute(V, [3, 2, 1]);
+        histology_probe_direction = V(:, 1);
+        % (make sure the direction goes down in DV - flip if it's going up)
+        if histology_probe_direction(2) < 0
+            histology_probe_direction = -histology_probe_direction;
+        end
+
+        line_eval = [-1000, 1000];
+        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
+        plot3(thesePoints(:, 1), ...
+            thesePoints(:, 2), ...
+            thesePoints(:, 3), ...
+            '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
+        line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+            'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
     end
 end
 
@@ -1040,28 +1139,28 @@ load(cmap_filename);
 for curr_probe = 1:length(probe_ccf)
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
-   
-    curr_axes = subplot(1, gui_data.n_probes, curr_probe);
 
-    trajectory_area_boundaries = ...
-        [1; find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0); length(probe_ccf(curr_probe).trajectory_areas)];
-    trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries) / 2;
+        curr_axes = subplot(1, gui_data.n_probes, curr_probe);
 
-    %     trajectory_area_labels = gui_data.st.acronym(...
-    %         ismember(gui_data.st.id, probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers))));
-    %
-    for iArea = 1:size(trajectory_area_centers, 1)
-        trajectory_area_labels(iArea) = gui_data.st.acronym(gui_data.st.id == ...
-            probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers(iArea))));
-    end
-    image(probe_ccf(curr_probe).trajectory_areas);
-    colormap(curr_axes, cmap);
-    caxis([1, size(cmap, 1)])
-    set(curr_axes, 'YTick', trajectory_area_centers, 'YTickLabels', trajectory_area_labels);
-    set(curr_axes, 'XTick', []);
-    title(['Probe ', num2str(curr_probe)]);
+        trajectory_area_boundaries = ...
+            [1; find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0); length(probe_ccf(curr_probe).trajectory_areas)];
+        trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries) / 2;
+
+        %     trajectory_area_labels = gui_data.st.acronym(...
+        %         ismember(gui_data.st.id, probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers))));
+        %
+        for iArea = 1:size(trajectory_area_centers, 1)
+            trajectory_area_labels(iArea) = gui_data.st.acronym(gui_data.st.id == ...
+                probe_ccf(curr_probe).trajectory_areas(round(trajectory_area_centers(iArea))));
+        end
+        image(probe_ccf(curr_probe).trajectory_areas);
+        colormap(curr_axes, cmap);
+        caxis([1, size(cmap, 1)])
+        set(curr_axes, 'YTick', trajectory_area_centers, 'YTickLabels', trajectory_area_labels);
+        set(curr_axes, 'XTick', []);
+        title(['Probe ', num2str(curr_probe)]);
     end
 
 end
- 
+
 end
