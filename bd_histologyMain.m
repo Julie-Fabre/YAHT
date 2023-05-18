@@ -9,7 +9,7 @@
 %% ~ Images info
 myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF096';
+animal = 'JF107';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -71,7 +71,7 @@ bd_fitProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes
 
 %% ~ Assign probes to days/sites ~
 load([outputDir, '/probe_ccf.mat'])
-bd_plotHistoPerMouse(outputDir);
+bd_plotHistoPerMouse(outputDir, st);
 
 % plot and assign
 probe2ephys = struct; 

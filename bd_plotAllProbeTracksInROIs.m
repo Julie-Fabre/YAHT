@@ -3,16 +3,17 @@
 % plot only probe in the region of interest? 
 myPaths; 
 bregma = [540,0,570];
-
+theseAnimals = {'JF107', 'JF093'};
 animalsType = {'Naive'};
 regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
 regions = {'DMS', 'GPe', 'GPi', 'STN', 'SNr'};
 regionPlotLoc = [-1,1,-1,1,-1];
-recordingInfo = readtable('/home/julie/Dropbox/Analysis/RecNew.csv');
+%recordingInfo = readtable('/home/julie/Dropbox/Analysis/RecNew.csv');
+% all animals probes 
 
 %add probe types, depths
 for iType = 1:size(animalsType, 2)
-    theseTypes = strcmp(recordingInfo.Type, animalsType{iType});
+    %theseTypes = strcmp(recordingInfo.Type, animalsType{iType});
     theseColors = {rgb('DeepSkyBlue');   rgb('DarkOrange'); rgb('Hotpink');rgb('SeaGreen');rgb('Crimson')};
 
     allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
@@ -26,7 +27,7 @@ for iType = 1:size(animalsType, 2)
     [~, brain_outline] = plotBrainGrid([], []);
 
     %overlay regions
-    for iRegion = [1,2,5]
+    for iRegion = 1:5
         curr_plot_structure = find(strcmp(st.acronym, regionsNames{iRegion}));
         if regionPlotLoc(iRegion)==-1
             structure_3d = isosurface(permute(av(1:slice_spacing:end, ...
@@ -52,24 +53,29 @@ for iType = 1:size(animalsType, 2)
             'FaceColor', theseColors{iRegion, :}, 'EdgeColor', 'none', 'FaceAlpha', structure_alpha);
         end
         %plot probe tracks
-        theseProbes = ones((size(recordingInfo.Location, 1)),1);
+        %theseProbes = ones((size(recordingInfo.Location, 1)),1);
         %get animal and probe, load track
-        theseAnimals = recordingInfo.Mouse(theseTypes);
+        %theseAnimals = recordingInfo.Mouse(theseTypes);
         qqqq=unique(theseAnimals);
-        for iAnimal =19
+        for iAnimal =1:size(theseAnimals,2)
             %iAnimal = iAnimal + 1;
+            if isempty(imgToRegister) || contains(imgToRegister.folder, 'Recycle')
+    imgToRegister = dir(['/home/netshare/zaru/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
+    imgToTransform = dir(['/home/netshare/zaru/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
+end
+outputDirs = dir(['/home/netshare/zaru/', theseAnimals{iAnimal}, '/*istology/downsampled_stacks/025_micron/' 'brainReg']);
+outputDir = outputDirs(1).folder;
+            load([outputDir '/probe_ccf.mat'])
             
-            load([extraHDPath, filesep, qqqq{iAnimal}, '/slices/probe_ccf.mat'])
-            
-            thisAnimal = strcmp(recordingInfo.Mouse, qqqq{iAnimal});
-            ttP = (recordingInfo.HistologyProbe( thisAnimal & theseProbes));
+            %thisAnimal = strcmp(recordingInfo.Mouse, qqqq{iAnimal});
+            %ttP = (recordingInfo.HistologyProbe( thisAnimal & theseProbes));
             %thisProbe = recordingInfo.HistologyProbe(find(thisAnimal & theseProbes));
             for iProbe = 1:size(probe_ccf,1)
                 %iProbe = iProbe +1 
                 thisthisProbe = iProbe;
-                animalIdx=find(thisAnimal);
-                ex=recordingInfo.Exclude(animalIdx(iProbe));
-                if  isempty(ex{:})
+                %animalIdx=find(thisAnimal);
+                %ex=recordingInfo.Exclude(animalIdx(iProbe));
+                %if  isempty(ex{:})
                    
                 if (any(probe_ccf(iProbe).trajectory_areas == curr_plot_structure) ) %|| (iAnimal == 2 && ismember(iProbe,ttP))
                 
@@ -114,7 +120,7 @@ for iType = 1:size(animalsType, 2)
                 end
 %                 probe_vector = [probe_ref_vector(:, 1), diff(probe_ref_vector, [], 2) ./ ...
 %                     norm(diff(probe_ref_vector, [], 2)) * probe_length + probe_ref_vector(:, 1)];
-            end
+            %end
         end
 
     end

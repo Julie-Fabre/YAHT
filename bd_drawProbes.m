@@ -53,6 +53,9 @@ for curr_slice = 1:length(gui_data.histology_ccf)
         imwarp(curr_av_slice, tform, 'nearest', 'OutputView', tform_size);
 end
 
+% Initialize infection points
+gui_data.inflection_points = cell(gui_data.n_probes,1);
+
 % Create figure, set button functions
 gui_fig = figure('KeyPressFcn', @keypress, 'Color', 'k');
 
@@ -198,21 +201,28 @@ for iProbe = 1:gui_data.n_probes
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
 
-    gui_data.fitType(iProbe) = uicontrol('Style', 'popupmenu', ...
-        'String', {'linear fit', 'spline fit'}, ...
+%     gui_data.fitType(iProbe) = uicontrol('Style', 'popupmenu', ...
+%         'String', {'linear fit', 'spline fit'}, ...
+%         'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
+%         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+%         'CallBack', @(varargin) fitTypeToggleButtonPushed(gui_fig));
+
+    gui_data.addInflectionPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', {'add inflec* pt'}, ...
         'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 250, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) fitTypeToggleButtonPushed(gui_fig));
+        'CallBack', @(varargin) addInflectionPt(gui_fig));
 
-    gui_data.piecewiseN(iProbe) = uicontrol('Style', 'edit', ...
-        'String', {'piecewise #'}, ...
-        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 310, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
+    gui_data.rmInflectionPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', {'rm inflec* pt'}, ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 340, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 10, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) fitTypeToggleButtonPushed(gui_fig));
+        'CallBack', @(varargin) rmInflectionPt(gui_fig));
+    
 
     gui_data.viewFit(iProbe) = uicontrol('Style', 'pushbutton', ...
         'String', 'view fit', ...
-        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 400, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'Position', gui_button_position1-[60 - (nextCol - 1) * colSpacing - 430, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) viewFitButtonPushed(gui_fig));
 
@@ -733,31 +743,31 @@ gui_data.curr_probe = curr_probe;
 update_curr_probe(gui_fig, curr_probe)
 
 end
-
-function fitTypeToggleButtonPushed(gui_fig)
-% Get guidata
-gui_data = guidata(gui_fig);
-
-% Get current probe
-curr_probe = gui_data.curr_probe;
-
-% piecewise number
-if strcmp(gui_data.piecewiseN(curr_probe).String{:}, 'piecewise #')
-    piecewiseN(curr_probe) = 1;
-else
-    piecewiseN(curr_probe) = str2num(gui_data.piecewiseN(curr_probe).String{:});
-end
-
-% set fit to linear / spline
-if contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'linear')
-    fitType = 1;
-elseif contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'spline')
-    fitType = 2;
-end
-% Upload gui data
-guidata(gui_fig, gui_data);
-end
-
+% 
+% function fitTypeToggleButtonPushed(gui_fig)
+% % Get guidata
+% gui_data = guidata(gui_fig);
+% 
+% % Get current probe
+% curr_probe = gui_data.curr_probe;
+% 
+% % piecewise number
+% if strcmp(gui_data.piecewiseN(curr_probe).String{:}, 'piecewise #')
+%     piecewiseN(curr_probe) = 1;
+% else
+%     piecewiseN(curr_probe) = str2num(gui_data.piecewiseN(curr_probe).String{:});
+% end
+% 
+% % set fit to linear / spline
+% if contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'linear')
+%     fitType = 1;
+% elseif contains(gui_data.fitType(curr_probe).String{gui_data.fitType(curr_probe).Value}, 'spline')
+%     fitType = 2;
+% end
+% % Upload gui data
+% guidata(gui_fig, gui_data);
+% end
+% 
 function viewFitButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
@@ -860,13 +870,17 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
                 round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
                 round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
 
+% figure(); scatter3(gui_data.probe_ccf(curr_probe).points(:,1), gui_data.probe_ccf(curr_probe).points(:,2), gui_data.probe_ccf(curr_probe).points(:,3));
+% hold on;
+% plot3(trajectory_ap_ccf, trajectory_ml_ccf, trajectory_dv_ccf)
 
         elseif fitType == 1 % piece-wise linear fit 
-            % get max, min and divide into piecewiseN chunks 
-            probeChunkSize = (max(gui_data.probe_ccf(curr_probe).points) - min(gui_data.probe_ccf(curr_probe).points))./piecewiseN;
-            probeChunks(:,1) = min(gui_data.probe_ccf(curr_probe).points(:,1)):probeChunkSize(1):max(gui_data.probe_ccf(curr_probe).points(:,1));
-            probeChunks(:,2) = min(gui_data.probe_ccf(curr_probe).points(:,2)):probeChunkSize(2):max(gui_data.probe_ccf(curr_probe).points(:,2));
-            probeChunks(:,3) = min(gui_data.probe_ccf(curr_probe).points(:,3)):probeChunkSize(3):max(gui_data.probe_ccf(curr_probe).points(:,3));
+            inflectionPoint = [190, 156, 162];
+            probeChunks(:,1) = [-Inf, inflectionPoint(:, 1)', Inf];
+            probeChunks(:,2) = [-Inf, inflectionPoint(:, 2)', Inf];
+            probeChunks(:,3) = [-Inf, inflectionPoint(:, 3)', Inf];
+            
+
             xyz = [];
             trajectory_ap_ccf = [];
             trajectory_ml_ccf = [];
@@ -885,7 +899,7 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
                     histology_probe_direction = - histology_probe_direction;
                 end
 
-                line_eval = [-1000./piecewiseN, 1000./piecewiseN];
+                line_eval = [-1000, 1000];
                 probe_fit_line(iPiece,:,:) = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0(iPiece,:,:))';
           
                 % Get the positions of the probe trajectory
@@ -894,19 +908,24 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
                     round(linspace(probe_fit_line(iPiece,1, 1), probe_fit_line(iPiece,1, 2), trajectory_n_coords(iPiece))), ...
                     round(linspace(probe_fit_line(iPiece,3, 1), probe_fit_line(iPiece,3, 2), trajectory_n_coords(iPiece))), ...
                     round(linspace(probe_fit_line(iPiece,2, 1), probe_fit_line(iPiece,2, 2), trajectory_n_coords(iPiece))));
-                trajectory_ap_ccf = [trajectory_ap_ccf, trajectory_ap_ccf_piece];
-                trajectory_dv_ccf = [trajectory_dv_ccf, trajectory_dv_ccf_piece];
-                trajectory_ml_ccf = [trajectory_ml_ccf, trajectory_ml_ccf_piece];
+                
+                probeChunk_limits = trajectory_ap_ccf_piece >= probeChunks(iPiece, 1) &...
+                    trajectory_ap_ccf_piece <= probeChunks(iPiece + 1, 1) & trajectory_dv_ccf_piece >= probeChunks(iPiece, 3) &...
+                    trajectory_dv_ccf_piece <= probeChunks(iPiece + 1, 3) & trajectory_ml_ccf_piece >= probeChunks(iPiece, 2) &...
+                    trajectory_ml_ccf_piece <= probeChunks(iPiece + 1, 2);
+
+                trajectory_ap_ccf = [trajectory_ap_ccf, trajectory_ap_ccf_piece(probeChunk_limits)];
+                trajectory_dv_ccf = [trajectory_dv_ccf, trajectory_dv_ccf_piece(probeChunk_limits)];
+                trajectory_ml_ccf = [trajectory_ml_ccf, trajectory_ml_ccf_piece(probeChunk_limits)];
             end
-           
+
+%             figure(); scatter3(gui_data.probe_ccf(curr_probe).points(:,1), gui_data.probe_ccf(curr_probe).points(:,2), gui_data.probe_ccf(curr_probe).points(:,3));
+% hold on;
+% plot3(trajectory_ap_ccf, trajectory_ml_ccf, trajectory_dv_ccf)
+
 
         else
         end
-
-        
-       
-
-
 
         trajectory_coords_outofbounds = ...
             any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
@@ -953,6 +972,40 @@ end
 
 % % Plot probe trajectories
 % plot_probe(gui_data, probe_ccf);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function addInflectionPt(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+curr_probe = find([gui_data.addInflectionPt(:).Value]);
+
+% add inflection point 
+disp('Click on your desired inflection point location; press ENTER when finished.');
+set(gui_data.histology_ax_title, 'String', ...
+    'Click on your desired inflection point location; press ENTER when finished.');
+
+mousePointCoords = ginput;
+gui_data.inflection_points{curr_probe} = [gui_data.inflection_points{curr_probe} ; ...
+     gui_data.curr_slice, mousePointCoords(1), mousePointCoords(2)];
+
+set(gui_data.histology_ax_title, 'String', ...
+    ['Arrows to move, Number to draw probe [', num2str(1:gui_data.n_probes), '], Esc to save/quit']);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function rmInflectionPt(gui_fig)
+
+% Get guidata
+gui_data = guidata(gui_fig);
+curr_probe = find([gui_data.rmInflectionPt(:).Value]);
+
+% remove all inflection points 
+gui_data.inflection_points{curr_probe} = [];
 
 % Upload gui data
 guidata(gui_fig, gui_data);
