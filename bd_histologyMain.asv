@@ -10,7 +10,7 @@
 clearvars -global % releases previous GUI , if there are any 
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF110';
+animal = 'JF109';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -261,7 +261,7 @@ bd_alignEphysAndHistology(st, outputDir, ...
                 iProbe, isSpikeGlx, shank);
 
 end
-save([outputDir, '/probe_ccf_copy.mat'], 'probe_ccf')
+save([outputDir, '/probe_ccf.mat'], 'probe2ephys')
 %%
 load([outputDir, '/probe_ccf.mat'])
 probe_ccf(13).probe_depths = probe_ccf(1).probe_depths - 688;

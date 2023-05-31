@@ -485,7 +485,12 @@ for curr_probe = 1:gui_data.n_probes
     if ~isempty(slice_points)
 
         % Get best fit line through points as probe trajectory
-        if isempty(gui_data.inflection_points{curr_probe}) % simple linear fit
+        try
+            ff = isempty(gui_data.inflection_points{curr_probe}) ;
+        catch
+            ff= 1;
+        end
+        if ff % simple linear fit
             r0 = mean(gui_data.probe_ccf(curr_probe).points, 1);
             xyz = bsxfun(@minus, gui_data.probe_ccf(curr_probe).points, r0);
             [~, ~, V] = svd(xyz, 0);
@@ -507,6 +512,32 @@ for curr_probe = 1:gui_data.n_probes
             % figure(); scatter3(gui_data.probe_ccf(curr_probe).points(:,1), gui_data.probe_ccf(curr_probe).points(:,2), gui_data.probe_ccf(curr_probe).points(:,3));
             % hold on;
             % plot3(trajectory_ap_ccf, trajectory_ml_ccf, trajectory_dv_ccf)
+
+                   trajectory_coords_outofbounds = ...
+            any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
+            any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
+
+        trajectory_coords = ...
+            [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
+            trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
+            trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
+
+        trajectory_coords_idx = sub2ind(size(gui_data.av), ...
+            trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3));
+
+        trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
+        %sum(trajectory_areas_uncut)
+
+        % Get rid of NaN's and start/end 1's (non-parsed)
+        trajectory_areas_parsed = find(trajectory_areas_uncut > 1); %ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
+        use_trajectory_areas = trajectory_areas_parsed(1): ...
+            trajectory_areas_parsed(end);
+        trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
+
+        gui_data.probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
+        gui_data.probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
+        probe_ccf(curr_probe).trajectory_coords = gui_data.probe_ccf(curr_probe).trajectory_coords;
+        probe_ccf(curr_probe).trajectory_areas = gui_data.probe_ccf(curr_probe).trajectory_areas;
 
         else % piece-wise linear fit
             inflectionPoints = gui_data.inflection_points{curr_probe};
@@ -629,7 +660,8 @@ for curr_probe = 1:gui_data.n_probes
 
         gui_data.probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
         gui_data.probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
-
+        probe_ccf(curr_probe).trajectory_coords = gui_data.probe_ccf(curr_probe).trajectory_coords;
+        probe_ccf(curr_probe).trajectory_areas = gui_data.probe_ccf(curr_probe).trajectory_areas;
 
             %             figure(); scatter3(gui_data.probe_ccf(curr_probe).points(:,1), gui_data.probe_ccf(curr_probe).points(:,2), gui_data.probe_ccf(curr_probe).points(:,3));
             % hold on;
@@ -1383,6 +1415,7 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
             'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
     end
+    try
     if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
         slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
             gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice, 2:3);
@@ -1392,7 +1425,10 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
                 'linewidth', 2, 'LineStyle', '--', 'color', [rgb('HotPink'), 1]);
         end
     end
+    catch
+    end
 end
+if find(~cellfun(@isempty, gui_data.inflection_points))
 for curr_probe = find(~cellfun(@isempty, gui_data.inflection_points))
 
     if ~isempty(gui_data.inflection_points{curr_probe})
@@ -1404,7 +1440,7 @@ for curr_probe = find(~cellfun(@isempty, gui_data.inflection_points))
             end
     end
 end
-
+end
     
 
 
@@ -1458,12 +1494,12 @@ for curr_probe = 1:length(probe_ccf)
             '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
         line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
             'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
-        if ~isempty(gui_data.inflection_points{curr_probe})
+%        if ~isempty(gui_data.inflection_points{curr_probe})
 %             plot3(gui_data.inflection_points{curr_probe}(:,3),...
 %                 gui_data.inflection_points{curr_probe}(:,1), ...
 %                 gui_data.inflection_points{curr_probe}(:,2), ...
 %                 '*', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
-         end
+ %        end
     end
 end
 

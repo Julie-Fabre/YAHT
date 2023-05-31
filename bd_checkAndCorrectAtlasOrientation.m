@@ -418,7 +418,7 @@ set(gui_data.atlas_aligned_atlas_boundaries, ...
     'AlphaData', av_warp_boundaries*0.3);
 
 % Upload gui_data
-guidata(gui_fig, gui_data);plane_a
+guidata(gui_fig, gui_data);
 
 % Upload gui_data
 guidata(gui_fig, gui_data);

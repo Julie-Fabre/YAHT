@@ -1,6 +1,6 @@
 function bd_alignEphysAndHistology(st,outputDir, ...
     spike_times,spike_templates,template_depths, spike_xdepths, template_xdepths,...
-    lfp,lfp_channel_positions,lfp_channel_xpositions,use_probe,isSpikeGlx, curr_shank,animal, date, site)
+    lfp,lfp_channel_positions,lfp_channel_xpositions,use_probe,isSpikeGlx, curr_shank)
 % based on the great AP_align_probe_histology(st,slice_path,spike_times,spike_templates,template_depths,lfp,lfp_channel_positions,use_probe)
 
 % If no probe specified, use probe 1
@@ -13,31 +13,22 @@ probe_ccf_fn = [outputDir filesep 'probe_ccf.mat'];
 load(probe_ccf_fn);
 
 if ~isnan(curr_shank)
-    if length(unique(lfp_channel_xpositions))==2
-        warning('single shank recorded, keeping all units')
-        theseChannels = ones(size(lfp_channel_xpositions,1),1);
-        theseTemplates = ones(size(template_xdepths,1),1);
-        theseSpikes = ones(size(spike_xdepths,1),1);
-        [~,~,spike_templates_reidx] = unique(spike_templates);
-        norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
-    else
-        theseChannelPositions = [(curr_shank-1) * 250, (curr_shank-1)*250 + 32];
-        theseChannels = ismember(lfp_channel_xpositions, theseChannelPositions);
-        theseTemplates = ismember(template_xdepths, theseChannelPositions);
-        theseSpikes = ismember(spike_xdepths, theseChannelPositions);
-        spike_times = spike_times(theseSpikes);
-        spike_templates = spike_templates(theseSpikes);
-        %rename 
-        good_templates_idx = unique(spike_templates);
-        new_spike_idx = nan(max(spike_templates), 1);
-        new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
-        spike_templates = new_spike_idx(spike_templates);
-        
-         template_depths = template_depths(theseTemplates) + 2880 - 750;
-        [~,~,spike_templates_reidx] = unique(spike_templates);
-        norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
-        [channel_spikeCounts, channel_id] = bd_histologyRec(animal, date, site, curr_shank, 0);
-    end
+    theseChannelPositions = [(curr_shank-1) * 250, (curr_shank-1)*250 + 32];
+    theseChannels = ismember(lfp_channel_xpositions, theseChannelPositions);
+    theseTemplates = ismember(template_xdepths, theseChannelPositions);
+    theseSpikes = ismember(spike_xdepths, theseChannelPositions);
+    spike_times = spike_times(theseSpikes);
+    spike_templates = spike_templates(theseSpikes);
+    %rename 
+    good_templates_idx = unique(spike_templates);
+    new_spike_idx = nan(max(spike_templates), 1);
+    new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
+    spike_templates = new_spike_idx(spike_templates);
+    
+     template_depths = template_depths(theseTemplates);
+    [~,~,spike_templates_reidx] = unique(spike_templates);
+    norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx,1)+1));
+
 else
     theseChannels = ones(size(lfp_channel_xpositions,1),1);
     theseTemplates = ones(size(template_xdepths,1),1);
@@ -54,7 +45,7 @@ if isSpikeGlx
 else
     n_corr_groups = 40;
 end
-if isSpikeGlx %2.0 probes, shorter shank
+if isSpikeGlx &&  max(template_depths) <= 384*7.5 %2.0 probes, shorter shank
     max_depths = 384*7.5;
     min_depths = 0;
     depth_group_edges = linspace(min_depths,max_depths,n_corr_groups+1);
@@ -105,29 +96,19 @@ xlabel(multiunit_ax,'Multiunit depth');
 
 % Plot LFP median-subtracted correlation
 if length(lfp)>1
-    lfp_moving_median = 10; % channels to take sliding median
-    lfp_ax = subplot('Position',[0.5,0.1,0.3,0.8]);
-    imagesc([min_depths,max_depths],[min_depths,max_depths], ...
-        corrcoef((movmedian(zscore(double(lfp(theseChannels,:)),[],2),lfp_moving_median,1) - ...
-        nanmedian(zscore(double(lfp(theseChannels,:)),[],2),1))'));
-    xlim([min_depths,max_depths]);
-    ylim([min_depths,max_depths]);
-    set(lfp_ax,'YTick',[]);
-    title('LFP power');
-    set(lfp_ax,'FontSize',12)
-    caxis([-1,1])
-    xlabel(lfp_ax,'Depth (\mum)'); 
-    colormap(lfp_ax,brewermap([],'*RdBu'));
-elseif ~isnan(curr_shank)
-    lfp_moving_median = 10; % channels to take sliding median
-    lfp_ax = subplot('Position',[0.5,0.1,0.3,0.8]);
-   
-    plot(smoothdata(channel_spikeCounts, 'movmedian', 5), channel_id)
-     set(lfp_ax,'YTick',[]);
-    title(['5'' shank' num2str(curr_shank) ' spike count' ]);
-    set(lfp_ax,'FontSize',12)
-    xlabel(lfp_ax,'# threshold crossings'); 
-    makepretty;
+lfp_moving_median = 10; % channels to take sliding median
+lfp_ax = subplot('Position',[0.5,0.1,0.3,0.8]);
+imagesc([min_depths,max_depths],[min_depths,max_depths], ...
+    corrcoef((movmedian(zscore(double(lfp(theseChannels,:)),[],2),lfp_moving_median,1) - ...
+    nanmedian(zscore(double(lfp(theseChannels,:)),[],2),1))'));
+xlim([min_depths,max_depths]);
+ylim([min_depths,max_depths]);
+set(lfp_ax,'YTick',[]);
+title('LFP power');
+set(lfp_ax,'FontSize',12)
+caxis([-1,1])
+xlabel(lfp_ax,'Depth (\mum)'); 
+colormap(lfp_ax,brewermap([],'*RdBu'));
 end
 
 % Plot probe areas (interactive)
@@ -250,18 +231,18 @@ switch eventdata.Key
             % Close the figure
             close(gui_fig);
         end
-     case 'n' % stretch - narrow
+     case 'n' % stretch
            new_ylim = [gui_data.probe_areas_ax_ylim(1), gui_data.probe_areas_ax_ylim(2) .*(1-s_change)];
            ylim(gui_data.probe_areas_ax,new_ylim);
            gui_data.probe_areas_ax_ylim = new_ylim;
            % Upload gui data
            guidata(gui_fig,gui_data);
 
-    case 'w' % stretch - widden
+     case 'w' % stretch
             probe_ccf = gui_data.probe_ccf;
             
             % Get the probe depths corresponding to the trajectory areas
-            probe_depths = [gui_data.probe_areas_ax_ylim(1), gui_data.probe_areas_ax_ylim(2) .*(1+s_change)];   
+            probe_depths = gui_data.probe_trajectory_depths .* (1+s_change);      
             
             probe_ccf(gui_data.use_probe).probe_depths = probe_depths;
             
@@ -273,7 +254,6 @@ switch eventdata.Key
 end
 
 end
-
 
 
 

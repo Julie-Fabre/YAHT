@@ -47,7 +47,6 @@ for curr_probe = 1:length(probe_ccf)
 end
 
 [~, brain_outline] = plotBrainGrid([], []);
-hold on;
 theseColors = {rgb('DeepSkyBlue'); rgb('DarkOrange'); rgb('Hotpink'); rgb('SeaGreen'); rgb('Crimson')};
 regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
 % for iRegion = 1:size(regionsNames,2)
@@ -65,43 +64,27 @@ regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
 %         structure_patch = patch('Vertices', structure_3d.vertices*slice_spacing, ...
 %             'Faces', structure_3d.faces, ...
 %             'FaceColor', theseColors{iRegion}, 'EdgeColor', 'none', 'FaceAlpha', structure_alpha);
-% 
+%
 % end
 colsThese = lines(length(probe_ccf));
+if size(colsThese, 1) > 7
+    %    hashes = qq;
+else
 
-for curr_probe = 1:length(probe_ccf)
+end
+
+for thisthisProbe = 1:length(probe_ccf)
     try
 
-%         r0 = mean(probe_ccf(thisthisProbe).points, 1);
-%         xyz = bsxfun(@minus, probe_ccf(thisthisProbe).points, r0);
-%         [~, ~, V] = svd(xyz, 0);
-%         histology_probe_direction = V(:, 1);
-% 
-%         probe_eval_points = [-1000, 1000];
-%         probe_line_endpoints = bsxfun(@plus, bsxfun(@times, probe_eval_points', histology_probe_direction'), r0);
-%         line(probe_line_endpoints(:, 1), probe_line_endpoints(:, 3), probe_line_endpoints(:, 2), 'color', ...
-%             colsThese(thisthisProbe, :), 'linewidth', 2)
-
-        thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
-        r0 = mean(thesePoints, 1);
-        xyz = bsxfun(@minus, thesePoints, r0);
+        r0 = mean(probe_ccf(thisthisProbe).points, 1);
+        xyz = bsxfun(@minus, probe_ccf(thisthisProbe).points, r0);
         [~, ~, V] = svd(xyz, 0);
-        %V= permute(V, [3, 2, 1]);
         histology_probe_direction = V(:, 1);
-        % (make sure the direction goes down in DV - flip if it's going up)
-        if histology_probe_direction(2) < 0
-            histology_probe_direction = -histology_probe_direction;
-        end
 
-        line_eval = [-1000, 1000];
-        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
-        plot3(thesePoints(:, 1), ...
-            thesePoints(:, 2), ...
-            thesePoints(:, 3), ...
-            '.', 'color', colsThese(curr_probe, :), 'MarkerSize', 20);
-        line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-            'color', colsThese(curr_probe, :), 'linewidth', 2)
-
+        probe_eval_points = [-1000, 1000];
+        probe_line_endpoints = bsxfun(@plus, bsxfun(@times, probe_eval_points', histology_probe_direction'), r0);
+        line(probe_line_endpoints(:, 1), probe_line_endpoints(:, 3), probe_line_endpoints(:, 2), 'color', ...
+            colsThese(thisthisProbe, :), 'linewidth', 2)
     catch
     end
 end
