@@ -703,7 +703,7 @@ save(save_fn, 'probe_ccf');
 % save points 
 save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
 probe_points = gui_data.probe_points_histology;
-save(save_fn_start, 'probe_points');
+save(save_fn_pt, 'probe_points');
 
 % save start points 
 save_fn_start = [gui_data.slice_im_path, filesep, 'probe_points_start_position.mat'];
@@ -740,6 +740,10 @@ gui_data = guidata(gui_fig);
 % load
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
 load(save_fn);
+
+% load points
+save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
+load(save_fn_pt);
 
 % slices AP
 for iSlice = 1:size(gui_data.histology_ccf, 1)
@@ -839,20 +843,20 @@ if size(probe_ccf, 1) > gui_data.n_probes
 end
 
 % match points with AP, index in and store in gui_data
-for iProbe = 1:size(probe_ccf, 1)
-
-    curr_probe_points = probe_ccf(iProbe).points;
-    if ~isempty(curr_probe_points)
-        if size(curr_probe_points, 1) >= 2
-            for iSlice = 1:2:2 * floor(size(curr_probe_points, 1)/2)
-                curr_slice = find(ap_all == probe_ccf(iProbe).points(iSlice, 1));
-                gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice, 2:3); ...
-                    probe_ccf(iProbe).points(iSlice+1, 2:3)];
-            end
-        end
-    end
-end
-
+% for iProbe = 1:size(probe_ccf, 1)
+% 
+%     curr_probe_points = probe_ccf(iProbe).points;
+%     if ~isempty(curr_probe_points)
+%         if size(curr_probe_points, 1) >= 2
+%             for iSlice = 1:2:2 * floor(size(curr_probe_points, 1)/2)
+%                 curr_slice = find(ap_all == probe_ccf(iProbe).points(iSlice, 1));
+%                 gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice, 2:3); ...
+%                     probe_ccf(iProbe).points(iSlice+1, 2:3)];
+%             end
+%         end
+%     end
+% end
+ gui_data.probe_points_histology{curr_slice, iProbe} = probe_points;
 set(gui_data.histology_ax_title, 'String', 'successfully loaded')
 
 % Upload gui data
