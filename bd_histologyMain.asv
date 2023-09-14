@@ -1,4 +1,5 @@
 
+
 %% Histology main
 % QQ to do: 
 % - add option to use elastix
@@ -10,7 +11,7 @@
 clearvars -global % releases previous GUI , if there are any 
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF109';
+animal = 'JF099';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -74,6 +75,9 @@ bd_fitProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes
 load([outputDir, '/probe_ccf.mat'])
 bd_plotHistoPerMouse(outputDir, st);
 
+% get probe angles ? 
+
+
 % duplicate probes if several recordings (eg botRow+0, botRow+48, ...)
 probe_ccf(end+1)=probe_ccf(1);
 probe_ccf(end+1)=probe_ccf(2);
@@ -90,140 +94,103 @@ probe_ccf(end+1)=probe_ccf(10);
 probe_ccf(end+1)=probe_ccf(11);
 probe_ccf(end+1)=probe_ccf(12);
 
-probe_ccf(end+1)=probe_ccf(13);
-probe_ccf(end+1)=probe_ccf(14);
-probe_ccf(end+1)=probe_ccf(15);
-probe_ccf(end+1)=probe_ccf(16);
 
-probe_ccf(end+1)=probe_ccf(17);
-probe_ccf(end+1)=probe_ccf(18);
-probe_ccf(end+1)=probe_ccf(19);
-probe_ccf(end+1)=probe_ccf(20);
 
-probe_ccf(end+1)=probe_ccf(21);
-probe_ccf(end+1)=probe_ccf(22);
-probe_ccf(end+1)=probe_ccf(23);
-probe_ccf(end+1)=probe_ccf(24);
 % plot and assign
 probe2ephys = struct; 
-%load([outputDir, '/probe2ephys.mat'])
-probe2ephys(1).day = NaN;
-probe2ephys(1).site = NaN;
+probe2ephys(1).day = 5;
+probe2ephys(1).site = 1;
 probe2ephys(1).shank = NaN;
+probe2ephys(1).certainty = 0;
 
-probe2ephys(2).day = 1;
+probe2ephys(2).day = 4;%4
 probe2ephys(2).site = 1;
 probe2ephys(2).shank = NaN;
+probe2ephys(2).certainty = 0;
 
-probe2ephys(3).day = NaN;
-probe2ephys(3).site = NaN;
+probe2ephys(3).day = 1;%1
+probe2ephys(3).site = 1;
 probe2ephys(3).shank = NaN;
+probe2ephys(3).certainty = 0;
 
-probe2ephys(4).day = NaN;
-probe2ephys(4).site = NaN;
+probe2ephys(4).day = 3;%3
+probe2ephys(4).site = 1;
 probe2ephys(4).shank = NaN;
+probe2ephys(4).certainty = 1;
 
-probe2ephys(5).day = 2;
-probe2ephys(5).site = 5;
+probe2ephys(5).day = 8;
+probe2ephys(5).site = 1;
 probe2ephys(5).shank = NaN;
+probe2ephys(5).certainty = 1;
 
-probe2ephys(6).day = 2;
-probe2ephys(6).site = 3;
+probe2ephys(6).day = 6;
+probe2ephys(6).site = 1;
 probe2ephys(6).shank = NaN;
+probe2ephys(6).certainty = 1;
 
-probe2ephys(7).day = 2;
+probe2ephys(7).day = 7;
 probe2ephys(7).site = 1;
-probe2ephys(7).shank = 3;
+probe2ephys(7).shank = NaN;
+probe2ephys(7).certainty = 1;
 
-probe2ephys(8).day = 2;
+
+probe2ephys(8).day = 6;
 probe2ephys(8).site = 1;
-probe2ephys(8).shank = 2;
+probe2ephys(8).shank = NaN;
+probe2ephys(8).certainty = 1;
 
-probe2ephys(9).day = 2;
-probe2ephys(9).site = 2;
-probe2ephys(9).shank = 2;
+probe2ephys(9).day = 1;
+probe2ephys(9).site = 4;
+probe2ephys(9).shank = NaN;
+probe2ephys(9).certainty = 0;
 
-probe2ephys(10).day = 2;
-probe2ephys(10).site = 2;
-probe2ephys(10).shank = 3;
+probe2ephys(10).day = 1;
+probe2ephys(10).site = 3;
+probe2ephys(10).shank = NaN;
+probe2ephys(10).certainty = 0;
 
-probe2ephys(11).day = 2;
-probe2ephys(11).site = 4;
+probe2ephys(11).day = 3;
+probe2ephys(11).site = 2;
 probe2ephys(11).shank = NaN;
+probe2ephys(11).certainty = 0;
 
 probe2ephys(12).day = 2;
-probe2ephys(12).site = 6;
+probe2ephys(12).site = 3;
 probe2ephys(12).shank = NaN;
+probe2ephys(12).certainty = 0;
 
-probe2ephys(13).day = NaN;
-probe2ephys(13).site = NaN;
+probe2ephys(13).day = 6;
+probe2ephys(13).site = 1;
 probe2ephys(13).shank = NaN;
+probe2ephys(13).certainty = 0;
 
-probe2ephys(14).day = NaN;
-probe2ephys(14).site = NaN;
+probe2ephys(14).day = 5;
+probe2ephys(14).site = 1;
 probe2ephys(14).shank = NaN;
+probe2ephys(14).certainty = 0;
 
-probe2ephys(15).day = 1;
+probe2ephys(15).day = 2;
 probe2ephys(15).site = 2;
 probe2ephys(15).shank = NaN;
+probe2ephys(15).certainty = 0;
 
-probe2ephys(16).day = NaN;
-probe2ephys(16).site = NaN;
+probe2ephys(16).day = 3;
+probe2ephys(16).site = 3;
 probe2ephys(16).shank = NaN;
+probe2ephys(16).certainty = 0;
 
-probe2ephys(17).day = 3;
-probe2ephys(17).site = 1;
-probe2ephys(17).shank = 2;
+probe2ephys(17).day = 5;
+probe2ephys(17).site = 2;
+probe2ephys(17).shank = NaN;
+probe2ephys(17).certainty = 0;
 
-probe2ephys(18).day = 3;
-probe2ephys(18).site = 1;
-probe2ephys(18).shank = 3;
-
-probe2ephys(19).day = 3;
-probe2ephys(19).site = 2;
-probe2ephys(19).shank = NaN;
-
-probe2ephys(20).day = 3;
-probe2ephys(20).site = 3;
-probe2ephys(20).shank = NaN;
-
-probe2ephys(21).day = 2;
-probe2ephys(21).site = 2;
-probe2ephys(21).shank = 4;
-
-probe2ephys(22).day = 2;
-probe2ephys(22).site = 2;
-probe2ephys(22).shank = 3;
-
-probe2ephys(23).day = 2;
-probe2ephys(23).site = 2;
-probe2ephys(23).shank = 2;
-
-probe2ephys(24).day = 2;
-probe2ephys(24).site = 2;
-probe2ephys(24).shank = 1;
-
-probe2ephys(25).day = 2;
-probe2ephys(25).site = 2;
-probe2ephys(25).shank = 4;
-
-probe2ephys(26).day = 2;
-probe2ephys(26).site = 2;
-probe2ephys(26).shank = 3;
-
-probe2ephys(27).day = 2;
-probe2ephys(27).site = 2;
-probe2ephys(27).shank = 2;
-
-probe2ephys(28).day = 2;
-probe2ephys(28).site = 2;
-probe2ephys(28).shank = 1;
-
-
-
+probe2ephys(18).day = 4;
+probe2ephys(18).site = 2;
+probe2ephys(18).shank = NaN;
+probe2ephys(18).certainty = 0;
 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
-save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
+%save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
 %save([outputDir, '/probe2ephys_safe.mat'], 'probe2ephys')
 %% ~ Align ephys and histology ~
 % - add "5 min histology recs" look at
@@ -233,19 +200,29 @@ load([outputDir, '/probe2ephys.mat'])
 
 load([outputDir, '/probe_ccf.mat'])
 
-iProbe = 14
-
+for iProbe = 8:18
+    iProbe = 1
 site = probe2ephys(iProbe).site;
-if ~isnan(site)experiments = AP_find_experimentsJF(animal, '', true);
+%if ~isnan(site)
+    keep probe2ephys animal iProbe site st outputDir
+    experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);
-day = experiments(probe2ephys(iProbe).day).day;
+day_num = probe2ephys(iProbe).day;
+day = experiments(day_num).day;
+%day = date_this(1);
 if isfield(probe2ephys, 'recording') && ~isempty(probe2ephys(iProbe).recording)
     recording = probe2ephys(iProbe).recording(1);
 else
     recording = [];
 end
 shank = probe2ephys(iProbe).shank;
-experiment = 5
+if site ==1 || site ==2
+experiment = 1
+elseif site == 3  || site ==4
+    experiment = 1
+elseif site ==5  || site ==6
+    experiment=1
+end
 load_sync=true;
 load_parts.cam = false;
 loadClusters=0;
@@ -253,15 +230,55 @@ load_parts.ephys=true;
 JF_load_experiment;
 curr_shank = shank;
 lfp = NaN;
-%AP_cellrasterJF({stimOn_times}, {trial_conditions(:,1)})
-
+AP_cellrasterJF({stimOn_times}, {trial_conditions(:,1)})
+%AP_cellrasterJF({stimOn_times,wheel_move_time,signals_events.responseTimes(1:end)'}, ...
+%    {trial_conditions(:,1),trial_conditions(:,2), ...
+%    trial_conditions(:,3)});
 bd_alignEphysAndHistology(st, outputDir, ...
                 spike_times, spike_templates, template_depths, ...
                 spike_xdepths, template_xdepths,lfp, channel_positions(:,2),channel_positions(:,1), ...
                 iProbe, isSpikeGlx, shank);
+end
+
+site_days = [2,2;2,3;1,3;1,4;3,2;3,3;4,1;4,2;5,1;5,2;6,1];
+for iSiteDay = 1:11
+    
+
+    keep probe2ephys animal iProbe st outputDir iSiteDay site_days
+    experiments = AP_find_experimentsJF(animal, '', true);
+experiments = experiments([experiments.ephys]);
+    site = site_days(iSiteDay,2);
+day = experiments(site_days(iSiteDay,1)).day;
+
+
+
+
+if isfield(probe2ephys, 'recording') && ~isempty(probe2ephys(iProbe).recording)
+    recording = probe2ephys(iProbe).recording(1);
+else
+    recording = [];
+end
+shank = probe2ephys(iProbe).shank;
+experiment = 1
+
+load_sync=true;
+load_parts.cam = false;
+loadClusters=0;
+load_parts.ephys=true;
+%experiment=2
+JF_load_experiment;
+curr_shank = shank;
+lfp = NaN;
+%AP_cellrasterJF({stimOn_times}, {trial_conditions(:,1)})
+AP_cellrasterJF({stimOn_times,wheel_move_time,signals_events.responseTimes(1:end)'}, ...
+   {trial_conditions(:,1),trial_conditions(:,2), ...
+   trial_conditions(:,3)});
 
 end
-save([outputDir, '/probe_ccf.mat'], 'probe2ephys')
+
+
+load([outputDir, '/probe_ccf.mat'])
+save([outputDir, '/probe_ccf_copy.mat'], 'probe_ccf')
 %%
 load([outputDir, '/probe_ccf.mat'])
 probe_ccf(13).probe_depths = probe_ccf(1).probe_depths - 688;

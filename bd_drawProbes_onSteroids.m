@@ -1,4 +1,4 @@
-function bd_drawProbes(tv, av, st, registeredImage, outputDir, screenToUse)
+function bd_drawProbes_onSteroids(tv, av, st, registeredImage, outputDir, screenToUse)
 % based on:
 % AP_get_probe_histology(tv,av,st,slice_im_path)
 %
@@ -166,8 +166,11 @@ gui_data.histology_ax_title = title(gui_data.histology_ax, '', 'FontSize', 14, '
 
 % Initialize probe points
 gui_data.probe_color = lines(gui_data.n_probes);
-gui_data.probe_points_histology = cell(length(gui_data.slice_im), gui_data.n_probes);gui_data.probe_color
-gui_data.probe_lines = gobjects(gui_data.n_probes, 1);
+gui_data.probe_points_histology = cell(length(gui_data.slice_im), gui_data.n_probes);
+%gui_data.probe_points = gobjects(gui_data.n_probes, 1);
+for iProbe = 1:gui_data.n_probes
+    gui_data.probe_points{iProbe} = gobjects(10, 1);
+end
 gui_data.probe_points_start = gobjects(gui_data.n_probes, 1);
 gui_data.probe_points_start_position = nan(gui_data.n_probes, 3);
 gui_data.probe_points_stop = gobjects(gui_data.n_probes, 1);
@@ -693,9 +696,14 @@ for curr_probe = 1:gui_data.n_probes
     end
 end
 
-% Save probe CCF points
+% Save fitted probe CCF points
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
 save(save_fn, 'probe_ccf');
+
+% save points 
+save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
+probe_points = gui_data.probe_points_histology;
+save(save_fn_start, 'probe_points');
 
 % save start points 
 save_fn_start = [gui_data.slice_im_path, filesep, 'probe_points_start_position.mat'];
@@ -749,7 +757,7 @@ if size(probe_ccf, 1) > gui_data.n_probes
     gui_data.probe_color = lines(size(probe_ccf, 1));
     for iNewProbe = previous_n_probes + 1:size(probe_ccf, 1)
         gui_data.probe_points_histology(:, iNewProbe) = cell(length(gui_data.slice_im), 1);
-        gui_data.probe_lines(iNewProbe) = gobjects(1, 1);
+        gui_data.probe_points{iNewProbe} = gobjects(10, 1);
         gui_data.probe_fit_lines(iNewProbe) = gobjects(1, 1);
     end
 
@@ -811,6 +819,19 @@ if size(probe_ccf, 1) > gui_data.n_probes
             'BackgroundColor', gui_data.probe_color(iProbe, :), ...
             'CallBack', @(varargin) viewFitButtonPushed(gui_fig));
 
+        gui_data.startPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', 'start Pt', ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 480, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) startPtButtonPushed(gui_fig));
+
+        gui_data.stopPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+            'String', 'stop Pt', ...
+            'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 530, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+            'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+            'CallBack', @(varargin) stopPtButtonPushed(gui_fig));
+
+
 
     end
 
@@ -867,31 +888,32 @@ end
 function update_curr_probe(gui_fig, curr_probe)
 % Get guidata
 gui_data = guidata(gui_fig);
+gui_data.curr_probe = curr_probe;
 
 set(gui_data.histology_ax_title, 'String', ['Draw probe ', num2str(curr_probe)]);
-curr_line = imline;
-% If the line is just a click, don't include
-curr_line_length = sqrt(sum(abs(diff(curr_line.getPosition, [], 1)).^2));
-if curr_line_length == 0
-    return
-end
+curr_point = drawpoint;
+% % If the line is just a click, don't include
+% curr_line_length = sqrt(sum(abs(diff(curr_point.getPosition, [], 1)).^2));
+% if curr_line_length == 0
+%     return
+% end
 gui_data.probe_points_histology{gui_data.curr_slice, curr_probe} = ...
-    curr_line.getPosition;
+    [gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}; curr_point.Position];
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1:gui_data.n_probes), '], Esc to save/quit']);
 
 % delete any previous lines
-delete(gui_data.probe_lines(curr_probe))
-curr_line.delete;
+delete(gui_data.probe_points{curr_probe});
+curr_point.delete;
+
 % update probe line
-gui_data.probe_lines(curr_probe) = ...
-    line(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
-    gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-    'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
+for iPoint = 1:size(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe},1)
+gui_data.probe_points{curr_probe}(iPoint) = ...
+    scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 1), ...
+    gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 2), ...
+    20, [gui_data.probe_color(curr_probe, :)], 'filled');
+end
 
-% Delete movable line, draw line object
-
-gui_data.curr_probe = curr_probe;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -905,7 +927,7 @@ gui_data = guidata(gui_fig);
 gui_data.n_probes = gui_data.n_probes + 1;
 gui_data.probe_color = lines(gui_data.n_probes);
 gui_data.probe_points_histology(:, gui_data.n_probes) = cell(length(gui_data.slice_im), 1);
-gui_data.probe_lines(gui_data.n_probes) = gobjects(1, 1);
+gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
 
@@ -967,6 +989,20 @@ for iProbe = 1:gui_data.n_probes
         'BackgroundColor', gui_data.probe_color(iProbe, :), ...
         'CallBack', @(varargin) viewFitButtonPushed(gui_fig));
 
+    gui_data.startPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', 'start Pt', ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 480, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) startPtButtonPushed(gui_fig));
+
+    gui_data.stopPt(iProbe) = uicontrol('Style', 'pushbutton', ...
+        'String', 'stop Pt', ...
+        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 530, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
+        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
+        'CallBack', @(varargin) stopPtButtonPushed(gui_fig));
+
+
+
 
 end
 
@@ -988,7 +1024,7 @@ if contains(gui_data.toggle_probe_btn.String, 'Hide')
     other_probes = find(other_probes);
     gui_data.visibility = 0;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_lines(iProbe).Color(4) = 0;
+        gui_data.probe_points{iProbe}.Color(4) = 0;%QQ fix
     end
 else
     gui_data.toggle_probe_btn.String = 'Hide all other probes';
@@ -997,7 +1033,7 @@ else
     other_probes = find(other_probes);
     gui_data.visibility = 1;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_lines(iProbe).Color(4) = 1;
+        gui_data.probe_lines{iProbe}.Color(4) = 1;%QQ fix
     end
 end
 % Upload gui data
@@ -1396,7 +1432,8 @@ curr_probe = find([gui_data.reset_probe_btns(:).Value]);
 
 % Delete current probe histology points and line
 gui_data.probe_points_histology{gui_data.curr_slice, curr_probe} = [];
-delete(gui_data.probe_lines(curr_probe))
+delete(gui_data.probe_points{curr_probe})
+%gui_data.probe_points{curr_probe} = gobjects(10,1);
 delete(gui_data.probe_fit_lines(curr_probe))
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -1414,7 +1451,7 @@ curr_probe = find([gui_data.reset_all_probe_btns(:).Value]);
 for iSlice = 1:length(gui_data.slice_im)
     gui_data.probe_points_histology{iSlice, curr_probe} = [];
 end
-delete(gui_data.probe_lines(curr_probe))
+delete(gui_data.probe_points{curr_probe})
 delete(gui_data.probe_fit_lines(curr_probe))
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -1432,7 +1469,9 @@ for iSlice = 1:length(gui_data.slice_im)
         gui_data.probe_points_histology{iSlice, iProbe} = [];
     end
 end
-delete(gui_data.probe_lines(:))
+for iProbe=1:gui_data.n_probes
+    delete(gui_data.probe_points{iProbe})
+end
 delete(gui_data.probe_fit_lines(:))
 
 % Upload gui data
@@ -1448,12 +1487,12 @@ gui_data = guidata(gui_fig);
 if contains(gui_data.del_probe_btns.String, 'ide')
     gui_data.del_probe_btns.String = 'show'; %<HTML><center><FONT color="white"><b>
      gui_data.visibility = 0;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 0;
+    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 0;%QQ fix
     
 else
     gui_data.del_probe_btns.String = 'hide';
     gui_data.visibility = 1;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 1;
+    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 1;%QQ fix
 end
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -1470,22 +1509,24 @@ gui_data = guidata(gui_fig);
 set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
 
 % Clear any current lines, draw probe lines
-gui_data.probe_lines.delete;
+for iProbe=1:gui_data.n_probes
+    gui_data.probe_points{iProbe}.delete;
+end
 gui_data.probe_fit_lines.delete;
 gui_data.inflection_points_scatter.delete;
 
 for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
     if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
-        gui_data.probe_lines(curr_probe) = ...
-            line(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
+        gui_data.probe_points{curr_probe} = ...
+             scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 0]);
+            20, [gui_data.probe_color(curr_probe, :)], 'filled');
     else
 
-        gui_data.probe_lines(curr_probe) = ...
-            line(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
+        gui_data.probe_points{curr_probe} = ...
+            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
+            10, [gui_data.probe_color(curr_probe, :)], 'filled');
     end
     try
     if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
