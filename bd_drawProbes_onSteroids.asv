@@ -703,7 +703,7 @@ save(save_fn, 'probe_ccf');
 % save points 
 save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
 probe_points = gui_data.probe_points_histology;
-save(save_fn_start, 'probe_points');
+save(save_fn_pt, 'probe_points');
 
 % save start points 
 save_fn_start = [gui_data.slice_im_path, filesep, 'probe_points_start_position.mat'];
@@ -740,6 +740,10 @@ gui_data = guidata(gui_fig);
 % load
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
 load(save_fn);
+
+% load points
+save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
+load(save_fn_pt);
 
 % slices AP
 for iSlice = 1:size(gui_data.histology_ccf, 1)
@@ -839,25 +843,50 @@ if size(probe_ccf, 1) > gui_data.n_probes
 end
 
 % match points with AP, index in and store in gui_data
-for iProbe = 1:size(probe_ccf, 1)
-
-    curr_probe_points = probe_ccf(iProbe).points;
-    if ~isempty(curr_probe_points)
-        if size(curr_probe_points, 1) >= 2
-            for iSlice = 1:2:2 * floor(size(curr_probe_points, 1)/2)
-                curr_slice = find(ap_all == probe_ccf(iProbe).points(iSlice, 1));
-                gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice, 2:3); ...
-                    probe_ccf(iProbe).points(iSlice+1, 2:3)];
-            end
-        end
-    end
-end
-
+% for iProbe = 1:size(probe_ccf, 1)
+% 
+%     curr_probe_points = probe_ccf(iProbe).points;
+%     if ~isempty(curr_probe_points)
+%         if size(curr_probe_points, 1) >= 2
+%             for iSlice = 1:2:2 * floor(size(curr_probe_points, 1)/2)
+%                 curr_slice = find(ap_all == probe_ccf(iProbe).points(iSlice, 1));
+%                 gui_data.probe_points_histology{curr_slice, iProbe} = [probe_ccf(iProbe).points(iSlice, 2:3); ...
+%                     probe_ccf(iProbe).points(iSlice+1, 2:3)];
+%             end
+%         end
+%     end
+% end
+ gui_data.probe_points_histology = probe_points;
 set(gui_data.histology_ax_title, 'String', 'successfully loaded')
+disp('loaded data')
 
 % Upload gui data
 set(gui_data.histology_ax_title, 'String', previous_string)
 guidata(gui_fig, gui_data);
+
+end
+
+function autoContrastButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Set contrast and brightness
+% Auto based on this function :
+% g(i,j) = α * f(i,j) + β - we want to find α (contrast) and β
+% (brightness)
+% α = 255 / (maximum_gray - minimum_gray)
+% solve β by plugging it into the formula where g(i, j)=0 and
+% f(i, j)=minimum_gray
+
+gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all')- ...
+    min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
+gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice
+update_slice(gui_fig)
 
 end
 
@@ -1012,6 +1041,32 @@ guidata(gui_fig, gui_data);
 
 end
 
+function toggleVisiblityProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% hide/show
+if contains(gui_data.del_probe_btns.String, 'ide')
+    gui_data.del_probe_btns.String = 'show'; %<HTML><center><FONT color="white"><b>
+    gui_data.visibility = 0;
+    delete(gui_data.probe_lines(gui_data.curr_probe));%QQ fix
+    
+else
+    curr_probe = gui_data.curr_probe;
+    gui_data.del_probe_btns.String = 'hide';
+    gui_data.visibility = 1;
+    for iPoint = 1:size(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe},1)
+            gui_data.probe_points{curr_probe}(iPoint) = ...
+                scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 1), ...
+                gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 2), ...
+                20, [gui_data.probe_color(curr_probe, :)], 'filled');
+    end
+end
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+end
+
 function toggleAllProbeButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
@@ -1024,7 +1079,8 @@ if contains(gui_data.toggle_probe_btn.String, 'Hide')
     other_probes = find(other_probes);
     gui_data.visibility = 0;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_points{iProbe}.Color(4) = 0;%QQ fix
+        thisProbe = other_probes(iProbe);
+        delete(gui_data.probe_points{thisProbe});%QQ fix
     end
 else
     gui_data.toggle_probe_btn.String = 'Hide all other probes';
@@ -1033,7 +1089,14 @@ else
     other_probes = find(other_probes);
     gui_data.visibility = 1;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_lines{iProbe}.Color(4) = 1;%QQ fix
+        curr_probe = other_probes(iProbe);
+        % update probe line
+        for iPoint = 1:size(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe},1)
+            gui_data.probe_points{curr_probe}(iPoint) = ...
+                scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 1), ...
+                gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 2), ...
+                20, [gui_data.probe_color(curr_probe, :)], 'filled');
+        end
     end
 end
 % Upload gui data
@@ -1433,6 +1496,7 @@ curr_probe = find([gui_data.reset_probe_btns(:).Value]);
 % Delete current probe histology points and line
 gui_data.probe_points_histology{gui_data.curr_slice, curr_probe} = [];
 delete(gui_data.probe_points{curr_probe})
+%gui_data.probe_points{curr_probe} = gobjects(10,1);
 delete(gui_data.probe_fit_lines(curr_probe))
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -1478,25 +1542,7 @@ guidata(gui_fig, gui_data);
 
 end
 
-function toggleVisiblityProbeButtonPushed(gui_fig)
-% Get guidata
-gui_data = guidata(gui_fig);
 
-% hide/show
-if contains(gui_data.del_probe_btns.String, 'ide')
-    gui_data.del_probe_btns.String = 'show'; %<HTML><center><FONT color="white"><b>
-     gui_data.visibility = 0;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 0;%QQ fix
-    
-else
-    gui_data.del_probe_btns.String = 'hide';
-    gui_data.visibility = 1;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 1;%QQ fix
-end
-% Upload gui data
-guidata(gui_fig, gui_data);
-
-end
 
 function update_slice(gui_fig)
 % Draw histology and CCF slice
@@ -1519,13 +1565,13 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
         gui_data.probe_points{curr_probe} = ...
              scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 0]);
+            20, [gui_data.probe_color(curr_probe, :)], 'filled');
     else
 
         gui_data.probe_points{curr_probe} = ...
             scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
             gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            'linewidth', 3, 'color', [gui_data.probe_color(curr_probe, :), 1]);
+            10, [gui_data.probe_color(curr_probe, :)], 'filled');
     end
     try
     if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)

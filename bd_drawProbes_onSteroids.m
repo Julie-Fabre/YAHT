@@ -856,8 +856,9 @@ end
 %         end
 %     end
 % end
- gui_data.probe_points_histology{curr_slice, iProbe} = probe_points;
+ gui_data.probe_points_histology = probe_points;
 set(gui_data.histology_ax_title, 'String', 'successfully loaded')
+disp('loaded data')
 
 % Upload gui data
 set(gui_data.histology_ax_title, 'String', previous_string)
@@ -888,6 +889,40 @@ guidata(gui_fig, gui_data);
 update_slice(gui_fig)
 
 end
+
+function brightnessButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+brightnessValue = gui_data.brightness_slider.Value;
+
+gui_data.brightness_beta = brightnessValue;
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice
+update_slice(gui_fig)
+
+end
+
+function contrastButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+contrastValue = gui_data.contrast_slider.Value;
+
+gui_data.contrast_alpha= contrastValue;
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice
+update_slice(gui_fig)
+
+end
+
+
 
 function update_curr_probe(gui_fig, curr_probe)
 % Get guidata
