@@ -111,6 +111,21 @@ gui_data.contrast_text = uicontrol('Style', 'text', ...
     'BackgroundColor', rgb('Black'), ...
     'ForegroundColor', rgb('White'));
 
+% point size slider
+gui_data.point_size = 20;
+gui_data.point_size_slider = uicontrol('Style', 'slider', ...
+    'String', 'Point size', ...
+    'Position', gui_button_position2+[450, 0, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'Min', -100, 'Max', 100, 'Value', gui_data.point_size, ...
+    'CallBack', @(varargin) pointSizeButtonPushed(gui_fig));
+
+gui_data.point_size_text = uicontrol('Style', 'text', ...
+    'String', 'Point size (px)', ...
+    'Position', gui_button_position2+[300, 20, 50, -20], ...
+    'BackgroundColor', rgb('Black'), ...
+    'ForegroundColor', rgb('White'));
+
 % 'add probe' button
 gui_data.add_probe_btn = uicontrol('Style', 'pushbutton', ...
     'String', '<HTML><center><FONT color="white"><b>Add a probe</b></Font>', ...
@@ -882,6 +897,10 @@ gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice
     min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
 gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
 
+% update bright and contast slider values 
+gui_data.brightness_slider.Value = gui_data.brightness_beta;
+gui_data.contrast_slider.Value = gui_data.contrast_alpha;
+
 % Upload gui data
 guidata(gui_fig, gui_data);
 
@@ -890,21 +909,13 @@ update_slice(gui_fig)
 
 end
 
-function autoContrastButtonPushed(gui_fig)
+function brightnessButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Set contrast and brightness
-% Auto based on this function :
-% g(i,j) = α * f(i,j) + β - we want to find α (contrast) and β
-% (brightness)
-% α = 255 / (maximum_gray - minimum_gray)
-% solve β by plugging it into the formula where g(i, j)=0 and
-% f(i, j)=minimum_gray
+brightnessValue = gui_data.brightness_slider.Value;
 
-gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all')- ...
-    min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
-gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
+gui_data.brightness_beta = brightnessValue;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -913,6 +924,24 @@ guidata(gui_fig, gui_data);
 update_slice(gui_fig)
 
 end
+
+function contrastButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+contrastValue = gui_data.contrast_slider.Value;
+
+gui_data.contrast_alpha= contrastValue;
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice
+update_slice(gui_fig)
+
+end
+
+
 
 function update_curr_probe(gui_fig, curr_probe)
 % Get guidata
