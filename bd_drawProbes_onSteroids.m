@@ -1012,6 +1012,32 @@ guidata(gui_fig, gui_data);
 
 end
 
+function toggleVisiblityProbeButtonPushed(gui_fig)
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% hide/show
+if contains(gui_data.del_probe_btns.String, 'ide')
+    gui_data.del_probe_btns.String = 'show'; %<HTML><center><FONT color="white"><b>
+    gui_data.visibility = 0;
+    delete(gui_data.probe_lines(gui_data.curr_probe));%QQ fix
+    
+else
+    curr_probe = gui_data.curr_probe;
+    gui_data.del_probe_btns.String = 'hide';
+    gui_data.visibility = 1;
+    for iPoint = 1:size(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe},1)
+            gui_data.probe_points{curr_probe}(iPoint) = ...
+                scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 1), ...
+                gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 2), ...
+                20, [gui_data.probe_color(curr_probe, :)], 'filled');
+    end
+end
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+end
+
 function toggleAllProbeButtonPushed(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
@@ -1024,7 +1050,8 @@ if contains(gui_data.toggle_probe_btn.String, 'Hide')
     other_probes = find(other_probes);
     gui_data.visibility = 0;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_points{iProbe}.Color(4) = 0;%QQ fix
+        thisProbe = other_probes(iProbe);
+        delete(gui_data.probe_points{thisProbe});%QQ fix
     end
 else
     gui_data.toggle_probe_btn.String = 'Hide all other probes';
@@ -1033,7 +1060,14 @@ else
     other_probes = find(other_probes);
     gui_data.visibility = 1;
     for iProbe = 1:size(other_probes, 1)
-        gui_data.probe_lines{iProbe}.Color(4) = 1;%QQ fix
+        curr_probe = other_probes(iProbe);
+        % update probe line
+        for iPoint = 1:size(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe},1)
+            gui_data.probe_points{curr_probe}(iPoint) = ...
+                scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 1), ...
+                gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(iPoint, 2), ...
+                20, [gui_data.probe_color(curr_probe, :)], 'filled');
+        end
     end
 end
 % Upload gui data
@@ -1479,25 +1513,7 @@ guidata(gui_fig, gui_data);
 
 end
 
-function toggleVisiblityProbeButtonPushed(gui_fig)
-% Get guidata
-gui_data = guidata(gui_fig);
 
-% hide/show
-if contains(gui_data.del_probe_btns.String, 'ide')
-    gui_data.del_probe_btns.String = 'show'; %<HTML><center><FONT color="white"><b>
-     gui_data.visibility = 0;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 0;%QQ fix
-    
-else
-    gui_data.del_probe_btns.String = 'hide';
-    gui_data.visibility = 1;
-    gui_data.probe_lines(gui_data.curr_probe).Color(4) = 1;%QQ fix
-end
-% Upload gui data
-guidata(gui_fig, gui_data);
-
-end
 
 function update_slice(gui_fig)
 % Draw histology and CCF slice
