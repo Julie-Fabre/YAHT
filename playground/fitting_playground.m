@@ -23,26 +23,35 @@ z = probe_points_full(:,3);
 
 t = (1:length(x))'; % Creating a parameter t based on the number of data points
 
-% Creating fittype objects for smooth spline
+% Creating fittype objects for smooth spline with smoothing parameter
 ft = fittype('smoothingspline');
 
-% Fitting the curves
-fitresult_x = fit(t, x, ft);
-fitresult_y = fit(t, y, ft);
-fitresult_z = fit(t, z, ft);
+% Define a smoothing parameter
+smoothing_param = 0.05; % Adjust this value between 0 and 1 to control the smoothness
 
-t_new = linspace(min(t), max(t), 1000)'; % Creating a new set of t values for smoother curve
-x_new = fitresult_x(t_new); % Evaluating x at the new t values
-y_new = fitresult_y(t_new); % Evaluating y at the new t values
-z_new = fitresult_z(t_new); % Evaluating z at the new t values
+% Fitting the curves with the smoothing parameter
+fitresult_x = fit(t, x, ft, 'SmoothingParam', smoothing_param);
+fitresult_y = fit(t, y, ft, 'SmoothingParam', smoothing_param);
+fitresult_z = fit(t, z, ft, 'SmoothingParam', smoothing_param);
 
-% Plotting the original points and the fitted curve
+delta = 5;
+% Step 3: Extending the Curve and Visualizing
+% Extend the range of t for extrapolation
+t_extended = [linspace(min(t)-delta, max(t)+delta, 1000)]'; % Adjust delta to control the extension amount
+
+% Evaluate the extended spline at the new t values
+x_new = fitresult_x(t_extended);
+y_new = fitresult_y(t_extended);
+z_new = fitresult_z(t_extended);
+
+% Plot the original points and the extended spline
 figure;
 scatter3(x, y, z, 'b'); % Original points in blue
 hold on;
-plot3(x_new, y_new, z_new, 'r'); % Fitted curve in red
+plot3(x_new, y_new, z_new, 'r'); % Extended spline in red
 xlabel('X');
 ylabel('Y');
 zlabel('Z');
 grid on;
 hold off;
+
