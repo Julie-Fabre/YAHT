@@ -654,7 +654,7 @@ for curr_probe = 1:length(probe_ccf)
             x = thesePoints(:, 1);
             y = thesePoints(:, 2);
             z = thesePoints(:, 3);
-
+            
             t = (1:length(x))'; % Creating a parameter t based on the number of data points
             
             % Creating fittype objects for smooth spline with smoothing parameter
@@ -672,11 +672,12 @@ for curr_probe = 1:length(probe_ccf)
             % Step 3: Extending the Curve and Visualizing
             % Extend the range of t for extrapolation
             t_extended = [linspace(min(t)-delta, max(t)+delta, 1000)]'; % Adjust delta to control the extension amount
-
+            
             % Evaluate the extended spline at the new t values
             x_new = fitresult_x(t_extended);
             y_new = fitresult_y(t_extended);
             z_new = fitresult_z(t_extended);
+
 
             plot3(x_new, y_new, z_new, ...
                 'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
@@ -695,13 +696,8 @@ for curr_probe = 1:length(probe_ccf)
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
 
-        curr_axes = subplot(1, gui_data.n_probes, curr_probe); 
-        % flip probe direction if necessary - check dv (dim 2) goes down
-        if probe_ccf(curr_probe).trajectory_coords(1,2) > probe_ccf(curr_probe).trajectory_coords(end,2)
-            probe_ccf(curr_probe).trajectory_coords = flipud(probe_ccf(curr_probe).trajectory_coords);
-            probe_ccf(curr_probe).trajectory_areas = flipud(probe_ccf(curr_probe).trajectory_areas);
-            probe_ccf(curr_probe).points = flipud(probe_ccf(curr_probe).points);
-        end
+        curr_axes = subplot(1, gui_data.n_probes, curr_probe);
+
         trajectory_area_boundaries = ...
             [1; find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0); length(probe_ccf(curr_probe).trajectory_areas)];
         trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries) / 2;
