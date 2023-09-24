@@ -576,13 +576,15 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
     end
     try
-        if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
+            % find line on this slice
+        if gui_data.fit_visibility == 1 && ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1))...
+                == gui_data.curr_slice)
             slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
                 round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
             if ~isempty(slice_coords_fit)
                 gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
                     [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                    'linewidth', 2, 'LineStyle', '--', 'color', [gui_data.probe_color(curr_probe, :), 0.5]);
+                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.5]);
             end
         end
     catch
@@ -1401,11 +1403,11 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
     % find line on this slice
     slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
         round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
-    if ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
+    if ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice)
         try
             gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
                 [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                'linewidth', 1, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe,:), 0.5]);
+                'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe,:), 0.5]);
         catch
         end
     end

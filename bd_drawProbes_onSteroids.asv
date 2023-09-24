@@ -576,13 +576,14 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
     end
     try
-        if gui_data.fit_visibility == 1 && ~isempty(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1) == gui_data.curr_slice)
+        if gui_data.fit_visibility == 1 && ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1))...
+                == gui_data.curr_slice)
             slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
                 round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
             if ~isempty(slice_coords_fit)
                 gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
                     [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                    'linewidth', 2, 'LineStyle', '--', 'color', [gui_data.probe_color(curr_probe, :), 0.5]);
+                    'linewidth', 2, 'LineStyle', '--', 'color', [gui_data.probe_color(curr_probe, :), 1]);
             end
         end
     catch
@@ -1030,6 +1031,7 @@ if size(probe_ccf, 1) > gui_data.n_probes
         gui_data.probe_points_histology(:, iNewProbe) = cell(length(gui_data.slice_im), 1);
         gui_data.probe_points{iNewProbe} = gobjects(10, 1);
         gui_data.probe_fit_lines(iNewProbe) = gobjects(1, 1);
+        gui_data.prev_spline_fit(iNewProbe) = 0.1;
     end
 
     % Update all buttons
@@ -1115,7 +1117,7 @@ gui_data.probe_points_histology(:, gui_data.n_probes) = cell(length(gui_data.sli
 gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
-
+gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
 % Update all buttons
 
 nProbes_fit = floor((gui_data.SCRSZ(4) - gui_data.gui_button_position(2))/50);
@@ -1428,11 +1430,12 @@ function splineSmoothnessButtonPushed(gui_fig)
 gui_data = guidata(gui_fig);
 
 % Get current probe
-curr_probe = find([gui_data.spline_smoothness(:).Value]);
+curr_probe = find(diff([gui_data.prev_spline_fit; gui_data.spline_smoothness(:).Value]));
 
+% Update spline smoothness
 spineSmoothValue = gui_data.spline_smoothness(curr_probe).Value;
-
-gui_data.brightness_beta = spineSmoothValue;
+gui_data.prev_spline_fit(curr_probe) = gui_data.spline_smoothness(curr_probe).Value;
+gui_data.spline_smoothness(curr_probe).Value = spineSmoothValue;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
