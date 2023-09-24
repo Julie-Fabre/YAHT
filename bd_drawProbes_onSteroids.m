@@ -1195,7 +1195,7 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
     end
 
 else
-    gui_data.viewFit(curr_probe).String = 'View fit';
+    gui_data.viewFit(curr_probe).String = 'view fit';
     gui_data.fit_visibility = 0;
     try
         gui_data.probe_fit_lines(curr_probe).Color(4) = 0;
