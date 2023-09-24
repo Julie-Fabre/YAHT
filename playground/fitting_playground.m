@@ -55,3 +55,5 @@ zlabel('Z');
 grid on;
 hold off;
 
+
+gui_data.spline_smoothness_factor
