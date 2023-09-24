@@ -8,10 +8,10 @@
 % - add option to change atlas orientation post automatic alignement
 
 %% ~ Images info
-clearvars -global % releases previous GUI , if there are any 
+clearvars -global % releases previous GUIs, if there are any 
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF097';
+animal = 'JF067';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -41,8 +41,6 @@ else
    registeredImage = loadtiff([outputDir, filesep, 'downsampled_standard.tiff']);
 end
 
-% AP format to be able to use AP functions
-
 %% ~ Manually check and adjust registration ~
 screenToUse = 2; % on which of your displays to create the following plots. 1 = main display, 2 = secondary and so on
 
@@ -61,17 +59,13 @@ end
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : ccf to histology alignement/warp
 
-%% ~ Draw probes ~
+%% ~ Draw probes + adjust probe fits ~
 % QQ to add: draw both bspine fit and affine, choose which to use for each
 % probe 
 transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
 transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
-bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
+bd_drawProbes_onSteroids(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
-
-%% ~ Check and adjust probe fits ~
-bd_fitProbes(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
-
 
 %% ~ Assign probes to days/sites ~
 load([outputDir, '/probe_ccf.mat'])

@@ -27,7 +27,7 @@ t = (1:length(x))'; % Creating a parameter t based on the number of data points
 ft = fittype('smoothingspline');
 
 % Define a smoothing parameter
-smoothing_param = 0.05; % Adjust this value between 0 and 1 to control the smoothness
+smoothing_param = 0.1; % Adjust this value between 0 and 1 to control the smoothness
 
 % Fitting the curves with the smoothing parameter
 fitresult_x = fit(t, x, ft, 'SmoothingParam', smoothing_param);
