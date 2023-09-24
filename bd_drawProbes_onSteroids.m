@@ -584,7 +584,7 @@ for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_dat
             if ~isempty(slice_coords_fit)
                 gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
                     [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.5]);
+                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.8]);
             end
         end
     catch
@@ -644,7 +644,8 @@ for curr_probe = 1:length(probe_ccf)
             line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
                 'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
         else
-
+            thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
+            
             plot3(thesePoints(:, 1), ...
                 thesePoints(:, 2), ...
                 thesePoints(:, 3), ...
@@ -957,8 +958,8 @@ for curr_probe = 1:gui_data.n_probes
             trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
             trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
 
-        trajectory_coords_idx = round(sub2ind(size(gui_data.av), ...
-            trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3)));
+        trajectory_coords_idx = sub2ind(size(gui_data.av), ...
+            round(trajectory_coords(:, 1)),  round(trajectory_coords(:, 2)),  round(trajectory_coords(:, 3)));
 
         trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
 
