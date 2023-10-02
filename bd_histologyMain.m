@@ -11,7 +11,7 @@
 clearvars -global % releases previous GUIs, if there are any 
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m. 
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF067';
+animal = 'JF096';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel

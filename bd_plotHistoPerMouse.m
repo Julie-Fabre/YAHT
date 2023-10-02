@@ -11,7 +11,7 @@ structure_alpha = 0.2;
 % st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
 
 load([outputDir, '/probe_ccf.mat'])
-load([outputDir, '/probe_points_start_position.mat'])
+%load([outputDir, '/probe_points_start_position.mat'])
 %load([outputDir, '/probe_ccf.mat'])
 
 if ~isempty(dir([outputDir '/probe2ephys.mat']))

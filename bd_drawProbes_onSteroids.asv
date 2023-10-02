@@ -654,14 +654,13 @@ for curr_probe = 1:length(probe_ccf)
             x = thesePoints(:, 1);
             y = thesePoints(:, 2);
             z = thesePoints(:, 3);
-            
             t = (1:length(x))'; % Creating a parameter t based on the number of data points
             
             % Creating fittype objects for smooth spline with smoothing parameter
             ft = fittype('smoothingspline');
             
             % Define a smoothing parameter
-            smoothing_param = gui_data.spline_smoothness_factor(curr_probe); % Adjust this value between 0 and 1 to control the smoothness
+            smoothing_param = 0.1; % Adjust this value between 0 and 1 to control the smoothness
             
             % Fitting the curves with the smoothing parameter
             fitresult_x = fit(t, x, ft, 'SmoothingParam', smoothing_param);
@@ -674,11 +673,26 @@ for curr_probe = 1:length(probe_ccf)
             t_extended = [linspace(min(t)-delta, max(t)+delta, 1000)]'; % Adjust delta to control the extension amount
             
             % Evaluate the extended spline at the new t values
-            x_new = fitresult_x(t_extended);
-            y_new = fitresult_y(t_extended);
-            z_new = fitresult_z(t_extended);
+            x_smooth = fitresult_x(t_extended);
+            y_smooth = fitresult_y(t_extended);
+            z_smooth = fitresult_z(t_extended);
 
+            x_monotonic = enforce_monotonic(x_smooth);
+            y_monotonic = enforce_monotonic(y_smooth);
+            z_monotonic = enforce_monotonic(z_smooth);
+                        
+            % Plot
+            figure;
+            plot3(x, y, z, 'bo'); hold on;
+            plot3(x_smooth, y_smooth, z_smooth, 'r-');
+            plot3(x_monotonic, y_monotonic, z_monotonic, 'k-');
+            
+            xlabel('X'); ylabel('Y'); zlabel('Z');
+            legend('Original Data', 'Monotonic Smoothed Curve');
+            grid on;
 
+            
+            % (plot) 
             plot3(x_new, y_new, z_new, ...
                 'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
         end
@@ -696,8 +710,13 @@ for curr_probe = 1:length(probe_ccf)
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
 
-        curr_axes = subplot(1, gui_data.n_probes, curr_probe);
-
+        curr_axes = subplot(1, gui_data.n_probes, curr_probe); 
+        % flip probe direction if necessary - check dv (dim 2) goes down
+        if probe_ccf(curr_probe).trajectory_coords(1,2) > probe_ccf(curr_probe).trajectory_coords(end,2)
+            probe_ccf(curr_probe).trajectory_coords = flipud(probe_ccf(curr_probe).trajectory_coords);
+            probe_ccf(curr_probe).trajectory_areas = flipud(probe_ccf(curr_probe).trajectory_areas);
+            probe_ccf(curr_probe).points = flipud(probe_ccf(curr_probe).points);
+        end
         trajectory_area_boundaries = ...
             [1; find(diff(probe_ccf(curr_probe).trajectory_areas) ~= 0); length(probe_ccf(curr_probe).trajectory_areas)];
         trajectory_area_centers = trajectory_area_boundaries(1:end-1) + diff(trajectory_area_boundaries) / 2;
@@ -1507,3 +1526,33 @@ delete(gui_data.probe_fit_lines(:))
 guidata(gui_fig, gui_data);
 
 end
+
+
+%% internal 
+function out = enforce_monotonic(in)
+    % direction 
+    out = in;
+    halfway_pt = round(length(in)/2);
+    if in(1) < in(end)
+        flip = true;
+        out = flipud(in);
+    else
+        flip = false;
+    end
+        for i = halfway_pt+1:length(in)-1
+            if out(i) < out(i+1)  % or use > for enforcing increasing monotonicity
+                out(i+1) = out(i);
+            end
+        end
+
+        for i = halfway_pt:-1:2
+            if out(i) > out(i-1)  % or use > for enforcing increasing monotonicity
+                out(i) = out(i-1);
+
+            end
+        end
+        if flip 
+            out = flipud(out);
+        end
+end
+
