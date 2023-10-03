@@ -187,9 +187,9 @@ gui_data.curr_probe = 1;
 % Place the dropdown menu at position [x, y, width, height]
 % Dropdown dimensions
 point_list_position = [650, 350, 500, 300];
-dropdown_width = 500;  % Match the width of the point list for alignment
-dropdown_height = 30;  % Arbitrary height for the dropdown menu
-padding = 5;  % Space between the point list and the dropdown
+dropdown_width = 500; % Match the width of the point list for alignment
+dropdown_height = 30; % Arbitrary height for the dropdown menu
+padding = 5; % Space between the point list and the dropdown
 
 dropdown_x = point_list_position(1);
 dropdown_y = point_list_position(2) + point_list_position(4) + padding;
@@ -197,13 +197,13 @@ dropdown_position = [dropdown_x, dropdown_y, dropdown_width, dropdown_height];
 
 
 % Create a cell array of probe names or identifiers
-probes_list = arrayfun(@(x) ['Probe ' num2str(x)], 1:gui_data.n_probes, 'UniformOutput', false);
+probes_list = arrayfun(@(x) ['Probe ', num2str(x)], 1:gui_data.n_probes, 'UniformOutput', false);
 
 
 gui_data.probe_dropdown = uicontrol('Style', 'popupmenu', ...
-                                    'String', probes_list, ...
-                                    'Position', dropdown_position, ...
-                                    'Callback', @(src, event)updateProbe(gui_fig));
+    'String', probes_list, ...
+    'Position', dropdown_position, ...
+    'Callback', @(src, event)updateProbe(gui_fig));
 
 % Save gui_data
 guidata(gui_fig, gui_data);
@@ -237,7 +237,7 @@ switch eventdata.Key
         update_slice(gui_fig);
 
 
-    case 'add'% 'add' is the numpad + key
+    case 'add' % 'add' is the numpad + key
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
 
@@ -245,16 +245,16 @@ switch eventdata.Key
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
 
-    case 'insert' % add a probe 
+    case 'insert' % add a probe
         addProbe(gui_fig)
 
     case 'uparrow'
-        gui_data.curr_probe = min(gui_data.n_probes, gui_data.curr_probe + 1);
+        gui_data.curr_probe = min(gui_data.n_probes, gui_data.curr_probe+1);
         guidata(gui_fig, gui_data);
         updateProbe_slider(gui_fig, gui_data.curr_probe)
 
-   case 'downarrow'
-        gui_data.curr_probe = max(1, gui_data.curr_probe - 1);
+    case 'downarrow'
+        gui_data.curr_probe = max(1, gui_data.curr_probe-1);
         guidata(gui_fig, gui_data);
         updateProbe_slider(gui_fig, gui_data.curr_probe)
 
@@ -476,9 +476,9 @@ curr_point = drawpoint;
 
 gui_data.bezier_control_points{curr_probe} = ...
     [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
-[~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:,3));% sort points by slice # 1+
+[~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:, 3)); % sort points by slice # 1+
 gui_data.bezier_control_points{curr_probe} = ...
-   gui_data.bezier_control_points{curr_probe}(sortIdx,:);
+    gui_data.bezier_control_points{curr_probe}(sortIdx, :);
 
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
@@ -493,10 +493,10 @@ if size(gui_data.bezier_control_points{curr_probe}, 1) >= 4
     % Compute the new Bezier curve in 3D
     t = linspace(0, 1, 1000);
     B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
-    
+
     % Filter based on z-slice
-    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
-    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
+    z_slice_tolerance = 0.1; % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+    indices = find(abs(B(:, 3)-gui_data.curr_slice) < z_slice_tolerance); % find indices of points on the Bezier curve close to z_slice
     B_slice = B(indices, :);
 
 
@@ -509,7 +509,7 @@ end
 %     gui_data.bezier_control_points{curr_probe}(:,2), 'o', 'MarkerFaceColor', gui_data.probe_color(curr_probe, :),...
 %     'MarkerEdgeColor', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax);
 curr_point.delete;
-thesePoints = gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice;
+thesePoints = gui_data.bezier_control_points{curr_probe}(:, 3) == gui_data.curr_slice;
 set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
     'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
@@ -533,30 +533,30 @@ set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*g
 % Clear any current lines, draw probe lines
 for iProbe = 1:gui_data.n_probes
     gui_data.bezier_curves(iProbe).delete;
- end
+end
 %gui_data.probe_fit_lines.delete;
 %gui_data.inflection_points_scatter.delete;
 
 for curr_probe = 1:size(gui_data.probe_points_histology, 2)
     if ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe})
-        thesePoints =  gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice;
-       set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
+        thesePoints = gui_data.bezier_control_points{curr_probe}(:, 3) == gui_data.curr_slice;
+        set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
             'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
-t = linspace(0, 1, 1000);
+        t = linspace(0, 1, 1000);
         B = bezier_curve(t, gui_data.bezier_control_points{curr_probe});
-    
-    % Filter based on z-slice
-    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
-    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
-    B_slice = B(indices, :);
 
-    
-    gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+        % Filter based on z-slice
+        z_slice_tolerance = 0.1; % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+        indices = find(abs(B(:, 3)-gui_data.curr_slice) < z_slice_tolerance); % find indices of points on the Bezier curve close to z_slice
+        B_slice = B(indices, :);
+
+
+        gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
     else
         try
-        set(gui_data.probe_points{curr_probe}, 'XData', NaN, 'YData', NaN);
-        set(gui_data.bezier_curves(curr_probe), 'XData', NaN, 'YData', NaN);
+            set(gui_data.probe_points{curr_probe}, 'XData', NaN, 'YData', NaN);
+            set(gui_data.bezier_curves(curr_probe), 'XData', NaN, 'YData', NaN);
         catch
         end
 
@@ -705,34 +705,35 @@ end
 end
 
 function updateProbe(gui_fig)
-    gui_data = guidata(gui_fig);
-    
-    % Get the selected probe index
-    selected_probe_idx = get(gui_data.probe_dropdown, 'Value');
-    
-    % Set the current probe in gui_data
-    gui_data.curr_probe = selected_probe_idx;
+gui_data = guidata(gui_fig);
 
-    % Refresh the points list
-    populate_points_table(gui_fig);
-    
-    % Save gui_data
-    guidata(gui_fig, gui_data);
+% Get the selected probe index
+selected_probe_idx = get(gui_data.probe_dropdown, 'Value');
+
+% Set the current probe in gui_data
+gui_data.curr_probe = selected_probe_idx;
+
+% Refresh the points list
+populate_points_table(gui_fig);
+
+% Save gui_data
+guidata(gui_fig, gui_data);
 end
 
 function updateProbe_slider(gui_fig, curr_probe)
-    gui_data = guidata(gui_fig);
-    
-    % Get the selected probe index
-    set(gui_data.probe_dropdown, 'Value', curr_probe);
-    
+gui_data = guidata(gui_fig);
 
-    % Refresh the points list
-    populate_points_table(gui_fig);
-    
-    % Save gui_data
-    guidata(gui_fig, gui_data);
+% Get the selected probe index
+set(gui_data.probe_dropdown, 'Value', curr_probe);
+
+
+% Refresh the points list
+populate_points_table(gui_fig);
+
+% Save gui_data
+guidata(gui_fig, gui_data);
 end
+
 %% bezier functions
 function selectPoint(gui_fig, table, event)
 gui_data = guidata(gui_fig);
@@ -763,26 +764,26 @@ guidata(gui_fig, gui_data);
 end
 
 function populate_points_table(gui_fig)
-    gui_data = guidata(gui_fig);
+gui_data = guidata(gui_fig);
 
-    %probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
-    %non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, gui_data.curr_probe)));
-   
-    pointStrings = cell(size(gui_data.bezier_control_points{gui_data.curr_probe}, 1), 1);
-    
-    if ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
-        for i = 1:size(gui_data.bezier_control_points{gui_data.curr_probe}, 1)
-            prefix = '';
-            if gui_data.bezier_control_points{gui_data.curr_probe}(i,3) == gui_data.curr_slice %condition to check if the point is in the current slice%
-                prefix = '[CURR] ';
-            end
-            pointStrings{i} = [prefix, 'Point ', num2str(i), ': (', ...
-                num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 1)), ', ', num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 2)), ')'];
+%probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
+%non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, gui_data.curr_probe)));
+
+pointStrings = cell(size(gui_data.bezier_control_points{gui_data.curr_probe}, 1), 1);
+
+if ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+    for i = 1:size(gui_data.bezier_control_points{gui_data.curr_probe}, 1)
+        prefix = '';
+        if gui_data.bezier_control_points{gui_data.curr_probe}(i, 3) == gui_data.curr_slice %condition to check if the point is in the current slice%
+            prefix = '[CURR] ';
         end
+        pointStrings{i} = [prefix, 'Point ', num2str(i), ': (', ...
+            num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 1)), ', ', num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 2)), ')'];
     end
+end
 
-    set(gui_data.points_table, 'String', pointStrings);
-    guidata(gui_fig, gui_data);
+set(gui_data.points_table, 'String', pointStrings);
+guidata(gui_fig, gui_data);
 end
 
 
@@ -846,15 +847,15 @@ set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
 gui_data.bezier_curves(gui_data.curr_probe).delete;
 
 t = linspace(0, 1, 1000);
- B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
-    
-    % Filter based on z-slice
-    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
-    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
-    B_slice = B(indices, :);
+B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
+
+% Filter based on z-slice
+z_slice_tolerance = 0.1; % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+indices = find(abs(B(:, 3)-gui_data.curr_slice) < z_slice_tolerance); % find indices of points on the Bezier curve close to z_slice
+B_slice = B(indices, :);
 
 
-    gui_data.bezier_curves(gui_data.curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(gui_data.curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+gui_data.bezier_curves(gui_data.curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(gui_data.curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
 
 guidata(gui_fig, gui_data);
@@ -1297,8 +1298,8 @@ gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
 gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
-gui_data.bezier_control_points = [gui_data.bezier_control_points; cell(1,1)];
-gui_data.bezier_curves(gui_data.n_probes) =  plot(NaN, NaN);
+gui_data.bezier_control_points = [gui_data.bezier_control_points; cell(1, 1)];
+gui_data.bezier_curves(gui_data.n_probes) = plot(NaN, NaN);
 gui_data.probe_dropdown.String{gui_data.n_probes} = ['Probe ', num2str(gui_data.n_probes)];
 
 % Upload gui data
