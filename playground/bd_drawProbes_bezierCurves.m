@@ -800,7 +800,7 @@ currentAxis = gca;
 
 % Get the current point with respect to the intended axis
 pt = get(currentAxis, 'CurrentPoint');
-draggedPos = pt(1, 1:3);
+draggedPos = pt(1, 1:2);
 
 % Get the axis limits
 xLim = get(currentAxis, 'XLim');
@@ -822,8 +822,10 @@ end
 
 % Update the position of the point
 selectedIdx = gui_data.selected_row;
-gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = draggedPos;
+gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, 1:2) = draggedPos;
 set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
+gui_data.bezier_curves(gui_data.curr_probe).delete;
+
 t = linspace(0, 1, 1000);
  B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
     
@@ -833,7 +835,7 @@ t = linspace(0, 1, 1000);
     B_slice = B(indices, :);
 
 
-    gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+    gui_data.bezier_curves(gui_data.curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(gui_data.curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
 
 guidata(gui_fig, gui_data);
@@ -1276,6 +1278,7 @@ gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
 gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
+
 % Update all buttons
 
 nProbes_fit = floor((gui_data.SCRSZ(4) - gui_data.gui_button_position(2))/50);

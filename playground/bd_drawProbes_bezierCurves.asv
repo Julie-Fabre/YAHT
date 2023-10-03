@@ -471,7 +471,10 @@ curr_point = drawpoint;
 
 gui_data.bezier_control_points{curr_probe} = ...
     [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
-[~, sorsort(gui_data.bezier_control_points{curr_probe}(:,3))% sort points by slice # 1+
+[~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:,3));% sort points by slice # 1+
+gui_data.bezier_control_points{curr_probe} = ...
+   gui_data.bezier_control_points{curr_probe}(sortIdx,:);
+
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
 
@@ -1273,6 +1276,7 @@ gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
 gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
+
 % Update all buttons
 
 nProbes_fit = floor((gui_data.SCRSZ(4) - gui_data.gui_button_position(2))/50);
