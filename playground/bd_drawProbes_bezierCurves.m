@@ -237,7 +237,7 @@ switch eventdata.Key
         update_slice(gui_fig);
 
 
-    case  'add'% 'add' is the numpad + key
+    case 'add'% 'add' is the numpad + key
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
 
@@ -245,13 +245,18 @@ switch eventdata.Key
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
 
-    case 'insert' % if probe # > 9, need an input dialog
+    case 'insert' % add a probe 
+        addProbe(gui_fig)
 
-        probeN = str2num(cell2mat(inputdlg('Probe #: ')));
-        curr_probe = probeN;
-        gui_data.curr_probe = curr_probe;
-        update_curr_probe(gui_fig, curr_probe)
+    case 'uparrow'
+        gui_data.curr_probe = min(gui_data.n_probes, gui_data.curr_probe + 1);
+        guidata(gui_fig, gui_data);
+        updateProbe_slider(gui_fig, gui_data.curr_probe)
 
+   case 'downarrow'
+        gui_data.curr_probe = max(1, gui_data.curr_probe - 1);
+        guidata(gui_fig, gui_data);
+        updateProbe_slider(gui_fig, gui_data.curr_probe)
 
     case 'escape'
         opts.Default = 'Yes';
@@ -538,7 +543,7 @@ for curr_probe = 1:size(gui_data.probe_points_histology, 2)
        set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
             'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 t = linspace(0, 1, 1000);
-        B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
+        B = bezier_curve(t, gui_data.bezier_control_points{curr_probe});
     
     % Filter based on z-slice
     z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
@@ -707,6 +712,20 @@ function updateProbe(gui_fig)
     
     % Set the current probe in gui_data
     gui_data.curr_probe = selected_probe_idx;
+
+    % Refresh the points list
+    populate_points_table(gui_fig);
+    
+    % Save gui_data
+    guidata(gui_fig, gui_data);
+end
+
+function updateProbe_slider(gui_fig, curr_probe)
+    gui_data = guidata(gui_fig);
+    
+    % Get the selected probe index
+    set(gui_data.probe_dropdown, 'Value', curr_probe);
+    
 
     % Refresh the points list
     populate_points_table(gui_fig);
@@ -1266,7 +1285,7 @@ guidata(gui_fig, gui_data);
 
 end
 
-function addProbeButtonPushed(gui_fig)
+function addProbe(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
@@ -1278,66 +1297,9 @@ gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
 gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
 gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
 gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
-
-% Update all buttons
-
-nProbes_fit = floor((gui_data.SCRSZ(4) - gui_data.gui_button_position(2))/50);
-nCols = ceil(gui_data.n_probes/nProbes_fit);
-colSpacing = (gui_data.SCRSZ(3) - 100) / nCols;
-
-for iProbe = 1:gui_data.n_probes
-    %if iProbe <= nProbes_fit
-    nextCol = ceil((iProbe)/(nProbes_fit));
-    gui_data.select_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', ['Probe', num2str(iProbe)], ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 0, 10], ...
-        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) selectProbeButtonPushed(gui_fig));
-
-    gui_data.reset_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', 'reset', ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 100, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 50, 10], ...
-        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) resetProbeSliceButtonPushed(gui_fig));
-
-    gui_data.reset_all_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', 'reset all', ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 150, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
-        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) resetProbeGlobalButtonPushed(gui_fig));
-
-    gui_data.del_probe_btns(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', 'hide', ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 210, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 60, 10], ...
-        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) toggleVisiblityProbeButtonPushed(gui_fig));
-
-
-    gui_data.spline_smoothness_factor(iProbe) = 0.1;
-    gui_data.spline_smoothness(iProbe) = uicontrol('Style', 'slider', ...
-        'String', 'Spline smoothness', ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 270, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 20, 20], ...
-        'BackgroundColor', rgb('Black'), ...
-        'Min', 0, 'Max', 1, 'Value', gui_data.spline_smoothness_factor(iProbe), ...
-        'CallBack', @(varargin) splineSmoothnessButtonPushed(gui_fig));
-
-    if iProbe == 1
-        gui_data.point_size_text = uicontrol('Style', 'text', ...
-            'String', 'Spline smoothness', ...
-            'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 270, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))) - 20, 0, -5], ...
-            'BackgroundColor', rgb('Black'), ...
-            'ForegroundColor', rgb('White'));
-    end
-
-    gui_data.viewFit(iProbe) = uicontrol('Style', 'pushbutton', ...
-        'String', 'view fit', ...
-        'Position', gui_data.gui_button_position-[60 - (nextCol - 1) * colSpacing - 370, 40 * (iProbe - ((nProbes_fit) * (nextCol - 1))), 40, 10], ...
-        'BackgroundColor', gui_data.probe_color(iProbe, :), ...
-        'CallBack', @(varargin) viewFitButtonPushed(gui_fig));
-
-
-end
-
+gui_data.bezier_control_points = [gui_data.bezier_control_points; cell(1,1)];
+gui_data.bezier_curves(gui_data.n_probes) =  plot(NaN, NaN);
+gui_data.probe_dropdown.String{gui_data.n_probes} = ['Probe ', num2str(gui_data.n_probes)];
 
 % Upload gui data
 guidata(gui_fig, gui_data);
