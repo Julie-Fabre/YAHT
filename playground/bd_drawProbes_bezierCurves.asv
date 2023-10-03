@@ -133,11 +133,14 @@ colormap(gray)
 % Create title to write area in
 gui_data.histology_ax_title = title(gui_data.histology_ax, '', 'FontSize', 14, 'Color', 'white');
 
-% Initialize probe points -> old method 
+% Initialize probe points -> old method
 gui_data.probe_color = lines(gui_data.n_probes);
 gui_data.probe_points_histology = cell(length(gui_data.slice_im), gui_data.n_probes);
 for iProbe = 1:gui_data.n_probes
-    gui_data.probe_points{iProbe} = gobjects(10, 1);
+    gui_data.probe_points{iProbe} = plot(NaN, NaN, 'ro'); %, 'ButtonDownFcn', @(src, event)startDragFcn(src, event, gui_fig), 'Tag', 'draggable');
+
+    %gui_data.probe_points{iProbe} = plot(NaN, NaN, 'ro', 'ButtonDownFcn', @(gui_fig)startDragFcn(gui_fig), 'Tag', 'draggable');%gobjects(10, 1);
+    %gui_data.hPointsPlot = plot(NaN, NaN, 'ro', 'ButtonDownFcn', @startDragFcn, 'Tag', 'draggable'); % initialize an empty plot for control points
 end
 gui_data.inflection_points_scatter = gobjects(gui_data.n_probes, 1);
 gui_data.probe_fit_lines = gobjects(gui_data.n_probes, 1);
@@ -155,14 +158,21 @@ gui_data.probe_fit_lines = gobjects(gui_data.n_probes, 1);
 % Initialize Bezier curve points and lines
 gui_data.bezier_control_points = cell(gui_data.n_probes, 1);
 gui_data.bezier_curves = gobjects(gui_data.n_probes, 1);
-gui_data.points_table = uitable('Parent', gui_fig, ...
-    'Position', [20 20 250 200], ...
-    'ColumnName', {'X', 'Y'}, ...
-    'CellSelectionCallback', @(src,event) selectPoint(gui_fig, src, event));
+% gui_data.points_table = uitable('Parent', gui_fig, ...
+%     'Position', [20 20 250 200], ...
+%     'ColumnName', {'X', 'Y'}, ...
+%     'CellSelectionCallback', @(src,event) selectPoint(gui_fig, src, event));
+gui_data.points_table = uicontrol('Parent', gui_fig, 'Style', 'listbox', 'Position', [650, 250, 500, 300], ...
+    'String', {}, 'Callback', @(src, event)selectPoint(gui_fig, src, event));
+gui_data.deletePointButton = uicontrol('Style', 'pushbutton', 'Position', [650, 210, 130, 30], 'String', 'Delete Point', 'Callback', @(src, event)deleteSelectedPoint(src,event,gui_fig));
+
 
 % Bezier Parameters
-gui_data.hHighlighted = [];
+% gui_data.hHighlighted = [];
 gui_data.pointSelected = false;
+%gui_data.hHighlighted = scatter(NaN, NaN, 'b*', 'ButtonDownFcn', @(src, event)disp('Point clicked!'), 'Tag', 'draggable');
+gui_data.hHighlighted = scatter(NaN, NaN, 40,'b*', 'ButtonDownFcn', @(src, event)startDragFcn(src, event, gui_fig), 'Tag', 'draggable');
+gui_data.selected_row = NaN;
 
 % initialize probe buttons
 nProbes_fit = floor((SCRSZ(4) - gui_button_position1(2))/50);
@@ -223,7 +233,7 @@ switch eventdata.Key
         if curr_probe == 0 %quirk in my keyboard
             curr_probe = 4;
         end
-        gui_data.curr_probe = curr_probe;1
+        gui_data.curr_probe = curr_probe; 1
         guidata(gui_fig, gui_data);
         update_curr_probe(gui_fig, curr_probe)
 
@@ -453,81 +463,35 @@ curr_point = drawpoint;
 gui_data.bezier_control_points{curr_probe} = ...
     [gui_data.bezier_control_points{curr_probe}; curr_point.Position];
 set(gui_data.histology_ax_title, 'String', ...
-    ['Arrows to move, Number to draw probe [', num2str(1), ':' num2str(gui_data.n_probes), '], Esc to save/quit']);
-
-
+    ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
 
 % Plot Bezier curve if there are enough control points (at least 4 for a cubic Bezier curve)
 if size(gui_data.bezier_control_points{curr_probe}, 1) >= 4
     t = linspace(0, 1, 100);
     B = bezier_curve(t, gui_data.bezier_control_points{curr_probe});
-    
+
     % delete any previous Bezier curves
     delete(gui_data.bezier_curves(curr_probe));
-    
-    gui_data.bezier_curves(curr_probe) = plot(B(:,1), B(:,2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+
+    gui_data.bezier_curves(curr_probe) = plot(B(:, 1), B(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 end
 
 % delete any previous control points and replot
-delete(gui_data.probe_points{curr_probe});
-gui_data.probe_points{curr_probe} = scatter(gui_data.bezier_control_points{curr_probe}(:,1), gui_data.bezier_control_points{curr_probe}(:,2), 'o', 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax);
+%11delete(gui_data.probe_points{curr_probe});
+% gui_data.probe_points{curr_probe} = plot(gui_data.bezier_control_points{curr_probe}(:,1),...
+%     gui_data.bezier_control_points{curr_probe}(:,2), 'o', 'MarkerFaceColor', gui_data.probe_color(curr_probe, :),...
+%     'MarkerEdgeColor', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax);
+curr_point.delete;
+set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(:, 1), 'YData', gui_data.bezier_control_points{curr_probe}(:, 2), ...
+    'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
+% store points
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = gui_data.bezier_control_points;
 % Store the gui_data again
 guidata(gui_fig, gui_data);
-endfunction update_slice(gui_fig)
-% Draw histology and CCF slice
 
-% Get guidata
-gui_data = guidata(gui_fig);
-
-% Set next histology slice
-set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
-
-% Clear any current lines, draw probe lines
-for iProbe = 1:gui_data.n_probes
-    gui_data.probe_points{iProbe}.delete;
+populate_points_table(gui_fig);
 end
-gui_data.probe_fit_lines.delete;
-gui_data.inflection_points_scatter.delete;
-
-for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
-    if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
-        gui_data.probe_points{curr_probe} = ...
-            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
-    else
-
-        gui_data.probe_points{curr_probe} = ...
-            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
-    end
-    try
-        % find line on this slice
-        if gui_data.fit_visibility == 1 && ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) ...
-                == gui_data.curr_slice)
-            slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
-                round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
-            if ~isempty(slice_coords_fit)
-                gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
-                    [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.8]);
-            end
-        end
-    catch
-    end
-end
-
-
-set(gui_data.histology_ax_title, 'String', ...
-    ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
-
-% Upload gui data
-guidata(gui_fig, gui_data);
-
-end
-
 
 function update_slice(gui_fig)
 % Draw histology and CCF slice
@@ -539,50 +503,26 @@ gui_data = guidata(gui_fig);
 set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
 
 % Clear any current lines, draw probe lines
-for iProbe = 1:gui_data.n_probes
-    gui_data.probe_points{iProbe}.delete;
-end
+% for iProbe = 1:gui_data.n_probes
+%     gui_data.probe_points{iProbe}.delete;
+% end
 gui_data.probe_fit_lines.delete;
 gui_data.inflection_points_scatter.delete;
 
 for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
-    if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
-        gui_data.probe_points{curr_probe} = ...
-            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
-    else
+    set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(:, 1), 'YData', gui_data.bezier_control_points{curr_probe}(:, 2), ...
+        'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
-        gui_data.probe_points{curr_probe} = ...
-            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
-            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
-            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
-    end
-    try
-            % find line on this slice
-        if gui_data.fit_visibility == 1 && ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1))...
-                == gui_data.curr_slice)
-            slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
-                round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
-            if ~isempty(slice_coords_fit)
-                gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
-                    [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
-                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.8]);
-            end
-        end
-    catch
-    end
 end
 
 
 set(gui_data.histology_ax_title, 'String', ...
-    ['Arrows to move, Number to draw probe [', num2str(1), ':' num2str(gui_data.n_probes), '], Esc to save/quit']);
+    ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
 
 % Upload gui data
 guidata(gui_fig, gui_data);
 
 end
-
 
 
 function plot_probe(gui_data, probe_ccf)
@@ -714,65 +654,163 @@ end
 
 end
 
-%% bezier functions 
+%% bezier functions
 function selectPoint(gui_fig, table, event)
-    gui_data = guidata(gui_fig);
+gui_data = guidata(gui_fig);
 
-    selected_row = event.Indices(1); % Assuming only one row is selectable at a time
-    selected_point = gui_data.probe_points_graphics{selected_row, gui_data.curr_probe};
+removeHighlighted(gui_fig);
+%set(gui_data.hHighlighted, 'PickableParts', 'visible');
+gui_data.selected_row = event.Source.Value; % Assuming only one row is selectable at a time
+selected_point = gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.selected_row, :);
+%selected_point = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1}(selected_row,:);
 
-    % Make the point draggable and set a listener to update the Bezier fit when dragged
-    set(selected_point, 'draggable', 'on');
-    addlistener(selected_point, 'ROIMoved', @(src,evt) bezier_fit_probe(gui_fig));
+% Make the point draggable and set a listener to update the Bezier fit when dragged
+set(gui_data.hHighlighted, 'XData', selected_point(:, 1), 'YData', selected_point(:, 2));
+gui_data.pointSelected = true; % Indicate that a point is currently selected
+%addlistener(selected_point, 'ROIMoved', @(src,evt) bezier_fit_probe(gui_fig));
 
-    % Optionally, change the color or appearance of the selected point
-    selected_point.Color = 'g';
+% Optionally, change the color or appearance of the selected point
+%selected_point.Color = 'g';
 
-    guidata(gui_fig, gui_data);
+guidata(gui_fig, gui_data);
+end
+
+function removeHighlighted(gui_fig)
+gui_data = guidata(gui_fig);
+if ishandle(gui_data.hHighlighted)
+    set(gui_data.hHighlighted, 'XData', NaN, 'YData', NaN);
+end
+guidata(gui_fig, gui_data);
 end
 
 function populate_points_table(gui_fig)
+gui_data = guidata(gui_fig);
+%curr_probe = gui_data.curr_probe;
+
+probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
+
+
+pointStrings = cell(size(probe_points, 1), 1);
+for i = 1:size(probe_points, 1)
+    pointStrings{i} = ['Point ', num2str(i), ': (', num2str(probe_points(i, 1)), ', ', num2str(probe_points(i, 2)), ')'];
+end
+set(gui_data.points_table, 'String', pointStrings);
+guidata(gui_fig, gui_data);
+end
+
+function deleteSelectedPoint(~,~,gui_fig)
+gui_data = guidata(gui_fig);
+selectedIdx = gui_data.selected_row;
+if ~isempty(selectedIdx)
+    gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = [];
+    gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1}(selectedIdx, :) = [];
+end
+gui_data.pointSelected = true;
+guidata(gui_fig, gui_data);
+removeHighlighted(gui_fig);
+populate_points_table(gui_fig)
+update_slice(gui_fig);
+
+end
+
+function startDragFcn(~, ~, gui_fig)
+gui_data = guidata(gui_fig);
+selectedIdx = gui_data.selected_row;
+if ~isempty(selectedIdx)
+    set(gui_fig, 'WindowButtonMotionFcn', @(src, event)draggingFcn(src, event, gui_fig));
+    set(gui_fig, 'WindowButtonUpFcn', @(src, event)stopDragFcn(src, event, gui_fig));
+end
+end
+
+function draggingFcn(~, ~, gui_fig)
     gui_data = guidata(gui_fig);
-    curr_probe = gui_data.curr_probe;
+    
+    % Assuming your draggable points are on the current axis (gca). 
+    % If they are on a specific axis, replace gca with the handle to that axis.
+    currentAxis = gca; 
 
-    probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe};
-    x = cell2mat(probe_points(:, 1));
-    y = cell2mat(probe_points(:, 2));
+    % Get the current point with respect to the intended axis
+    pt = get(currentAxis, 'CurrentPoint');
+    draggedPos = pt(1, 1:2);
 
-    gui_data.points_table.Data = [x, y];
+    % Get the axis limits
+    xLim = get(currentAxis, 'XLim');
+    yLim = get(currentAxis, 'YLim');
+
+    % Check and adjust the x position if it's outside the axis limits
+    if draggedPos(1) < xLim(1)
+        draggedPos(1) = xLim(1);
+    elseif draggedPos(1) > xLim(2)
+        draggedPos(1) = xLim(2);
+    end
+
+    % Check and adjust the y position if it's outside the axis limits
+    if draggedPos(2) < yLim(1)
+        draggedPos(2) = yLim(1);
+    elseif draggedPos(2) > yLim(2)
+        draggedPos(2) = yLim(2);
+    end
+
+   % Update the position of the point
+    selectedIdx = gui_data.selected_row;
+    gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = draggedPos;
+    set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
+    
+    % Compute the new Bezier curve
+    t = linspace(0, 1, 100); % Change 100 to any other number if you want more or fewer points in the curve
+    B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
+
+    % Update the Bezier curve plot
+    delete(gui_data.bezier_curves(curr_probe));
+
+    gui_data.bezier_curves(curr_probe)
+    set(gui_data.hBezierCurve, 'XData', B(:, 1), 'YData', B(:, 2));
+
     guidata(gui_fig, gui_data);
+    populate_points_table(gui_fig);
+    removeHighlighted(gui_fig);
+
+end
+
+function stopDragFcn(~, ~, gui_fig)
+gui_data = guidata(gui_fig);
+set(gui_fig, 'WindowButtonMotionFcn', '');
+set(gui_fig, 'WindowButtonUpFcn', '');
+gui_data.pointSelected = false; % Reset the flag since we're no longer selecting a point
+guidata(gui_fig, gui_data);
+update_slice(gui_fig);
 end
 
 
 % Bezier curve function
 function B = bezier_curve(t, control_points)
-    n = size(control_points, 1) - 1;  % degree of the polynomial
-    B = zeros(length(t), 2);
-    
-    for i = 0:n
-        B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :);
-    end
+n = size(control_points, 1) - 1; % degree of the polynomial
+B = zeros(2, length(t));
+
+for i = 0:n
+    B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
+end
+B = B';
 end
 
 function bezier_fit_probe(gui_fig)
-    gui_data = guidata(gui_fig);
-    
-    % Collect points for the current probe and slice
-    probe_points = gui_data.probe_points_histology(:, gui_data.curr_probe);
-    x = cell2mat(probe_points(:, 1));
-    y = cell2mat(probe_points(:, 2));
+gui_data = guidata(gui_fig);
 
-    if length(x) >= 4
-        t = (0:0.01:1)';
-        curve = bezier(t, x', y');
+% Collect points for the current probe and slice
+probe_points = gui_data.probe_points_histology(:, gui_data.curr_probe);
+x = cell2mat(probe_points(:, 1));
+y = cell2mat(probe_points(:, 2));
 
-        % Store and plot the curve
-        gui_data.probe_fit_lines(gui_data.curr_probe) = plot(curve(:,1), curve(:,2), 'r-');
-    end
+if length(x) >= 4
+    t = (0:0.01:1)';
+    curve = bezier(t, x', y');
 
-    guidata(gui_fig, gui_data);
+    % Store and plot the curve
+    gui_data.probe_fit_lines(gui_data.curr_probe) = plot(curve(:, 1), curve(:, 2), 'r-');
 end
 
+guidata(gui_fig, gui_data);
+end
 
 %% control appearance
 
