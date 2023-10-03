@@ -279,196 +279,7 @@ switch eventdata.Key
         user_confirm = questdlg('\fontsize{15} Save and quit?', 'Confirm exit', opts);
         if strcmp(user_confirm, 'Yes')
 
-            % Initialize structure to save
-            probe_ccf = struct( ...
-                'points', cell(gui_data.n_probes, 1), ...
-                'trajectory_coords', cell(gui_data.n_probes, 1), ... .
-                'trajectory_areas', cell(gui_data.n_probes, 1));
-
-            % Convert probe points to CCF points by alignment and save
-            for curr_probe = 1:gui_data.n_probes
-                for curr_slice = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'))
-
-                    % Transform histology to atlas slice
-                    tform = affine2d;
-                    tform.T = gui_data.histology_ccf_alignment{curr_slice};
-                    % (transform is CCF -> histology, invert for other direction)
-                    tform = invert(tform);
-
-                    % Transform and round to nearest index
-                    [probe_points_atlas_x, probe_points_atlas_y] = ...
-                        transformPointsForward(tform, ...
-                        gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1), ...
-                        gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2));
-
-                    probe_points_atlas_x = round(probe_points_atlas_x);
-                    probe_points_atlas_y = round(probe_points_atlas_y);
-
-                    % Get CCF coordinates corresponding to atlas slice points
-                    % (CCF coordinates are in [AP,DV,ML])
-                    use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
-                    for curr_point = 1:length(use_points)
-                        ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                            plane_ap(probe_points_atlas_y(curr_point), ...
-                            probe_points_atlas_x(curr_point));
-                        ccf_ml = gui_data.histology_ccf(curr_slice). ...
-                            plane_dv(probe_points_atlas_y(curr_point), ...
-                            probe_points_atlas_x(curr_point));
-                        ccf_dv = gui_data.histology_ccf(curr_slice). ...
-                            plane_ml(probe_points_atlas_y(curr_point), ...
-                            probe_points_atlas_x(curr_point));
-                        probe_ccf(curr_probe).points = ...
-                            vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
-                    end
-                end
-
-                % Sort probe points by DV (probe always top->bottom)
-                [~, dv_sort_idx] = sort(probe_ccf(curr_probe).points(:, 2));
-                probe_ccf(curr_probe).points = probe_ccf(curr_probe).points(dv_sort_idx, :);
-
-            end
-
-            % Get areas along probe trajectory
-            for curr_probe = 1:gui_data.n_probes
-                % Get slice and point info
-                slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)')); % slices that contain points
-
-                if ~isempty(slice_points)
-                    for curr_slice = slice_points
-
-
-                        probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
-                        probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
-
-                        probe_points_atlas_x = round(probe_points_atlas_x);
-                        probe_points_atlas_y = round(probe_points_atlas_y);
-
-                        % Get CCF coordinates corresponding to atlas slice points
-                        % (CCF coordinates are in [AP,DV,ML])
-                        use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
-                        for curr_point = 1:length(use_points)
-                            ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                                plane_ap(probe_points_atlas_y(curr_point), ...
-                                probe_points_atlas_x(curr_point));
-                            ccf_ml = gui_data.histology_ccf(curr_slice). ...
-                                plane_dv(probe_points_atlas_y(curr_point), ...
-                                probe_points_atlas_x(curr_point));
-                            ccf_dv = gui_data.histology_ccf(curr_slice). ...
-                                plane_ml(probe_points_atlas_y(curr_point), ...
-                                probe_points_atlas_x(curr_point));
-                            gui_data.probe_ccf(curr_probe).points = ...
-                                vertcat(gui_data.probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
-                        end
-                    end
-
-                    % Sort probe points by DV (probe always top->bottom)
-                    [~, dv_sort_idx] = sort(gui_data.probe_ccf(curr_probe).points(:, 2));
-                    gui_data.probe_ccf(curr_probe).points = gui_data.probe_ccf(curr_probe).points(dv_sort_idx, :);
-
-                    linear_fit = 0; % QQ hard-coded for now
-                    if linear_fit
-
-                        % Get best fit line through points as probe trajectory
-                        r0 = mean(gui_data.probe_ccf(curr_probe).points, 1);
-                        xyz = bsxfun(@minus, gui_data.probe_ccf(curr_probe).points, r0);
-                        [~, ~, V] = svd(xyz, 0);
-                        histology_probe_direction = V(:, 1);
-
-                        % (make sure the direction goes down in DV - flip if it's going up)
-                        if histology_probe_direction(3) < 0
-                            histology_probe_direction = -histology_probe_direction;
-                        end
-
-                        line_eval = [-1000, 1000];
-                        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
-
-                        % Get the positions of the probe trajectory
-                        trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
-
-                        % get AP, DV, ML
-                        [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
-                            round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
-                            round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
-                            round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
-
-
-                    else % spline fit
-                        ap_points = gui_data.probe_ccf(curr_probe).points(:, 1);
-                        dv_points = gui_data.probe_ccf(curr_probe).points(:, 2);
-                        ml_points = gui_data.probe_ccf(curr_probe).points(:, 3);
-
-                        t = (1:length(ap_points))'; % Creating a parameter t based on the number of data points
-
-                        % Creating fittype objects for smooth spline with smoothing parameter
-                        ft = fittype('smoothingspline');
-
-                        % Define a smoothing parameter
-                        smoothing_param = gui_data.spline_smoothness_factor(curr_probe); % Adjust this value between 0 and 1 to control the smoothness
-
-                        % Fitting the curves with the smoothing parameter
-                        fitresult_ap = fit(t, ap_points, ft, 'SmoothingParam', smoothing_param);
-                        fitresult_dv = fit(t, dv_points, ft, 'SmoothingParam', smoothing_param);
-                        fitresult_ml = fit(t, ml_points, ft, 'SmoothingParam', smoothing_param);
-
-                        delta = 5;
-                        % (Extending the Curve and Visualizing)
-
-                        % Extend the range of t for extrapolation
-                        t_extended = [linspace(min(t)-delta, max(t)+delta, 1000)]'; % Adjust delta to control the extension amount
-
-                        % Evaluate the extended spline at the new t values
-                        trajectory_ap_ccf = fitresult_ap(t_extended)';
-                        trajectory_dv_ccf = fitresult_ml(t_extended)';
-                        trajectory_ml_ccf = fitresult_dv(t_extended)';
-
-                    end
-
-                    % remove any out-of-bounds points
-                    trajectory_coords_outofbounds = ...
-                        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
-                        any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
-
-                    trajectory_coords = ...
-                        [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
-                        trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
-                        trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
-
-                    trajectory_coords_idx = round(sub2ind(size(gui_data.av), ...
-                        trajectory_coords(:, 1), trajectory_coords(:, 2), trajectory_coords(:, 3)));
-
-                    trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
-
-                    % Get rid of NaN's and start/end 1's (non-parsed)
-                    trajectory_areas_parsed = find(trajectory_areas_uncut > 1); %ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
-                    use_trajectory_areas = trajectory_areas_parsed(1): ...
-                        trajectory_areas_parsed(end);
-                    trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
-
-                    % store fit points in gui_data
-                    gui_data.probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
-                    gui_data.probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
-
-                end
-
-
-            end
-
-            % Save fitted probe CCF points
-            save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
-            save(save_fn, 'probe_ccf');
-
-            % save points
-            save_fn_pt = [gui_data.slice_im_path, filesep, 'probe_points.mat'];
-            probe_points = gui_data.probe_points_histology;
-            save(save_fn_pt, 'probe_points');
-
-            % save fit info
-            save_fn_fits = [gui_data.slice_im_path, filesep, 'probe_fit_sline_smoothness.mat'];
-            probe_fit_sline_smoothness = gui_data.spline_smoothness_factor;
-            save(save_fn_fits, 'probe_fit_sline_smoothness');
-
-
-            disp(['Saved probe locations in ', save_fn])
+            saveButtonPushed(gui_fig)
 
             % Plot probe trajectories
             plot_probe(gui_data, probe_ccf);
@@ -529,7 +340,7 @@ set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{c
     'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
 % store points
-gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = gui_data.bezier_control_points;
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = gui_data.bezier_control_points{gui_data.curr_probe};
 % Store the gui_data again
 guidata(gui_fig, gui_data);
 
@@ -613,6 +424,7 @@ for curr_probe = 1:length(probe_ccf)
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
     if ~isempty(slice_points)
         linear_fit = 0; %hard coded for now
+        spline_fit = 0;
         if linear_fit
             thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
             r0 = mean(thesePoints, 1);
@@ -633,7 +445,7 @@ for curr_probe = 1:length(probe_ccf)
                 '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
             line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
                 'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
-        else
+        elseif spline_fit
             thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
 
             plot3(thesePoints(:, 1), ...
@@ -672,6 +484,26 @@ for curr_probe = 1:length(probe_ccf)
 
             plot3(x_new, y_new, z_new, ...
                 'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
+        else
+             thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
+
+            plot3(thesePoints(:, 1), ...
+                thesePoints(:, 2), ...
+                thesePoints(:, 3), ...
+                '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
+
+            x = thesePoints(:, 1);
+            y = thesePoints(:, 2);
+            z = thesePoints(:, 3);
+
+            % (bezier)
+            t = linspace(0, 1, 1000); % Creating a parameter t based on the number of data points
+             Bezier_fit = bezier_curve(t,[x, y, z]);
+            
+              plot3(Bezier_fit(:,1), Bezier_fit(:,2), Bezier_fit(:,3), ...
+                'color', gui_data.probe_color(curr_probe, :), 'linewidth', 2)
+            
+
         end
 
     end
@@ -807,7 +639,7 @@ gui_data = guidata(gui_fig);
 selectedIdx = gui_data.selected_row;
 if ~isempty(selectedIdx)
     gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = [];
-    gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1}(selectedIdx, :) = [];
+    gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}(selectedIdx, :) = [];
 end
 gui_data.pointSelected = true;
 guidata(gui_fig, gui_data);
@@ -858,6 +690,8 @@ end
 % Update the position of the point
 selectedIdx = gui_data.selected_row;
 gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, 1:2) = draggedPos;
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}(selectedIdx, 1:2) = draggedPos;
+
 set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
 gui_data.bezier_curves(gui_data.curr_probe).delete;
 
@@ -1085,6 +919,7 @@ for curr_probe = 1:gui_data.n_probes
         gui_data.probe_ccf(curr_probe).points = gui_data.probe_ccf(curr_probe).points(dv_sort_idx, :);
 
         linear_fit = 0; % QQ hard-coded for now
+        spline_fit = 0;
         if linear_fit
 
             % Get best fit line through points as probe trajectory
@@ -1111,7 +946,7 @@ for curr_probe = 1:gui_data.n_probes
                 round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
 
 
-        else % spline fit
+        elseif spline_fit % spline fit
             ap_points = gui_data.probe_ccf(curr_probe).points(:, 1);
             dv_points = gui_data.probe_ccf(curr_probe).points(:, 2);
             ml_points = gui_data.probe_ccf(curr_probe).points(:, 3);
@@ -1137,8 +972,23 @@ for curr_probe = 1:gui_data.n_probes
 
             % Evaluate the extended spline at the new t values
             trajectory_ap_ccf = fitresult_ap(t_extended)';
-            trajectory_dv_ccf = fitresult_ml(t_extended)';
-            trajectory_ml_ccf = fitresult_dv(t_extended)';
+            trajectory_ml_ccf = fitresult_ml(t_extended)';
+            trajectory_dv_ccf = fitresult_dv(t_extended)';
+
+        else % manual bezier curve drawing 
+            ap_points = gui_data.probe_ccf(curr_probe).points(:, 1);
+            dv_points = gui_data.probe_ccf(curr_probe).points(:, 2);
+            ml_points = gui_data.probe_ccf(curr_probe).points(:, 3);
+
+            t = linspace(0, 1, 1000);
+            Bezier_fit = bezier_curve(t,[ap_points, dv_points, ml_points]);
+
+            trajectory_ap_ccf = Bezier_fit(:,1)';
+            trajectory_ml_ccf = Bezier_fit(:,2)';
+            trajectory_dv_ccf = Bezier_fit(:,3)';
+
+
+            
 
         end
 
