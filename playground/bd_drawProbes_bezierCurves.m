@@ -513,18 +513,18 @@ gui_data = guidata(gui_fig);
 set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
 
 % Clear any current lines, draw probe lines
-% for iProbe = 1:gui_data.n_probes
-%     gui_data.probe_points{iProbe}.delete;
-% end
+for iProbe = 1:gui_data.n_probes
+    gui_data.bezier_curves(iProbe).delete;
+ end
 %gui_data.probe_fit_lines.delete;
 %gui_data.inflection_points_scatter.delete;
 
 for curr_probe = 1:size(gui_data.probe_points_histology, 2)
     if ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe})
-        thesePoints =  gui_data.bezier_control_points{curr_probe};
+        thesePoints =  gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice;
        set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
             'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
-
+t = linspace(0, 1, 1000);
         B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
     
     % Filter based on z-slice
@@ -532,7 +532,7 @@ for curr_probe = 1:size(gui_data.probe_points_histology, 2)
     indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
     B_slice = B(indices, :);
 
-
+    
     gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
     else
@@ -786,7 +786,7 @@ end
 selectedIdx = gui_data.selected_row;
 gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = draggedPos;
 set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
-
+t = linspace(0, 1, 1000);
  B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
     
     % Filter based on z-slice
