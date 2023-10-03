@@ -904,7 +904,8 @@ function B = bezier_curve(t, control_points)
 n = size(control_points, 1) - 1; % degree of the polynomial
 B = zeros(3, length(t)); % Change to 3 for 3D
 
-
+[~, control_points_idx] = sort(control_points(:,3));
+control_points = control_points(control_points_idx, :);
 for i = 0:n
     B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
 end
@@ -1254,6 +1255,9 @@ for iProbe = 1:gui_data.n_probes
             probe_points{non_empty_slices(iSlice), iProbe},...
             repmat(non_empty_slices(iSlice), length(probe_points{non_empty_slices(iSlice), iProbe}), 1)];
     end
+    [~, idx] = sort(gui_data.bezier_control_points{iProbe}(:,3));
+    gui_data.bezier_control_points{iProbe} =gui_data.bezier_control_points{iProbe}(idx, :);
+    
 end
 set(gui_data.histology_ax_title, 'String', 'successfully loaded')
 disp('loaded data')
