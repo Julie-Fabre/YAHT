@@ -1250,7 +1250,8 @@ gui_data.probe_points_histology = probe_points;
 for iProbe = 1:gui_data.n_probes
     non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, iProbe)));
     for iSlice = 1:size(non_empty_slices,1)
-        gui_data.bezier_control_points{iProbe} = [probe_points{non_empty_slices(iSlice), iProbe},...
+        gui_data.bezier_control_points{iProbe} = [gui_data.bezier_control_points{iProbe}; ...
+            probe_points{non_empty_slices(iSlice), iProbe},...
             repmat(non_empty_slices(iSlice), length(probe_points{non_empty_slices(iSlice), iProbe}), 1)];
     end
 end
