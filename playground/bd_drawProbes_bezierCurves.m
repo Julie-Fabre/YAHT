@@ -164,14 +164,14 @@ gui_data.bezier_curves = gobjects(gui_data.n_probes, 1);
 %     'CellSelectionCallback', @(src,event) selectPoint(gui_fig, src, event));
 gui_data.points_table = uicontrol('Parent', gui_fig, 'Style', 'listbox', 'Position', [650, 250, 500, 300], ...
     'String', {}, 'Callback', @(src, event)selectPoint(gui_fig, src, event));
-gui_data.deletePointButton = uicontrol('Style', 'pushbutton', 'Position', [650, 210, 130, 30], 'String', 'Delete Point', 'Callback', @(src, event)deleteSelectedPoint(src,event,gui_fig));
+gui_data.deletePointButton = uicontrol('Style', 'pushbutton', 'Position', [650, 210, 130, 30], 'String', 'Delete Point', 'Callback', @(src, event)deleteSelectedPoint(src, event, gui_fig));
 
 
 % Bezier Parameters
 % gui_data.hHighlighted = [];
 gui_data.pointSelected = false;
 %gui_data.hHighlighted = scatter(NaN, NaN, 'b*', 'ButtonDownFcn', @(src, event)disp('Point clicked!'), 'Tag', 'draggable');
-gui_data.hHighlighted = scatter(NaN, NaN, 40,'b*', 'ButtonDownFcn', @(src, event)startDragFcn(src, event, gui_fig), 'Tag', 'draggable');
+gui_data.hHighlighted = scatter(NaN, NaN, 40, 'b*', 'ButtonDownFcn', @(src, event)startDragFcn(src, event, gui_fig), 'Tag', 'draggable');
 gui_data.selected_row = NaN;
 
 % initialize probe buttons
@@ -461,7 +461,7 @@ curr_point = drawpoint;
 
 % Storing Bezier control points instead of probe points
 gui_data.bezier_control_points{curr_probe} = ...
-    [gui_data.bezier_control_points{curr_probe}; curr_point.Position];
+    [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
 
@@ -472,8 +472,17 @@ if size(gui_data.bezier_control_points{curr_probe}, 1) >= 4
 
     % delete any previous Bezier curves
     delete(gui_data.bezier_curves(curr_probe));
+    % Compute the new Bezier curve in 3D
+    t = linspace(0, 1, 1000);
+    B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
+    
+    % Filter based on z-slice
+    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
+    B_slice = B(indices, :);
 
-    gui_data.bezier_curves(curr_probe) = plot(B(:, 1), B(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+
+    gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 end
 
 % delete any previous control points and replot
@@ -482,7 +491,8 @@ end
 %     gui_data.bezier_control_points{curr_probe}(:,2), 'o', 'MarkerFaceColor', gui_data.probe_color(curr_probe, :),...
 %     'MarkerEdgeColor', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax);
 curr_point.delete;
-set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(:, 1), 'YData', gui_data.bezier_control_points{curr_probe}(:, 2), ...
+thesePoints = gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice;
+set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
     'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
 % store points
@@ -506,13 +516,34 @@ set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*g
 % for iProbe = 1:gui_data.n_probes
 %     gui_data.probe_points{iProbe}.delete;
 % end
-gui_data.probe_fit_lines.delete;
-gui_data.inflection_points_scatter.delete;
+%gui_data.probe_fit_lines.delete;
+%gui_data.inflection_points_scatter.delete;
 
-for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
-    set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(:, 1), 'YData', gui_data.bezier_control_points{curr_probe}(:, 2), ...
-        'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
+for curr_probe = 1:size(gui_data.probe_points_histology, 2)
+    if ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe})
+        thesePoints =  gui_data.bezier_control_points{curr_probe};
+       set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
+            'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
+        B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
+    
+    % Filter based on z-slice
+    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
+    B_slice = B(indices, :);
+
+
+    gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
+
+    else
+        try
+        set(gui_data.probe_points{curr_probe}, 'XData', NaN, 'YData', NaN);
+        set(gui_data.bezier_curves(curr_probe), 'XData', NaN, 'YData', NaN);
+        catch
+        end
+
+
+    end
 end
 
 
@@ -698,7 +729,7 @@ set(gui_data.points_table, 'String', pointStrings);
 guidata(gui_fig, gui_data);
 end
 
-function deleteSelectedPoint(~,~,gui_fig)
+function deleteSelectedPoint(~, ~, gui_fig)
 gui_data = guidata(gui_fig);
 selectedIdx = gui_data.selected_row;
 if ~isempty(selectedIdx)
@@ -723,52 +754,53 @@ end
 end
 
 function draggingFcn(~, ~, gui_fig)
-    gui_data = guidata(gui_fig);
+gui_data = guidata(gui_fig);
+
+% Assuming your draggable points are on the current axis (gca).
+% If they are on a specific axis, replace gca with the handle to that axis.
+currentAxis = gca;
+
+% Get the current point with respect to the intended axis
+pt = get(currentAxis, 'CurrentPoint');
+draggedPos = pt(1, 1:3);
+
+% Get the axis limits
+xLim = get(currentAxis, 'XLim');
+yLim = get(currentAxis, 'YLim');
+
+% Check and adjust the x position if it's outside the axis limits
+if draggedPos(1) < xLim(1)
+    draggedPos(1) = xLim(1);
+elseif draggedPos(1) > xLim(2)
+    draggedPos(1) = xLim(2);
+end
+
+% Check and adjust the y position if it's outside the axis limits
+if draggedPos(2) < yLim(1)
+    draggedPos(2) = yLim(1);
+elseif draggedPos(2) > yLim(2)
+    draggedPos(2) = yLim(2);
+end
+
+% Update the position of the point
+selectedIdx = gui_data.selected_row;
+gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = draggedPos;
+set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
+
+ B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
     
-    % Assuming your draggable points are on the current axis (gca). 
-    % If they are on a specific axis, replace gca with the handle to that axis.
-    currentAxis = gca; 
+    % Filter based on z-slice
+    z_slice_tolerance = 0.1;  % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
+    indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance);  % find indices of points on the Bezier curve close to z_slice
+    B_slice = B(indices, :);
 
-    % Get the current point with respect to the intended axis
-    pt = get(currentAxis, 'CurrentPoint');
-    draggedPos = pt(1, 1:2);
 
-    % Get the axis limits
-    xLim = get(currentAxis, 'XLim');
-    yLim = get(currentAxis, 'YLim');
+    gui_data.bezier_curves(curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
-    % Check and adjust the x position if it's outside the axis limits
-    if draggedPos(1) < xLim(1)
-        draggedPos(1) = xLim(1);
-    elseif draggedPos(1) > xLim(2)
-        draggedPos(1) = xLim(2);
-    end
 
-    % Check and adjust the y position if it's outside the axis limits
-    if draggedPos(2) < yLim(1)
-        draggedPos(2) = yLim(1);
-    elseif draggedPos(2) > yLim(2)
-        draggedPos(2) = yLim(2);
-    end
-
-   % Update the position of the point
-    selectedIdx = gui_data.selected_row;
-    gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = draggedPos;
-    set(gui_data.hHighlighted, 'XData', draggedPos(1), 'YData', draggedPos(2));
-    
-    % Compute the new Bezier curve
-    t = linspace(0, 1, 100); % Change 100 to any other number if you want more or fewer points in the curve
-    B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
-
-    % Update the Bezier curve plot
-    %delete(gui_data.bezier_curves(gui_data.curr_probe));
-
-    
-    set(gui_data.bezier_curves(gui_data.curr_probe), 'XData', B(:, 1), 'YData', B(:, 2));
-
-    guidata(gui_fig, gui_data);
-    populate_points_table(gui_fig);
-    removeHighlighted(gui_fig);
+guidata(gui_fig, gui_data);
+populate_points_table(gui_fig);
+removeHighlighted(gui_fig);
 
 end
 
@@ -783,7 +815,7 @@ end
 
 
 % Bezier curve function
-function B = bezier_curve(t, control_points)
+function B = bezier_curve_prev(t, control_points)
 n = size(control_points, 1) - 1; % degree of the polynomial
 B = zeros(2, length(t));
 
@@ -793,23 +825,14 @@ end
 B = B';
 end
 
-function bezier_fit_probe(gui_fig)
-gui_data = guidata(gui_fig);
+function B = bezier_curve(t, control_points)
+n = size(control_points, 1) - 1; % degree of the polynomial
+B = zeros(3, length(t)); % Change to 3 for 3D
 
-% Collect points for the current probe and slice
-probe_points = gui_data.probe_points_histology(:, gui_data.curr_probe);
-x = cell2mat(probe_points(:, 1));
-y = cell2mat(probe_points(:, 2));
-
-if length(x) >= 4
-    t = (0:0.01:1)';
-    curve = bezier(t, x', y');
-
-    % Store and plot the curve
-    gui_data.probe_fit_lines(gui_data.curr_probe) = plot(curve(:, 1), curve(:, 2), 'r-');
+for i = 0:n
+    B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
 end
-
-guidata(gui_fig, gui_data);
+B = B';
 end
 
 %% control appearance
