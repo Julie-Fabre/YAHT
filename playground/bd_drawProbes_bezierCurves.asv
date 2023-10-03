@@ -472,15 +472,9 @@ end
 delete(gui_data.probe_points{curr_probe});
 gui_data.probe_points{curr_probe} = scatter(gui_data.bezier_control_points{curr_probe}(:,1), gui_data.bezier_control_points{curr_probe}(:,2), 'o', 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :), 'Parent', gui_data.histology_ax);
 
-% store points 
-gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = gui_data.bezier_control_points;
 % Store the gui_data again
 guidata(gui_fig, gui_data);
-
-populate_points_table(gui_fig);
-end
-
-function update_slice(gui_fig)
+endfunction update_slice(gui_fig)
 % Draw histology and CCF slice
 
 % Get guidata
@@ -528,6 +522,61 @@ end
 
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+end
+
+
+function update_slice(gui_fig)
+% Draw histology and CCF slice
+
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Set next histology slice
+set(gui_data.histology_im_h, 'CData', (gui_data.slice_im{gui_data.curr_slice})*gui_data.contrast_alpha+gui_data.brightness_beta)
+
+% Clear any current lines, draw probe lines
+for iProbe = 1:gui_data.n_probes
+    gui_data.probe_points{iProbe}.delete;
+end
+gui_data.probe_fit_lines.delete;
+gui_data.inflection_points_scatter.delete;
+
+for curr_probe = find(~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :)))
+    if gui_data.visibility == 0 && gui_data.curr_probe ~= curr_probe
+        gui_data.probe_points{curr_probe} = ...
+            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
+            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
+            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
+    else
+
+        gui_data.probe_points{curr_probe} = ...
+            scatter(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 1), ...
+            gui_data.probe_points_histology{gui_data.curr_slice, curr_probe}(:, 2), ...
+            gui_data.point_size, [gui_data.probe_color(curr_probe, :)], 'filled');
+    end
+    try
+            % find line on this slice
+        if gui_data.fit_visibility == 1 && ~isempty(round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1))...
+                == gui_data.curr_slice)
+            slice_coords_fit = gui_data.probe_ccf(curr_probe).trajectory_coords( ...
+                round(gui_data.probe_ccf(curr_probe).trajectory_coords(:, 1)) == gui_data.curr_slice, 2:3);
+            if ~isempty(slice_coords_fit)
+                gui_data.probe_fit_lines(curr_probe) = line([slice_coords_fit(1, 2), slice_coords_fit(end, 2)], ...
+                    [slice_coords_fit(1, 1), slice_coords_fit(end, 1)], ...
+                    'linewidth', 3, 'LineStyle', '-', 'color', [gui_data.probe_color(curr_probe, :), 0.8]);
+            end
+        end
+    catch
+    end
+end
+
+
+set(gui_data.histology_ax_title, 'String', ...
+    ['Arrows to move, Number to draw probe [', num2str(1), ':' num2str(gui_data.n_probes), '], Esc to save/quit']);
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -684,13 +733,13 @@ end
 
 function populate_points_table(gui_fig)
     gui_data = guidata(gui_fig);
-    %curr_probe = gui_data.curr_probe;
+    curr_probe = gui_data.curr_probe;
 
-    probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
-    x = probe_points(:, 1);
-    y = probe_points(:, 2);
+    probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe};
+    x = cell2mat(probe_points(:, 1));
+    y = cell2mat(probe_points(:, 2));
 
-    set(gui_data.points_table, 'Data',[x, y]);
+    gui_data.points_table.Data = [x, y];
     guidata(gui_fig, gui_data);
 end
 
@@ -698,12 +747,11 @@ end
 % Bezier curve function
 function B = bezier_curve(t, control_points)
     n = size(control_points, 1) - 1;  % degree of the polynomial
-    B = zeros(2, length(t));
+    B = zeros(length(t), 2);
     
     for i = 0:n
-        B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
+        B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :);
     end
-    B = B';
 end
 
 function bezier_fit_probe(gui_fig)

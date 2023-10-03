@@ -64,8 +64,13 @@ end
 % probe 
 transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
 transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
-bd_drawProbes_onSteroids(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
+% version 1:
+% bd_drawProbes(tv, av, st, transformedImage, outputDir, screenToUse)
+% version 2: 
+% bd_drawProbes_onSteroids(tv, av, st, transformedImage, outputDir, screenToUse) % draw probes. it you have more than 9 probes, 
 % use shift to add 10, alt to add 20 and ctrl to add 30 (so shift+1 lets you select probe 11) 
+% version 3: 
+bd_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir, screenToUse)
 
 %% ~ Assign probes to days/sites ~
 load([outputDir, '/probe_ccf.mat'])
