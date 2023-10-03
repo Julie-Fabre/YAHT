@@ -552,6 +552,7 @@ set(gui_data.histology_ax_title, 'String', ...
 
 % Upload gui data
 guidata(gui_fig, gui_data);
+populate_points_table(gui_fig);
 
 end
 
@@ -715,19 +716,27 @@ guidata(gui_fig, gui_data);
 end
 
 function populate_points_table(gui_fig)
-gui_data = guidata(gui_fig);
-%curr_probe = gui_data.curr_probe;
+    gui_data = guidata(gui_fig);
 
-probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
+    %probe_points = gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}{1};
+    %non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, gui_data.curr_probe)));
+   
+    pointStrings = cell(size(gui_data.bezier_control_points{gui_data.curr_probe}, 1), 1);
+    if ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+        for i = 1:size(gui_data.bezier_control_points{gui_data.curr_probe}, 1)
+            prefix = '';
+            if gui_data.bezier_control_points{gui_data.curr_probe}(i,3) == gui_data.curr_slice %condition to check if the point is in the current slice%
+                prefix = '[CURR] ';
+            end
+            pointStrings{i} = [prefix, 'Point ', num2str(i), ': (', ...
+                num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 1)), ', ', num2str(gui_data.bezier_control_points{gui_data.curr_probe}(i, 2)), ')'];
+        end
+    end
 
-
-pointStrings = cell(size(probe_points, 1), 1);
-for i = 1:size(probe_points, 1)
-    pointStrings{i} = ['Point ', num2str(i), ': (', num2str(probe_points(i, 1)), ', ', num2str(probe_points(i, 2)), ')'];
+    set(gui_data.points_table, 'String', pointStrings);
+    guidata(gui_fig, gui_data);
 end
-set(gui_data.points_table, 'String', pointStrings);
-guidata(gui_fig, gui_data);
-end
+
 
 function deleteSelectedPoint(~, ~, gui_fig)
 gui_data = guidata(gui_fig);
