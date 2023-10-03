@@ -236,36 +236,11 @@ switch eventdata.Key
         guidata(gui_fig, gui_data);
         update_slice(gui_fig);
 
-        % Number: add coordinates for the numbered probe
-    % case [cellfun(@num2str, num2cell(0:9), 'uni', false), cellfun(@(x) ['numpad', num2str(x)], num2cell(0:9), 'uni', false)]
-    %     keyData = eventdata;
-    %     if isempty(keyData.Modifier)
-    %         curr_probe = str2num(eventdata.Key(end));
-    %     elseif strcmp(keyData.Modifier{:}, 'shift') == 1
-    %         curr_probe = str2num(eventdata.Key(end)) + 10;
-    %     elseif strcmp(keyData.Modifier{:}, 'alt') == 1
-    %         curr_probe = str2num(eventdata.Key(end)) + 20;
-    %     elseif strcmp(keyData.Modifier{:}, 'control') == 1
-    %         curr_probe = str2num(eventdata.Key(end)) + 30;
-    %     end
-    % 
-    % 
-    %     if curr_probe > gui_data.n_probes
-    %         disp(['Probe ', eventdata.Key, ' selected, only ', num2str(gui_data.n_probes), ' available']);
-    %         return
-    %     end
-    % 
-    %     if curr_probe == 0 %quirk in my keyboard
-    %         curr_probe = 4;
-    %     end
-    %     gui_data.curr_probe = curr_probe;
-    % 
-    %     guidata(gui_fig, gui_data);
-    %     update_curr_probe(gui_fig, curr_probe)
 
     case  'add'% 'add' is the numpad + key
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
+
     case '+'
         curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
@@ -493,8 +468,13 @@ set(gui_data.histology_ax_title, 'String', ['Draw control points for probe ', nu
 curr_point = drawpoint;
 
 % Storing Bezier control points instead of probe points
+
 gui_data.bezier_control_points{curr_probe} = ...
     [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
+[~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:,3));% sort points by slice # 1+
+gui_data.bezier_control_points{curr_probe} = ...
+   gui_data.bezier_control_points{curr_probe}(sortIdx,:);
+
 set(gui_data.histology_ax_title, 'String', ...
     ['Arrows to move, Number to draw probe [', num2str(1), ':', num2str(gui_data.n_probes), '], Esc to save/quit']);
 
@@ -886,6 +866,7 @@ end
 function B = bezier_curve(t, control_points)
 n = size(control_points, 1) - 1; % degree of the polynomial
 B = zeros(3, length(t)); % Change to 3 for 3D
+
 
 for i = 0:n
     B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
