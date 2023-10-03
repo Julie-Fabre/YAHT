@@ -183,6 +183,31 @@ gui_data.prev_spline_fit = repmat(0.1, gui_data.n_probes, 1);
 % curr_probe
 gui_data.curr_probe = 1;
 
+% Assuming gui_data is available and the figure handle is gui_fig
+% Place the dropdown menu at position [x, y, width, height]
+% Dropdown dimensions
+point_list_position = [650, 350, 500, 300];
+dropdown_width = 500;  % Match the width of the point list for alignment
+dropdown_height = 30;  % Arbitrary height for the dropdown menu
+padding = 5;  % Space between the point list and the dropdown
+
+dropdown_x = point_list_position(1);
+dropdown_y = point_list_position(2) + point_list_position(4) + padding;
+dropdown_position = [dropdown_x, dropdown_y, dropdown_width, dropdown_height];
+
+
+% Create a cell array of probe names or identifiers
+probes_list = arrayfun(@(x) ['Probe ' num2str(x)], 1:gui_data.n_probes, 'UniformOutput', false);
+
+
+gui_data.probe_dropdown = uicontrol('Style', 'popupmenu', ...
+                                    'String', probes_list, ...
+                                    'Position', dropdown_position, ...
+                                    'Callback', @(src, event)updateProbe(gui_fig));
+
+% Save gui_data
+guidata(gui_fig, gui_data);
+
 % Upload gui data
 guidata(gui_fig, gui_data);
 
@@ -212,29 +237,37 @@ switch eventdata.Key
         update_slice(gui_fig);
 
         % Number: add coordinates for the numbered probe
-    case [cellfun(@num2str, num2cell(0:9), 'uni', false), cellfun(@(x) ['numpad', num2str(x)], num2cell(0:9), 'uni', false)]
-        keyData = eventdata;
-        if isempty(keyData.Modifier)
-            curr_probe = str2num(eventdata.Key(end));
-        elseif strcmp(keyData.Modifier{:}, 'shift') == 1
-            curr_probe = str2num(eventdata.Key(end)) + 10;
-        elseif strcmp(keyData.Modifier{:}, 'alt') == 1
-            curr_probe = str2num(eventdata.Key(end)) + 20;
-        elseif strcmp(keyData.Modifier{:}, 'control') == 1
-            curr_probe = str2num(eventdata.Key(end)) + 30;
-        end
+    % case [cellfun(@num2str, num2cell(0:9), 'uni', false), cellfun(@(x) ['numpad', num2str(x)], num2cell(0:9), 'uni', false)]
+    %     keyData = eventdata;
+    %     if isempty(keyData.Modifier)
+    %         curr_probe = str2num(eventdata.Key(end));
+    %     elseif strcmp(keyData.Modifier{:}, 'shift') == 1
+    %         curr_probe = str2num(eventdata.Key(end)) + 10;
+    %     elseif strcmp(keyData.Modifier{:}, 'alt') == 1
+    %         curr_probe = str2num(eventdata.Key(end)) + 20;
+    %     elseif strcmp(keyData.Modifier{:}, 'control') == 1
+    %         curr_probe = str2num(eventdata.Key(end)) + 30;
+    %     end
+    % 
+    % 
+    %     if curr_probe > gui_data.n_probes
+    %         disp(['Probe ', eventdata.Key, ' selected, only ', num2str(gui_data.n_probes), ' available']);
+    %         return
+    %     end
+    % 
+    %     if curr_probe == 0 %quirk in my keyboard
+    %         curr_probe = 4;
+    %     end
+    %     gui_data.curr_probe = curr_probe;
+    % 
+    %     guidata(gui_fig, gui_data);
+    %     update_curr_probe(gui_fig, curr_probe)
 
-
-        if curr_probe > gui_data.n_probes
-            disp(['Probe ', eventdata.Key, ' selected, only ', num2str(gui_data.n_probes), ' available']);
-            return
-        end
-
-        if curr_probe == 0 %quirk in my keyboard
-            curr_probe = 4;
-        end
-        gui_data.curr_probe = curr_probe; 1
-        guidata(gui_fig, gui_data);
+    case  'add'% 'add' is the numpad + key
+        curr_probe = gui_data.probe_dropdown.Value;
+        update_curr_probe(gui_fig, curr_probe)
+    case '+'
+        curr_probe = gui_data.probe_dropdown.Value;
         update_curr_probe(gui_fig, curr_probe)
 
     case 'insert' % if probe # > 9, need an input dialog
@@ -686,6 +719,21 @@ end
 
 end
 
+function updateProbe(gui_fig)
+    gui_data = guidata(gui_fig);
+    
+    % Get the selected probe index
+    selected_probe_idx = get(gui_data.probe_dropdown, 'Value');
+    
+    % Set the current probe in gui_data
+    gui_data.curr_probe = selected_probe_idx;
+
+    % Refresh the points list
+    populate_points_table(gui_fig);
+    
+    % Save gui_data
+    guidata(gui_fig, gui_data);
+end
 %% bezier functions
 function selectPoint(gui_fig, table, event)
 gui_data = guidata(gui_fig);
@@ -722,6 +770,7 @@ function populate_points_table(gui_fig)
     %non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, gui_data.curr_probe)));
    
     pointStrings = cell(size(gui_data.bezier_control_points{gui_data.curr_probe}, 1), 1);
+    
     if ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
         for i = 1:size(gui_data.bezier_control_points{gui_data.curr_probe}, 1)
             prefix = '';
