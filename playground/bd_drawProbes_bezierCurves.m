@@ -358,7 +358,7 @@ end
 %gui_data.inflection_points_scatter.delete;
 
 for curr_probe = 1:size(gui_data.probe_points_histology, 2)
-    if ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, curr_probe})
+    if sum(gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice) > 0
         thesePoints = gui_data.bezier_control_points{curr_probe}(:, 3) == gui_data.curr_slice;
         set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
             'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
@@ -554,10 +554,13 @@ selected_probe_idx = get(gui_data.probe_dropdown, 'Value');
 gui_data.curr_probe = selected_probe_idx;
 
 % Refresh the points list
-populate_points_table(gui_fig);
+gui_data.selected_row = 1;
+gui_data.points_table.Value = gui_data.selected_row;
 
 % Save gui_data
 guidata(gui_fig, gui_data);
+populate_points_table(gui_fig);
+
 end
 
 function updateProbe_slider(gui_fig, curr_probe)
@@ -568,10 +571,14 @@ set(gui_data.probe_dropdown, 'Value', curr_probe);
 
 
 % Refresh the points list
-populate_points_table(gui_fig);
+gui_data.selected_row = 1;
+gui_data.points_table.Value = gui_data.selected_row;
 
 % Save gui_data
 guidata(gui_fig, gui_data);
+populate_points_table(gui_fig);
+
+
 end
 
 function startPtButtonPushed(gui_fig)
@@ -671,6 +678,8 @@ if gui_data.selected_row > 1
 else
     gui_data.selected_row = gui_data.selected_row + 1;
 end
+gui_data.points_table.Value = gui_data.selected_row;
+guidata(gui_fig, gui_data);
 populate_points_table(gui_fig)
 update_slice(gui_fig);
 
@@ -1169,6 +1178,7 @@ disp('loaded data')
 % Upload gui data
 set(gui_data.histology_ax_title, 'String', previous_string)
 guidata(gui_fig, gui_data);
+populate_points_table(gui_fig)
 
 end
 
