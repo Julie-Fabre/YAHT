@@ -119,18 +119,24 @@ gui_data.point_size_text = uicontrol('Style', 'text', ...
 
 % save current datapoints
 gui_data.save_btn = uicontrol('Style', 'pushbutton', ...
-    'String', '<HTML><center><FONT color="white"><b>Save</b></Font>', ...
-    'Position', [400, 200, 100, 50], ...
-    'BackgroundColor', rgb('DarkOrange'), ...
+    'String', '<HTML><center><FONT color="black"><b>Save</b></Font>', ...
+    'Position', [650, 400, 100, 50], ...
+    'BackgroundColor', rgb('Gold'), ...
     'CallBack', @(varargin) saveButtonPushed(gui_fig));
 
 % load previous datapoints
 gui_data.load_btn = uicontrol('Style', 'pushbutton', ...
     'String', '<HTML><center><FONT color="white"><b>Load</b></Font>', ...
-    'Position', [400, 300, 100, 50], ...
-    'BackgroundColor', rgb('DarkMagenta'), ...
+    'Position', [500, 400, 100, 50], ...
+    'BackgroundColor', rgb('OrangeRed'), ...
     'CallBack', @(varargin) loadButtonPushed(gui_fig));
 
+% plot probes 
+gui_data.plot_btn = uicontrol('Style', 'pushbutton', ...
+    'String', '<HTML><center><FONT color="white"><b>Plot</b></Font>', ...
+    'Position', [350, 400, 100, 50], ...
+    'BackgroundColor', rgb('Orange'), ...
+    'CallBack', @(varargin) plotProbeButtonPushed(gui_fig));
 
 gui_data.curr_slice = 150;
 gui_data.visibility = 1;
@@ -169,7 +175,7 @@ gui_data.bezier_curves = gobjects(gui_data.n_probes, 1);
 gui_data.points_table = uicontrol('Parent', gui_fig, 'Style', 'listbox', 'Position', points_table_position, ...
     'String', {}, 'Callback', @(src, event)selectPoint(gui_fig, src, event));
 gui_data.deletePointButton = uicontrol('Style', 'pushbutton', 'Position', ...
-    [points_table_position(1,2) + [750, -50], 130, 30], 'String', 'Delete Point',...
+    [points_table_position(1,2) + [750, -50], 130, 30], 'String', '<HTML><center><FONT color="white"><b>Delete Point</b></Font>',...
     'BackgroundColor', rgb('Crimson'),...
     'Callback', @(src, event)deleteSelectedPoint(src, event, gui_fig));
 
@@ -180,7 +186,7 @@ gui_data.probe_points_stop = gobjects(gui_data.n_probes, 1);
 gui_data.probe_points_stop_position = nan(gui_data.n_probes, 3);
 gui_data.startPt = uicontrol('Style', 'pushbutton', ...
         'String', 'Set starting point', ...
-        'Position', [points_table_position(1,2)  + [880, -50], 130, 30], ...
+        'Position', [points_table_position(1,2)  + [920, -50], 130, 30], ...
         'BackgroundColor', rgb('PaleGreen'), ...
         'CallBack', @(varargin) startPtButtonPushed(gui_fig));
 
@@ -275,9 +281,6 @@ switch eventdata.Key
 
             saveButtonPushed(gui_fig)
 
-            % Plot probe trajectories
-            plot_probe(gui_data, probe_ccf);
-
         end
 end
 
@@ -334,7 +337,8 @@ set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{c
     'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
 
 % store points
-gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = gui_data.bezier_control_points{gui_data.curr_probe};
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
+    gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:,3)==gui_data.curr_slice,1:2);
 % Store the gui_data again
 guidata(gui_fig, gui_data);
 
@@ -358,6 +362,7 @@ end
 %gui_data.inflection_points_scatter.delete;
 
 for curr_probe = 1:size(gui_data.probe_points_histology, 2)
+    try
     if sum(gui_data.bezier_control_points{curr_probe}(:,3) == gui_data.curr_slice) > 0
         thesePoints = gui_data.bezier_control_points{curr_probe}(:, 3) == gui_data.curr_slice;
         set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
@@ -381,6 +386,8 @@ for curr_probe = 1:size(gui_data.probe_points_histology, 2)
         end
 
 
+    end
+    catch
     end
 end
 
@@ -1266,6 +1273,214 @@ else
 end
 % Upload gui data
 guidata(gui_fig, gui_data);
+end
+
+function plotProbeButtonPushed(gui_fig)
+
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Save current data
+% Initialize structure to save
+probe_ccf = struct( ...
+    'points', cell(gui_data.n_probes, 1), ...
+    'trajectory_coords', cell(gui_data.n_probes, 1), ... .
+    'trajectory_areas', cell(gui_data.n_probes, 1));
+
+%ccf_slice_fn = ['/home/netshare/zaru/JF096/Histology/downsampled_stacks/025_micron/brainReg/manual/histology_ccf.mat'];
+%load(ccf_slice_fn);
+%gui_data.histology_ccf = histology_ccf;
+
+% Convert probe points to CCF points by alignment and save
+for curr_probe = 1:gui_data.n_probes
+    slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
+    if ~isempty(slice_points)
+        for iSlice = 1:length(slice_points)
+            curr_slice = slice_points(iSlice);
+
+
+            probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
+            probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
+
+            probe_points_atlas_x = round(probe_points_atlas_x);
+            probe_points_atlas_y = round(probe_points_atlas_y);
+
+            % Get CCF coordinates corresponding to atlas slice points
+            % (CCF coordinates are in [AP,DV,ML])
+            use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
+
+
+            for curr_point = 1:length(use_points)
+                ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                    plane_ap(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_ml = gui_data.histology_ccf(curr_slice). ...
+                    plane_dv(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_dv = gui_data.histology_ccf(curr_slice). ...
+                    plane_ml(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                probe_ccf(curr_probe).points = ...
+                    vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+            end
+        end
+
+        % Sort probe points by DV (probe always top->bottom)
+        [~, dv_sort_idx] = sort(probe_ccf(curr_probe).points(:, 2));
+        probe_ccf(curr_probe).points = probe_ccf(curr_probe).points(dv_sort_idx, :);
+    end
+
+end
+gui_data.probe_ccf = probe_ccf;
+% Get areas along probe trajectory
+
+for curr_probe = 1:gui_data.n_probes
+    % Get slice and point info
+    slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)')); % slices that contain points
+
+    if ~isempty(slice_points)
+        for curr_slice = slice_points
+
+
+            probe_points_atlas_x = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 1);
+            probe_points_atlas_y = gui_data.probe_points_histology{curr_slice, curr_probe}(:, 2);
+
+            probe_points_atlas_x = round(probe_points_atlas_x);
+            probe_points_atlas_y = round(probe_points_atlas_y);
+
+            % Get CCF coordinates corresponding to atlas slice points
+            % (CCF coordinates are in [AP,DV,ML])
+            use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
+            for curr_point = 1:length(use_points)
+                ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                    plane_ap(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_ml = gui_data.histology_ccf(curr_slice). ...
+                    plane_dv(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                ccf_dv = gui_data.histology_ccf(curr_slice). ...
+                    plane_ml(probe_points_atlas_y(curr_point), ...
+                    probe_points_atlas_x(curr_point));
+                gui_data.probe_ccf(curr_probe).points = ...
+                    vertcat(gui_data.probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+            end
+        end
+
+        % Sort probe points by DV (probe always top->bottom)
+        [~, dv_sort_idx] = sort(gui_data.probe_ccf(curr_probe).points(:, 2));
+        gui_data.probe_ccf(curr_probe).points = gui_data.probe_ccf(curr_probe).points(dv_sort_idx, :);
+
+        linear_fit = 0; % QQ hard-coded for now
+        spline_fit = 0;
+        if linear_fit
+
+            % Get best fit line through points as probe trajectory
+            r0 = mean(gui_data.probe_ccf(curr_probe).points, 1);
+            xyz = bsxfun(@minus, gui_data.probe_ccf(curr_probe).points, r0);
+            [~, ~, V] = svd(xyz, 0);
+            histology_probe_direction = V(:, 1);
+
+            % (make sure the direction goes down in DV - flip if it's going up)
+            if histology_probe_direction(3) < 0
+                histology_probe_direction = -histology_probe_direction;
+            end
+
+            line_eval = [-1000, 1000];
+            probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0)';
+
+            % Get the positions of the probe trajectory
+            trajectory_n_coords = max(abs(diff(probe_fit_line, [], 2)));
+
+            % get AP, DV, ML
+            [trajectory_ap_ccf, trajectory_dv_ccf, trajectory_ml_ccf] = deal( ...
+                round(linspace(probe_fit_line(1, 1), probe_fit_line(1, 2), trajectory_n_coords)), ...
+                round(linspace(probe_fit_line(3, 1), probe_fit_line(3, 2), trajectory_n_coords)), ...
+                round(linspace(probe_fit_line(2, 1), probe_fit_line(2, 2), trajectory_n_coords)));
+
+
+        elseif spline_fit % spline fit
+            ap_points = gui_data.probe_ccf(curr_probe).points(:, 1);
+            dv_points = gui_data.probe_ccf(curr_probe).points(:, 2);
+            ml_points = gui_data.probe_ccf(curr_probe).points(:, 3);
+
+            t = (1:length(ap_points))'; % Creating a parameter t based on the number of data points
+
+            % Creating fittype objects for smooth spline with smoothing parameter
+            ft = fittype('smoothingspline');
+
+            % Define a smoothing parameter
+            smoothing_param = gui_data.spline_smoothness_factor(curr_probe); % Adjust this value between 0 and 1 to control the smoothness
+
+            % Fitting the curves with the smoothing parameter
+            fitresult_ap = fit(t, ap_points, ft, 'SmoothingParam', smoothing_param);
+            fitresult_dv = fit(t, dv_points, ft, 'SmoothingParam', smoothing_param);
+            fitresult_ml = fit(t, ml_points, ft, 'SmoothingParam', smoothing_param);
+
+            delta = 5;
+            % (Extending the Curve and Visualizing)
+
+            % Extend the range of t for extrapolation
+            t_extended = [linspace(min(t)-delta, max(t)+delta, 1000)]'; % Adjust delta to control the extension amount
+
+            % Evaluate the extended spline at the new t values
+            trajectory_ap_ccf = fitresult_ap(t_extended)';
+            trajectory_ml_ccf = fitresult_ml(t_extended)';
+            trajectory_dv_ccf = fitresult_dv(t_extended)';
+
+        else % manual bezier curve drawing 
+            ap_points = gui_data.probe_ccf(curr_probe).points(:, 1);
+            dv_points = gui_data.probe_ccf(curr_probe).points(:, 2);
+            ml_points = gui_data.probe_ccf(curr_probe).points(:, 3);
+
+            t = linspace(0, 1, 1000);
+            Bezier_fit = bezier_curve(t,[ap_points, dv_points, ml_points]);
+
+            trajectory_ap_ccf = Bezier_fit(:,1)';
+            trajectory_ml_ccf = Bezier_fit(:,2)';
+            trajectory_dv_ccf = Bezier_fit(:,3)';
+
+
+            
+
+        end
+
+        % remove any out-of-bounds points
+        trajectory_coords_outofbounds = ...
+            any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] < 1, 1) | ...
+            any([trajectory_ap_ccf; trajectory_dv_ccf; trajectory_ml_ccf] > size(gui_data.av)', 1);
+
+        trajectory_coords = ...
+            [trajectory_ap_ccf(~trajectory_coords_outofbounds)', ...
+            trajectory_dv_ccf(~trajectory_coords_outofbounds)', ...
+            trajectory_ml_ccf(~trajectory_coords_outofbounds)'];
+
+        trajectory_coords_idx = sub2ind(size(gui_data.av), ...
+            round(trajectory_coords(:, 1)), round(trajectory_coords(:, 2)), round(trajectory_coords(:, 3)));
+
+        trajectory_areas_uncut = gui_data.av(trajectory_coords_idx)';
+
+        % Get rid of NaN's and start/end 1's (non-parsed)
+        trajectory_areas_parsed = find(trajectory_areas_uncut > 1); %ones(size(trajectory_areas_uncut,2),1);%find(trajectory_areas_uncut > 1);
+        use_trajectory_areas = trajectory_areas_parsed(1): ...
+            trajectory_areas_parsed(end);
+        trajectory_areas = reshape(trajectory_areas_uncut(use_trajectory_areas), [], 1);
+
+        % store fit points in gui_data
+        gui_data.probe_ccf(curr_probe).trajectory_coords = double(trajectory_coords(use_trajectory_areas, :));
+        gui_data.probe_ccf(curr_probe).trajectory_areas = double(trajectory_areas);
+
+    end
+
+
+end
+
+
+% Plot probe trajectories
+plot_probe(gui_data, gui_data.probe_ccf);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
 end
 
 
