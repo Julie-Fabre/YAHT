@@ -6,6 +6,7 @@ function bd_drawProbes_bezierCurves(tv, av, st, registeredImage, outputDir, scre
 
 %% create the GUI figure
 % Initialize guidata
+warning off;
 gui_data = struct;
 gui_data.tv = tv;
 gui_data.av = av;
@@ -230,8 +231,6 @@ gui_data.probe_dropdown = uicontrol('Style', 'popupmenu', ...
 % Save gui_data
 guidata(gui_fig, gui_data);
 
-% Upload gui data
-guidata(gui_fig, gui_data);
 
 % Update the slice
 update_slice(gui_fig);
@@ -494,10 +493,10 @@ for curr_probe = 1:length(probe_ccf)
         else
              thesePoints = probe_ccf(curr_probe).points * 2.5; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
 
-            plot3(thesePoints(:, 1), ...
-                thesePoints(:, 2), ...
-                thesePoints(:, 3), ...
-                '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
+            %plot3(thesePoints(:, 1), ...
+             %   thesePoints(:, 2), ...
+             %   thesePoints(:, 3), ...
+             %   '.', 'color', gui_data.probe_color(curr_probe, :), 'MarkerSize', 20);
 
             x = thesePoints(:, 1);
             y = thesePoints(:, 2);
@@ -776,19 +775,10 @@ end
 
 
 % Bezier curve function
-function B = bezier_curve_prev(t, control_points)
-n = size(control_points, 1) - 1; % degree of the polynomial
-B = zeros(2, length(t));
-
-for i = 0:n
-    B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
-end
-B = B';
-end
 
 function B = bezier_curve(t, control_points)
 n = size(control_points, 1) - 1; % degree of the polynomial
-B = zeros(3, length(t)); % Change to 3 for 3D
+B = zeros(3, length(t)); % Change to 2 for 3D
 
 [~, control_points_idx] = sort(control_points(:,3));
 control_points = control_points(control_points_idx, :);
@@ -1076,6 +1066,7 @@ end
 
 % Save fitted probe CCF points
 save_fn = [gui_data.slice_im_path, filesep, 'probe_ccf.mat'];
+probe_ccf = gui_data.probe_ccf;
 save(save_fn, 'probe_ccf');
 
 % save points

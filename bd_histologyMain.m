@@ -201,8 +201,8 @@ load([outputDir, '/probe2ephys.mat'])
 
 load([outputDir, '/probe_ccf.mat'])
 
-for iProbe = 8:18
-    iProbe = 1
+%for iProbe = 1
+    iProbe = 9
 site = probe2ephys(iProbe).site;
 %if ~isnan(site)
     keep probe2ephys animal iProbe site st outputDir
@@ -239,7 +239,15 @@ bd_alignEphysAndHistology(st, outputDir, ...
                 spike_times, spike_templates, template_depths, ...
                 spike_xdepths, template_xdepths,lfp, channel_positions(:,2),channel_positions(:,1), ...
                 iProbe, isSpikeGlx, shank);
-end
+%end
+
+load([outputDir, '/probe_ccf.mat'])
+probe_ccf(iProbe).trajectory_areas(probe_ccf(iProbe).probe_depths>=2500 & probe_ccf(iProbe).probe_depths<=2690) = [];
+probe_ccf(iProbe).probe_depths(probe_ccf(iProbe).probe_depths>=2500 & probe_ccf(iProbe).probe_depths<=2690) = [];
+
+
+
+
 
 site_days = [2,2;2,3;1,3;1,4;3,2;3,3;4,1;4,2;5,1;5,2;6,1];
 for iSiteDay = 1:11
@@ -276,7 +284,6 @@ AP_cellrasterJF({stimOn_times,wheel_move_time,signals_events.responseTimes(1:end
    trial_conditions(:,3)});
 
 end
-
 
 load([outputDir, '/probe_ccf.mat'])
 save([outputDir, '/probe_ccf_copy.mat'], 'probe_ccf')
