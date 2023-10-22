@@ -202,7 +202,7 @@ load([outputDir, '/probe2ephys.mat'])
 load([outputDir, '/probe_ccf.mat'])
 
 %for iProbe = 1
-    iProbe = 9
+    iProbe = 2
 site = probe2ephys(iProbe).site;
 %if ~isnan(site)
     keep probe2ephys animal iProbe site st outputDir

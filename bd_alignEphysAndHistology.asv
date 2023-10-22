@@ -184,7 +184,7 @@ set(probe_areas_ax, 'FontSize', 10)
 boundary_lines = gobjects;
 for curr_boundary = 1:length(trajectory_area_boundaries)
     boundary_lines(curr_boundary, 1) = line(probe_areas_ax, [-13.5, 1.5], ...
-        repmat(trajectory_area_boundaries(curr_boundary), 1, 2), 'color', 'b', 'linewidth', 2);
+        repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b', 'linewidth', 2);
 end
 set(probe_areas_ax, 'Clipping', 'off');
 
@@ -200,7 +200,9 @@ gui_data.multiunit_ax = multiunit_ax;
 
 gui_data.probe_areas_ax = probe_areas_ax;
 gui_data.probe_areas_ax_ylim = ylim(probe_areas_ax);
-gui_data.probe_trajectory_depths = probe_trajectory_depths;
+gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
+
+gui_data.probe_trajectory_depths = areas_linear_depth*25;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
