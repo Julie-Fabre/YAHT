@@ -1,4 +1,4 @@
-function bd_alignEphysAndHistology(st, outputDir, ...
+function bd_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, spike_xdepths, template_xdepths, ...
     lfp, lfp_channel_positions, lfp_channel_xpositions, use_probe, isSpikeGlx, curr_shank)
 % based on the great AP_align_probe_histology(st,slice_path,spike_times,spike_templates,template_depths,lfp,lfp_channel_positions,use_probe)
@@ -71,7 +71,7 @@ for curr_depth = 1:length(unique_depths)
 end
 
 mua_corr = corrcoef(binned_spikes_depth');
-
+gui_data = struct;
 gui_fig = figure('color', 'w', 'KeyPressFcn', @keypress);
 
 % Plot spike depth vs rate
@@ -172,7 +172,7 @@ end
 
 [~, area_dv_sort_idx] = sort(trajectory_area_centers);
 
-image([], areas_linear_depth*25, areas_linear);
+probe_image = image([], areas_linear_depth*25, areas_linear);
 colormap(probe_areas_ax, cmap);
 caxis([1, size(cmap, 1)])
 set(probe_areas_ax, 'YTick', trajectory_area_centers(area_dv_sort_idx)*25, ...
@@ -184,11 +184,13 @@ ylim([min_depths, max_depths]);
 ylabel({'Probe areas', '(Arrow/shift keys to move)', '(Escape: save & quit)'});
 set(probe_areas_ax, 'FontSize', 10)
 
-% Draw boundary lines at borders (and undo clipping to extend across all)
-boundary_lines = gobjects;
+% Draw boundary lines and make them draggable
+boundary_lines = gobjects(length(trajectory_area_boundaries), 1);
 for curr_boundary = 1:length(trajectory_area_boundaries)
-    boundary_lines(curr_boundary, 1) = line(probe_areas_ax, [-13.5, 1.5], ...
-        repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b', 'linewidth', 2);
+    boundary_lines(curr_boundary) = line(probe_areas_ax, [-13.5, 1.5], ...
+        repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b',...
+        'linewidth', 2, 'Tag', num2str(curr_boundary));
+    draggable_line(boundary_lines(curr_boundary), probe_areas_ax, gui_fig);
 end
 set(probe_areas_ax, 'Clipping', 'off');
 
@@ -196,20 +198,27 @@ probe_ccf(use_probe).probe_depths_linear = areas_linear_depth;
 probe_ccf(use_probe).probe_areas_linear = areas_linear;
 
 % Package into gui
-gui_data = struct;
-gui_data.probe_ccf_fn = probe_ccf_fn;
 
+gui_data.probe_ccf_fn = probe_ccf_fn;
 gui_data.probe_ccf = probe_ccf;
 gui_data.use_probe = use_probe;
 
+% axes
 gui_data.unit_ax = unit_ax;
 gui_data.multiunit_ax = multiunit_ax;
-
 gui_data.probe_areas_ax = probe_areas_ax;
 gui_data.probe_areas_ax_ylim = ylim(probe_areas_ax);
-gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
+gui_data.probe_image = probe_image;
 
-gui_data.probe_trajectory_depths = areas_linear_depth*25;
+
+% trajectory and boundaries 
+gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
+gui_data.probe_trajectory_depths = areas_linear_depth * 25;
+gui_data.original_region_boundaries = trajectory_area_boundaries;
+gui_data.areas_center = trajectory_area_centers(area_dv_sort_idx);
+gui_data.min_depth = min_depths;
+gui_data.max_depth = max_depths;
+gui_data.trajectory_area_labels =  trajectory_area_labels;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -222,14 +231,6 @@ function keypress(gui_fig, eventdata)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-% Set amounts to move by with/without shift
-if any(strcmp(eventdata.Modifier, 'shift'))
-    y_change = 100;
-    s_change = 0.1;
-else
-    y_change = 1;
-    s_change = 0.01;
-end
 
 switch eventdata.Key
 
@@ -268,25 +269,83 @@ switch eventdata.Key
             % Close the figure
             close(gui_fig);
         end
-    case 'n' % stretch
-        new_ylim = [gui_data.probe_areas_ax_ylim(1), gui_data.probe_areas_ax_ylim(2) .* (1 - s_change)];
-        ylim(gui_data.probe_areas_ax, new_ylim);
-        gui_data.probe_areas_ax_ylim = new_ylim;
-        % Upload gui data
-        guidata(gui_fig, gui_data);
 
-    case 'w' % stretch
-        probe_ccf = gui_data.probe_ccf;
-
-        % Get the probe depths corresponding to the trajectory areas
-        probe_depths_linear = gui_data.probe_trajectory_depths_linear .* (1 + s_change);
-
-        probe_ccf(gui_data.use_probe).probe_depths_linear = probe_depths_linear;
-
-        % Save the appended probe_ccf structure
-        save(gui_data.probe_ccf_fn, 'probe_ccf');
 
 
 end
 
+end
+
+
+function draggable_line(hLine, ax, fig)
+set(hLine, 'ButtonDownFcn', @startDragFcn);
+% Get guidata
+gui_data = guidata(fig);
+
+
+
+    function startDragFcn(src, ~)
+        src.UserData = get(ax, 'CurrentPoint');
+        set(fig, 'WindowButtonMotionFcn', {@draggingFcn, src, ax, fig});
+        set(fig, 'WindowButtonUpFcn', @stopDragFcn);
+    end
+
+    function draggingFcn(~, ~, src, ax, fig)
+        curr_pt = get(ax, 'CurrentPoint');
+        orig_pt = src.UserData;
+
+        dy = curr_pt(1, 2) - orig_pt(1, 2);
+        ydata = get(src, 'YData');
+        ydata = ydata + dy;
+        set(src, 'YData', ydata);
+
+        src.UserData = curr_pt;
+        update_probe_areas_image(ax, src, fig);
+    end
+
+    function stopDragFcn(~, ~)
+        set(fig, 'WindowButtonMotionFcn', '');
+        set(fig, 'WindowButtonUpFcn', '');
+         
+    end
+
+    function update_probe_areas_image(probe_areas_ax, src, fig)
+        % (get info)
+        newLine_location = src.UserData(1,2);
+        lineTag = str2num(get(src, 'Tag'));
+        gui_data = guidata(fig);
+        origin_depth = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag));% up or down? 
+        depth_change = newLine_location > origin_depth;
+
+        % (get new area boundaries)
+        curr_area_color = gui_data.probe_image.CData(round(gui_data.areas_center(lineTag)));
+        new_colors = gui_data.probe_image.CData;
+        gui_data.new_region_boundaries = gui_data.original_region_boundaries;
+        gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first');
+        
+        % (update image)
+        if depth_change == 1 % stretch up
+            new_colors(round(gui_data.areas_center(lineTag)):find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first')) = curr_area_color;
+        else % stretch down
+            new_colors(find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag))) = curr_area_color;
+        end
+        set(gui_data.probe_image, 'CData', new_colors) % update color
+        
+        % (update centers) 
+        gui_data.area_centers = nan(size(gui_data.new_region_boundaries, 2)-1, 1);
+        for iBoundary = 1:size(gui_data.new_region_boundaries, 2) - 1
+            gui_data.area_centers(iBoundary) = (gui_data.new_region_boundariess(iBoundary) + ...
+                 gui_data.new_region_boundaries(iBoundary+1)) ./ 2;
+        end
+        set(probe_areas_ax, 'YTick', gui_data.area_centers*25, ...
+            'YTickLabels', gui_data.trajectory_area_labels);
+
+        % update coordinates 
+        gui_data.
+
+
+        % Upload gui data
+        guidata(gui_fig, gui_data);
+        
+    end
 end

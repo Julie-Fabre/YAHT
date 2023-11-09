@@ -130,8 +130,12 @@ probe_trajectory_depths = ...
     probe_ccf(use_probe).trajectory_coords((dv_sort_idx == 1), :));
 
 %probe_trajectory_depths = probe_ccf(use_probe).trajectory_coords(:,2);
+
 trajectory_area_boundary_idx_non_linear = ...
-    [1; find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0) + 1; size(probe_ccf(use_probe).trajectory_areas, 1)];
+    [1; find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0) + 1];
+if trajectory_area_boundary_idx_non_linear(end) ~= size(probe_ccf(use_probe).trajectory_areas, 1)
+    trajectory_area_boundary_idx_non_linear = [trajectory_area_boundary_idx_non_linear, size(probe_ccf(use_probe).trajectory_areas, 1)+1];
+end
 % recreate linearily spaced areas
 areas_linear_depth = min(probe_trajectory_depths):max(probe_trajectory_depths);
 
@@ -187,6 +191,9 @@ for curr_boundary = 1:length(trajectory_area_boundaries)
         repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b', 'linewidth', 2);
 end
 set(probe_areas_ax, 'Clipping', 'off');
+
+probe_ccf(use_probe).probe_depths_linear = areas_linear_depth;
+probe_ccf(use_probe).probe_areas_linear = areas_linear;
 
 % Package into gui
 gui_data = struct;
@@ -250,10 +257,10 @@ switch eventdata.Key
             probe_ccf = gui_data.probe_ccf;
 
             % Get the probe depths corresponding to the trajectory areas
-            probe_depths = gui_data.probe_trajectory_depths - ...
+            probe_depths_linear = gui_data.probe_trajectory_depths - ...
                 gui_data.probe_areas_ax_ylim(1);
 
-            probe_ccf(gui_data.use_probe).probe_depths = probe_depths;
+            probe_ccf(gui_data.use_probe).probe_depths_linear = probe_depths_linear;
 
             % Save the appended probe_ccf structure
             save(gui_data.probe_ccf_fn, 'probe_ccf');
@@ -272,9 +279,9 @@ switch eventdata.Key
         probe_ccf = gui_data.probe_ccf;
 
         % Get the probe depths corresponding to the trajectory areas
-        probe_depths = gui_data.probe_trajectory_depths .* (1 + s_change);
+        probe_depths_linear = gui_data.probe_trajectory_depths_linear .* (1 + s_change);
 
-        probe_ccf(gui_data.use_probe).probe_depths = probe_depths;
+        probe_ccf(gui_data.use_probe).probe_depths_linear = probe_depths_linear;
 
         % Save the appended probe_ccf structure
         save(gui_data.probe_ccf_fn, 'probe_ccf');
