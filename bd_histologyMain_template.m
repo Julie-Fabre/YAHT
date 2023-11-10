@@ -114,8 +114,11 @@ day = probe2ephys(iProbe).day;
 shank = probe2ephys(iProbe).shank;
 pathToEphys = ['/home/netshare/zaru/', animal, filesep, day, filesep, 'ephys', filesep 'site']; % EDIT ME 
 probeLength = 3840; % EDIT ME, size of recording sites in um. E.g: 3840 for NP1, 2880 for NP2, ect. 
-% load data
+ephys_sample_rate = 3000; % EDIT ME ephys sample rate (samples per second). 
 
+% load data
+[spike_times, spike_templates, template_depths, spike_depths, template_xdepths,...
+    spike_xdepths, channelPositions, goodChannels] = bd_loadEphysData(pathToEphys, ephys_sample_rate);
 
 % align ephys and histology. Drag the lines to stretch or shrink any
 % regions that need it
