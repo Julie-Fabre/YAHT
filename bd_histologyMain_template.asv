@@ -3,10 +3,7 @@
 clearvars -global % releases previous GUIs, if there are any
 
 % EDIT ME :
-animal = 'JF096';
-brainsawPath = ['/home/netshare/zaru/', animal'];
-brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
-
+brainsawPath = '/home';
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
 % is the most posterior, superior, left part of the brain
@@ -15,9 +12,12 @@ channelColToTransform = 'red'; % channel you want to use to draw probes
 atlasResolution_um = 25; % voxel size. currently in all dimensions, both for atlas and acquired image
 atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
+brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
 
+animal = 'JF096';
 
 %% ~ Images info
+
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] = ...
     bd_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, ...
@@ -91,12 +91,9 @@ probe2ephys(4).certainty = 1;
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 
 %% ~ Align ephys and histology ~
-iProbe = 1;
-%% Run this section for each probe 
-% run this section for each probe, one at a time (otherwise the alignements
-% will not be saved properly). Modify the loading function path input so it
-% corresponds to how your data is stored 
 
+% run this section for each probe.
+iProbe = 1
 site = probe2ephys(iProbe).site;
 
 % load data
@@ -107,8 +104,6 @@ bd_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, ...
     spike_xdepths, template_xdepths, lfp, channel_positions(:, 2), channel_positions(:, 1), ...
     iProbe, isSpikeGlx, shank);
-
-%% Find out which units are in which region / which anatomical position 
 
 %% ~ Various useful plotting functions ~
 % plot/generate a video of all your probe tracks across mice
