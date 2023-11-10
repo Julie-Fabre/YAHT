@@ -4,7 +4,7 @@ clearvars -global % releases previous GUIs, if there are any
 
 % EDIT ME :
 animal = 'JF096';
-brainsawPath = ['/home/netshare/zaru/', animal'];
+brainsawPath = ['/home/netshare/zaru/', animal];
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
 
 % registration parameters
