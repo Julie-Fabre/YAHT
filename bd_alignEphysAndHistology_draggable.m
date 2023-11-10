@@ -1,6 +1,6 @@
 function bd_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, spike_xdepths, template_xdepths, ...
-    lfp, lfp_channel_positions, lfp_channel_xpositions, use_probe, isSpikeGlx, curr_shank)
+    lfp, lfp_channel_positions, lfp_channel_xpositions, use_probe, probeLength, curr_shank)
 % based on the great AP_align_probe_histology(st,slice_path,spike_times,spike_templates,template_depths,lfp,lfp_channel_positions,use_probe)
 
 % If no probe specified, use probe 1
@@ -40,20 +40,15 @@ end
 
 
 % Get multiunit correlation
-if isSpikeGlx
+if probeLength < 1200
     n_corr_groups = 20;
 else
     n_corr_groups = 40;
 end
-if isSpikeGlx && max(template_depths) <= 384 * 7.5 %2.0 probes, shorter shank
-    max_depths = 384 * 7.5;
-    min_depths = 0;
-    depth_group_edges = linspace(min_depths, max_depths, n_corr_groups+1);
-else
-    min_depths = 0;
-    max_depths = 3840; % (hardcode, sometimes kilosort2 drops channels)
-    depth_group_edges = linspace(0, max_depths, n_corr_groups+1);
-end
+max_depths = probeLength;
+min_depths = 0;
+depth_group_edges = linspace(min_depths, max_depths, n_corr_groups+1);
+
 
 depth_group = discretize(template_depths, depth_group_edges);
 depth_group_centers = depth_group_edges(1:end-1) + (diff(depth_group_edges) / 2);
@@ -343,7 +338,7 @@ gui_data = guidata(fig);
         % (update coordinates) + ineed to update this when shifting, no
         % longer only in saving. or just have an updates stretch factpor
         % thing???? 
-        gui_data.
+        %gui_data.
 
 
         % Upload gui data

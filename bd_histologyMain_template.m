@@ -63,31 +63,40 @@ transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedIma
 bd_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir, screenToUse)
 
 %% ~ Assign probes to days/sites ~
+% For each probe, assign the day and recording site. If you have 4-shank
+% probes also assign the shank number (from 1 to 4) - otherwise write NaN. 
+% Optionally, add a 'certainty' value to keep track of any probes you are not
+% 100% sure of. 
+
 load([outputDir, '/probe_ccf.mat'])
 bd_plotHistoPerMouse(outputDir, st);
 
 % plot and assign
 probe2ephys = struct;
+% Probe 1 information
 probe2ephys(1).day = 5;
 probe2ephys(1).site = 1;
 probe2ephys(1).shank = NaN;
 probe2ephys(1).certainty = 0;
-
+% Probe 2 information
 probe2ephys(2).day = 4; %4
 probe2ephys(2).site = 1;
 probe2ephys(2).shank = NaN;
 probe2ephys(2).certainty = 0;
-
+% Probe 3 information
 probe2ephys(3).day = 1; %1
 probe2ephys(3).site = 1;
 probe2ephys(3).shank = NaN;
 probe2ephys(3).certainty = 0;
-
+% Probe 4 information
 probe2ephys(4).day = 3; %3
 probe2ephys(4).site = 1;
 probe2ephys(4).shank = NaN;
 probe2ephys(4).certainty = 1;
+% Probe n information
+% .... and so on! 
 
+% save 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 
 %% ~ Align ephys and histology ~
@@ -97,18 +106,25 @@ iProbe = 1;
 % will not be saved properly). Modify the loading function path input so it
 % corresponds to how your data is stored 
 
+iProbe = iProbe + 1;
+
+% get information for this probe 
 site = probe2ephys(iProbe).site;
-
+day = probe2ephys(iProbe).day;
+shank = probe2ephys(iProbe).shank;
+pathToEphys = ['/home/netshare/zaru/', animal, filesep, day, filesep, 'ephys', filesep 'site']; % EDIT ME 
+probeLength = 3840; % EDIT ME, size of reocrding sites in um. E.g: 3840 for NP1, 2880 for NP2, ect. 
 % load data
-curr_shank = shank;
-lfp = NaN;
 
+
+% align ephys and histology. Drag the lines to stretch or shrink any
+% regions that need it
 bd_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, ...
     spike_xdepths, template_xdepths, lfp, channel_positions(:, 2), channel_positions(:, 1), ...
-    iProbe, isSpikeGlx, shank);
+    iProbe, probeLength, shank);
 
-%% Find out which units are in which region / which anatomical position 
+%% ~ Find out which units are in which region / which anatomical position ~
 
 %% ~ Various useful plotting functions ~
 % plot/generate a video of all your probe tracks across mice
