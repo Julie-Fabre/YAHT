@@ -753,7 +753,7 @@ end
 selectedIdx = gui_data.selected_row;
 try
     ss = strrep(selectedIdx, '[CURR] ', '');
-    selected_point = contains(gui_data.points_table.Items, ss(1:11));
+    selected_point = contains(gui_data.points_table.Items, ss(1:10));
 catch
     selected_point =  gui_data.selected_row;
 end

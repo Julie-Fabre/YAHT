@@ -43,8 +43,6 @@ else
 end
 
 %% ~ Manually check and adjust registration ~
-screenToUse = 2; % on which of your displays to create the following plots. 1 = main display, 2 = secondary and so on
-
 %% ~~ Check and adjust orientation ~~
 % Adjust the atlas to one slice (using arrow keys to navigate in the allen ccf and pressing eneter once you're happy)
 % and this transformation will then be applied to all other slices and saved in a histology_ccf.mat file.
@@ -60,7 +58,7 @@ bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenT
 %% ~ Draw probes + adjust probe fits ~
 transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
 transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
-bd_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir, screenToUse)
+bd_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir)
 
 %% ~ Assign probes to days/sites ~
 % For each probe, assign the day and recording site. If you have 4-shank
