@@ -183,7 +183,7 @@ set(probe_areas_ax, 'FontSize', 10)
 boundary_lines = gobjects(length(trajectory_area_boundaries), 1);
 for curr_boundary = 1:length(trajectory_area_boundaries)
     boundary_lines(curr_boundary) = line(probe_areas_ax, [-13.5, 1.5], ...
-        repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b',...
+        repmat((trajectory_area_boundaries(curr_boundary) - 0.5)*25, 1, 2), 'color', 'b', ...
         'linewidth', 2, 'Tag', num2str(curr_boundary));
     draggable_line(boundary_lines(curr_boundary), probe_areas_ax, gui_fig);
 end
@@ -206,14 +206,14 @@ gui_data.probe_areas_ax_ylim = ylim(probe_areas_ax);
 gui_data.probe_image = probe_image;
 
 
-% trajectory and boundaries 
+% trajectory and boundaries
 gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
 gui_data.probe_trajectory_depths = areas_linear_depth * 25;
 gui_data.original_region_boundaries = trajectory_area_boundaries;
 gui_data.areas_center = trajectory_area_centers(area_dv_sort_idx);
 gui_data.min_depth = min_depths;
 gui_data.max_depth = max_depths;
-gui_data.trajectory_area_labels =  trajectory_area_labels;
+gui_data.trajectory_area_labels = trajectory_area_labels;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -266,7 +266,6 @@ switch eventdata.Key
         end
 
 
-
 end
 
 end
@@ -276,7 +275,6 @@ function draggable_line(hLine, ax, fig)
 set(hLine, 'ButtonDownFcn', @startDragFcn);
 % Get guidata
 gui_data = guidata(fig);
-
 
 
     function startDragFcn(src, ~)
@@ -301,48 +299,48 @@ gui_data = guidata(fig);
     function stopDragFcn(~, ~)
         set(fig, 'WindowButtonMotionFcn', '');
         set(fig, 'WindowButtonUpFcn', '');
-         
+
     end
 
     function update_probe_areas_image(probe_areas_ax, src, fig)
         % (get info)
-        newLine_location = src.UserData(1,2);
+        newLine_location = src.UserData(1, 2);
         lineTag = str2num(get(src, 'Tag'));
         gui_data = guidata(fig);
-        origin_depth = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag));% up or down? 
+        origin_depth = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag)); % up or down?
         depth_change = newLine_location > origin_depth;
 
         % (get new area boundaries)
         curr_area_color = gui_data.probe_image.CData(round(gui_data.areas_center(lineTag)));
         new_colors = gui_data.probe_image.CData;
         gui_data.new_region_boundaries = gui_data.original_region_boundaries;
-        gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first');
-        
+        gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first');
+
         % (update image)
         if depth_change == 1 % stretch up
-            new_colors(round(gui_data.areas_center(lineTag)):find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first')) = curr_area_color;
+            new_colors(round(gui_data.areas_center(lineTag)):find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first')) = curr_area_color;
         else % stretch down
-            new_colors(find(gui_data.probe_trajectory_depths>=newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag))) = curr_area_color;
+            new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag))) = curr_area_color;
         end
         set(gui_data.probe_image, 'CData', new_colors) % update color
-        
-        % (update centers) 
+
+        % (update centers)
         gui_data.area_centers = nan(size(gui_data.new_region_boundaries, 2)-1, 1);
         for iBoundary = 1:size(gui_data.new_region_boundaries, 2) - 1
             gui_data.area_centers(iBoundary) = (gui_data.new_region_boundariess(iBoundary) + ...
-                 gui_data.new_region_boundaries(iBoundary+1)) ./ 2;
+                gui_data.new_region_boundaries(iBoundary+1)) ./ 2;
         end
         set(probe_areas_ax, 'YTick', gui_data.area_centers*25, ...
             'YTickLabels', gui_data.trajectory_area_labels);
 
         % (update coordinates) + ineed to update this when shifting, no
         % longer only in saving. or just have an updates stretch factpor
-        % thing???? 
+        % thing????
         %gui_data.
 
 
         % Upload gui data
         guidata(gui_fig, gui_data);
-        
+
     end
 end

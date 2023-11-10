@@ -113,7 +113,7 @@ site = probe2ephys(iProbe).site;
 day = probe2ephys(iProbe).day;
 shank = probe2ephys(iProbe).shank;
 pathToEphys = ['/home/netshare/zaru/', animal, filesep, day, filesep, 'ephys', filesep 'site']; % EDIT ME 
-probeLength = 3840; % EDIT ME, size of reocrding sites in um. E.g: 3840 for NP1, 2880 for NP2, ect. 
+probeLength = 3840; % EDIT ME, size of recording sites in um. E.g: 3840 for NP1, 2880 for NP2, ect. 
 % load data
 
 
