@@ -36,7 +36,7 @@ brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data li
 %% ~ Register ~
 if isempty(dir([outputDir, filesep, 'downsampled_standard.tiff']))
     % process image 
-    imgToRegister_processed = bd_preprocessImage([imgToRegister.folder, filesep, imgToRegister.name], outputDir);
+    imgToRegister_processed = bd_preprocessImage([imgToRegister.folder, filesep, imgToRegister.name]);
     % register image 
     bd_brainreg([imgToRegister_processed.folder, filesep, imgToRegister_processed.name], outputDir, ...
         [imgToTransform.folder, filesep, imgToTransform.name],orientationType, atlasResolution_um)% run brainreg
@@ -61,7 +61,7 @@ if isempty(dir([outputDir, filesep, 'manual', filesep, 'histology_ccf.mat']))
     bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse); 
 end
 
-%% ~~ [WIP] Check adjust border alignement/scaling ~~
+%% ~~ Check adjust border alignement/scaling ~~
 if isempty(dir([outputDir, filesep, 'manual', filesep, 'atlas2histology_tform.mat']))
     bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
 end

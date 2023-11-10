@@ -5,6 +5,8 @@ atlasLocation = dir([brainglobeLocation, atlasType, '_',...
 % default in subjects 
 imgToRegister = dir(['/home/netshare/zaru/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
 imgToTransform = dir(['/home/netshare/zaru/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
+
+
 if isempty(imgToRegister) 
     imgToRegister = dir(['/home/netshare/zinu/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
     imgToTransform = dir(['/home/netshare/zinu/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
@@ -14,7 +16,7 @@ if isempty(imgToRegister)
     imgToTransform = dir(['/home/netshare/znas/', animal, '/*istology/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 end
 % otherwise in znas-brainsaw-display warning 
-if isempty(imgToRegister) || contains(imgToRegister.folder, 'Recycle')
+if isempty(imgToRegister) || contains(imgToRegister(1).folder, 'Recycle')
     imgToRegister = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
     imgToTransform = dir([brainsawPath, '/*/', animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 end
@@ -22,6 +24,7 @@ if isempty(imgToRegister)
     imgToRegister = dir([brainsawPath, animal, '/downsampled_stacks/025_micron/*', channelColToRegister, '*.tif*']);
     imgToTransform = dir([brainsawPath, animal, '/downsampled_stacks/025_micron/*', channelColToTransform, '*.tif*']);
 end
-
-outputDir = [imgToRegister.folder, filesep, 'brainReg'];
+imgToTransform = imgToTransform(1);
+imgToRegister = imgToRegister(1);
+outputDir = [imgToRegister(1).folder, filesep, 'brainReg'];
 end

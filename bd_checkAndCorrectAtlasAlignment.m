@@ -84,7 +84,7 @@ else %assume portrait mode
 end
 
 hold on; axis image off; colormap(gray); caxis([0,400]);
-gui_data.atlas_im_h = imagesc(gui_data.histology_ccf(1).tv_slices, ...
+gui_data.atlas_im_h = imagesc(gui_data.slice_im{1}, ...
     'Parent',gui_data.atlas_ax,'ButtonDownFcn',@mouseclick_atlas);
 
 % Set up histology-aligned atlas overlay
@@ -291,40 +291,66 @@ function align_ccf_to_histology(gui_fig)
 % Get guidata
 gui_data = guidata(gui_fig);
 
-if size(gui_data.histology_control_points{gui_data.curr_slice},1) == ...
-        size(gui_data.atlas_control_points{gui_data.curr_slice},1) && ...
-        (size(gui_data.histology_control_points{gui_data.curr_slice},1) >= 3 && ...
-        size(gui_data.atlas_control_points{gui_data.curr_slice},1) >= 3)    
-    % If same number of >= 3 control points, use control point alignment
-    tform = fitgeotrans(gui_data.atlas_control_points{gui_data.curr_slice}, ...
+% if size(gui_data.histology_control_points{gui_data.curr_slice},1) == ...
+%         size(gui_data.atlas_control_points{gui_data.curr_slice},1) && ...
+%         (size(gui_data.histology_control_points{gui_data.curr_slice},1) >= 3 && ...
+%         size(gui_data.atlas_control_points{gui_data.curr_slice},1) >= 3)    
+%     % If same number of >= 3 control points, use control point alignment
+%     tform = fitgeotrans(gui_data.atlas_control_points{gui_data.curr_slice}, ...
+%         gui_data.histology_control_points{gui_data.curr_slice},'affine');
+%     title(gui_data.histology_ax,'New alignment', 'color', 'w');
+% 
+% 
+% elseif size(gui_data.histology_control_points{gui_data.curr_slice},1) >= 1 ||  ...
+%         size(gui_data.atlas_control_points{gui_data.curr_slice},1) >= 1
+%     % If less than 3 or nonmatching points, use auto but don't draw
+%     title(gui_data.histology_ax,'New alignment', 'color', 'w');
+% 
+%     % Upload gui data
+%     guidata(gui_fig, gui_data);
+%     return
+% 
+% else
+%     % If no points, use automated outline
+%     if isfield(gui_data,'histology_ccf_auto_alignment')
+%         tform = affine2d;
+%         tform.T = gui_data.histology_ccf_auto_alignment{gui_data.curr_slice};
+%         title(gui_data.histology_ax,'Previous alignment', 'color', 'w');
+%     end
+% end
+
+% Define a weight for blending based on the number of control points
+num_points = size(gui_data.histology_control_points{gui_data.curr_slice},1);
+weight_manual = min(num_points, 10) / 10; % Weight increases with number of points, max of 1
+
+if num_points >= 6   && numel(gui_data.atlas_control_points{gui_data.curr_slice}) ==...
+        numel(gui_data.histology_control_points{gui_data.curr_slice})
+    % Use control point alignment for manual transformation
+    tform_manual = fitgeotrans(gui_data.atlas_control_points{gui_data.curr_slice}, ...
         gui_data.histology_control_points{gui_data.curr_slice},'affine');
-    title(gui_data.histology_ax,'New alignment', 'color', 'w');
-    
-      
-elseif size(gui_data.histology_control_points{gui_data.curr_slice},1) >= 1 ||  ...
-        size(gui_data.atlas_control_points{gui_data.curr_slice},1) >= 1
-    % If less than 3 or nonmatching points, use auto but don't draw
-    title(gui_data.histology_ax,'New alignment', 'color', 'w');
-    
-    % Upload gui data
-    guidata(gui_fig, gui_data);
-    return
-    
 else
-    % If no points, use automated outline
-    if isfield(gui_data,'histology_ccf_auto_alignment')
-        tform = affine2d;
-        tform.T = gui_data.histology_ccf_auto_alignment{gui_data.curr_slice};
-        title(gui_data.histology_ax,'Previous alignment', 'color', 'w');
-    end
+    % No manual transformation if less than 3 points
+    tform_manual = affine2d(eye(3));
 end
 
-curr_av_slice = gui_data.histology_ccf(gui_data.curr_slice).av_slices;
+% Get automated transformation
+if isfield(gui_data,'histology_ccf_auto_alignment')
+    tform_auto = affine2d;
+    tform_auto.T = gui_data.histology_ccf_auto_alignment{gui_data.curr_slice};
+else
+    tform_auto = affine2d(eye(3));
+end
+
+% Blend the transformations
+tform_blended = affine2d(eye(3));
+tform_blended.T = (1 - weight_manual) * tform_auto.T + weight_manual * tform_manual.T;
+
+curr_av_slice = squeeze(gui_data.histology_ccf(gui_data.curr_slice).av_slices);
 curr_av_slice(isnan(curr_av_slice)) = 1;
 curr_slice_im = gui_data.slice_im{gui_data.curr_slice};
 
 tform_size = imref2d([size(curr_slice_im,1),size(curr_slice_im,2)]);
-curr_av_slice_warp = imwarp(curr_av_slice, tform, 'OutputView',tform_size);
+curr_av_slice_warp = imwarp(curr_av_slice, tform_blended, 'OutputView',tform_size);
 
 av_warp_boundaries = round(conv2(curr_av_slice_warp,ones(3)./9,'same')) ~= curr_av_slice_warp;
 av_warp_boundaries_red(:,:,1) = av_warp_boundaries;
@@ -346,7 +372,7 @@ set(gui_data.atlas_aligned_atlas_boundaries, ...
     'AlphaData', atlas_boundaries_red(:,:,1)*0.3);
 
 % Update transform matrix
-gui_data.histology_ccf_manual_alignment{gui_data.curr_slice} = tform.T;
+gui_data.histology_ccf_manual_alignment{gui_data.curr_slice} = tform_blended.T;
 
 % Upload gui data
 guidata(gui_fig, gui_data);
@@ -367,7 +393,7 @@ thisImage = gui_data.slice_im{gui_data.curr_slice};
 thisImage(thisImage>prctile(maxColVal(maxColVal>0), 90)) = prctile(maxColVal(maxColVal>0), 90);
 set(gui_data.histology_im_h,'CData',thisImage)
 
-set(gui_data.atlas_im_h,'CData',gui_data.histology_ccf(gui_data.curr_slice).tv_slices);
+set(gui_data.histology_im_h, 'CData', gui_data.slice_im{gui_data.curr_slice})
 
 % Plot control points for slice
 set(gui_data.histology_control_points_plot, ...
