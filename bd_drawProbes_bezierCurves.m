@@ -66,24 +66,28 @@ gui_data.histology_ax.Layout.Column = [1, 8];
 gui_data.histology_ax.YDir = 'reverse';
 
 % Row and col position for other GUI elements
-autoButtonPosition = [2, 1, 2];
-brightnessSliderPosition = [2, 3];
-brightnessTextPosition = [1, 3];
-contrastSliderPosition = [2, 4];
-contrastTextPosition = [1, 4];
-pointSliderPosition = [2, 5];
-pointTextPosition = [1, 5];
-saveButtonPosition = [2, 6];
-loadButtonPosition = [2, 7];
-plotButtonPosition = [2, 8];
-delButtonPosition = [11, 2, 3];
-startButtonPosition = [11, 4, 5];
-stopButtonPosition = [11, 6, 7];
-probePointsBoxPosition = [10, 2, 7];
-probeDropdownBoxPosition = [9, 2, 7];
+if strcmp(screenOrientation, 'portrait')
+    autoButtonPosition = [2, 1, 2];
+    brightnessSliderPosition = [2, 3];
+    brightnessTextPosition = [1, 3];
+    contrastSliderPosition = [2, 4];
+    contrastTextPosition = [1, 4];
+    pointSliderPosition = [2, 5];
+    pointTextPosition = [1, 5];
+    saveButtonPosition = [2, 6];
+    loadButtonPosition = [2, 7];
+    plotButtonPosition = [2, 8];
+    delButtonPosition = [11, 1, 2];
+    startButtonPosition = [11, 3, 4];
+    stopButtonPosition = [11, 5, 6];
+    probePointsBoxPosition = [10, 1, 6];
+    probeDropdownBoxPosition = [9, 1, 6];
+    legendPosition = [10, 7, 8, 11];
+else
+end
 
 % auto contrast/brightness button
-gui_data.auto_contrast_btn = uibutton(g, 'Text', 'Auto brightness + contrast', 'BackgroundColor', [1, 0.08, 0.58]);
+gui_data.auto_contrast_btn = uibutton(g, 'Text', 'Auto brightness + contrast', 'BackgroundColor', [1, 0.08, 0.58], 'FontColor', [1,1,1], 'FontSize', 14);
 gui_data.auto_contrast_btn.ButtonPushedFcn = @(varargin) autoContrastButtonPushed(gui_fig);
 gui_data.auto_contrast_btn.Layout.Row = autoButtonPosition(1);
 gui_data.auto_contrast_btn.Layout.Column = [autoButtonPosition(2), autoButtonPosition(3)];
@@ -96,7 +100,7 @@ gui_data.brightness_slider.Layout.Row = brightnessSliderPosition(1);
 gui_data.brightness_slider.Layout.Column = brightnessSliderPosition(2);
 
 % Brightness text
-gui_data.brightness_text = uilabel(g, 'Text', 'Brightness %', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1]);
+gui_data.brightness_text = uilabel(g, 'Text', 'Brightness %', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1], 'FontSize', 14);
 gui_data.brightness_text.Layout.Row = brightnessTextPosition(1);
 gui_data.brightness_text.Layout.Column = brightnessTextPosition(2);
 
@@ -108,36 +112,36 @@ gui_data.contrast_slider.Layout.Row = contrastSliderPosition(1);
 gui_data.contrast_slider.Layout.Column = contrastSliderPosition(2);
 
 % Contrast text
-gui_data.contrast_text = uilabel(g, 'Text', 'Contrast %', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1]);
+gui_data.contrast_text = uilabel(g, 'Text', 'Contrast', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1], 'FontSize', 14);
 gui_data.contrast_text.Layout.Row = contrastTextPosition(1);
 gui_data.contrast_text.Layout.Column = contrastTextPosition(2);
 
 % point size slider
 gui_data.point_size = 20;
-gui_data.point_size_slider = uislider(g, 'Limits', [1, 100], 'Value', gui_data.point_size, 'FontColor', [1, 1, 1]);
+gui_data.point_size_slider = uislider(g, 'Limits', [1, 100], 'Value', gui_data.point_size, 'FontColor', [1, 1, 1], 'FontSize', 14);
 gui_data.point_size_slider.ValueChangedFcn = @(varargin) pointSizeButtonPushed(gui_fig);
 gui_data.point_size_slider.Layout.Row = pointSliderPosition(1);
 gui_data.point_size_slider.Layout.Column = pointSliderPosition(2);
 
 % Point size text
-gui_data.point_size_text = uilabel(g, 'Text', 'Point size (px)', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1]);
+gui_data.point_size_text = uilabel(g, 'Text', 'Point size (px)', 'BackgroundColor', [0, 0, 0], 'FontColor', [1, 1, 1], 'FontSize', 14);
 gui_data.point_size_text.Layout.Row = pointTextPosition(1);
 gui_data.point_size_text.Layout.Column = pointTextPosition(2);
 
 % Save current datapoints
-gui_data.save_btn = uibutton(g, 'Text', 'Save', 'BackgroundColor', [1, 0.843, 0]); % Gold color
+gui_data.save_btn = uibutton(g, 'Text', 'Save', 'BackgroundColor', [1, 0.843, 0], 'FontSize', 14); % Gold color
 gui_data.save_btn.ButtonPushedFcn = @(varargin) saveButtonPushed(gui_fig);
 gui_data.save_btn.Layout.Row = saveButtonPosition(1);
 gui_data.save_btn.Layout.Column = saveButtonPosition(2);
 
 % Load previous datapoints
-gui_data.load_btn = uibutton(g, 'Text', 'Load', 'BackgroundColor', [1, 0.27, 0]); % OrangeRed color
+gui_data.load_btn = uibutton(g, 'Text', 'Load', 'BackgroundColor', [1, 0.27, 0], 'FontColor', [0.3,0.3,0.3], 'FontSize', 14); % OrangeRed color
 gui_data.load_btn.ButtonPushedFcn = @(varargin) loadButtonPushed(gui_fig);
 gui_data.load_btn.Layout.Row = loadButtonPosition(1);
 gui_data.load_btn.Layout.Column = loadButtonPosition(2);
 
 % Plot probes
-gui_data.plot_btn = uibutton(g, 'Text', 'Plot', 'BackgroundColor', [1, 0.65, 0]); % Orange color
+gui_data.plot_btn = uibutton(g, 'Text', 'Plot', 'BackgroundColor', [1, 0.65, 0], 'FontColor', [0.3,0.3,0.3], 'FontSize', 14); % Orange color
 gui_data.plot_btn.ButtonPushedFcn = @(varargin) plotProbeButtonPushed(gui_fig);
 gui_data.plot_btn.Layout.Row = plotButtonPosition(1);
 gui_data.plot_btn.Layout.Column = plotButtonPosition(2);
@@ -152,9 +156,10 @@ gui_data.histology_ax.YDir = 'reverse'; % Reverse Y-Axis direction if needed
 gui_data.histology_ax.Colormap = gray; % Set colormap to gray
 gui_data.histology_ax.Visible = 'off'; % Turn off axis lines and labels
 gui_data.histology_ax.DataAspectRatioMode = 'manual';
-gui_data.histology_ax.DataAspectRatio = [1,1,1]; % Maintain aspect ratio
+gui_data.histology_ax.DataAspectRatio = [1, 1, 1]; % Maintain aspect ratio
 gui_data.histology_ax.PlotBoxAspectRatioMode = 'manual';
-gui_data.histology_ax.PlotBoxAspectRatio = [1,1,1];
+gui_data.histology_ax.PlotBoxAspectRatio = [1, 1, 1];
+
 % Image processing and displaying
 gui_data.slice_im{1}(gui_data.slice_im{1} > 1200) = 0;
 img = imadjust(gui_data.slice_im{1}, [0.1, 0.8]);
@@ -169,9 +174,9 @@ hold(gui_data.histology_ax, 'on');
 % Create title to write area in
 gui_data.histology_ax_title = title(gui_data.histology_ax, '', 'FontSize', 14, 'Color', 'white');
 
+% Initialize probe points
+gui_data.probe_color = bd_getColors(gui_data.n_probes);
 
-% Initialize probe points -> old method
-gui_data.probe_color = lines(gui_data.n_probes);
 gui_data.probe_points_histology = cell(length(gui_data.slice_im), gui_data.n_probes);
 for iProbe = 1:gui_data.n_probes
     % Use the 'Parent' property to specify the target axes
@@ -184,12 +189,30 @@ gui_data.probe_fit_lines = gobjects(gui_data.n_probes, 1);
 gui_data.stop_points = nan(gui_data.n_probes, 3);
 gui_data.start_points = nan(gui_data.n_probes, 3);
 
+% Create a legend
+gui_data.legendAxes = uiaxes(g, 'Box', 'off', 'XTick', [], 'YTick', [], 'XColor', 'none', 'YColor', 'none', 'Color', 'k');
+gui_data.legendAxes.Layout.Row = [legendPosition(1), legendPosition(4)];
+gui_data.legendAxes.Layout.Column = [legendPosition(2), legendPosition(3)];
+hold(gui_data.legendAxes, 'on');
+
+% Define the positions for the legend items
+nProbes = size(gui_data.probe_color, 1);
+
+% Plot each probe's color in the legend
+gui_data.probeLegendText = gobjects(nProbes, 1);
+for i = 1:nProbes
+    gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i-1)/10)) * 0.3 +0.3, 0.9  -0.08 * (i - (floor((i-1)/10))*10) , ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :),...
+        'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
+end
+hold(gui_data.legendAxes, 'off');
+
+
 % Initialize plots for control points and Bezier curve
 gui_data.bezier_control_points = cell(gui_data.n_probes, 1);
 gui_data.bezier_curves = gobjects(gui_data.n_probes, 1);
 
-% Points table 
-gui_data.points_table = uilistbox(g);
+% Points table
+gui_data.points_table = uilistbox(g, 'FontColor', [1 ,1, 1], 'BackgroundColor', [0.1, 0.1, 0.1]);
 gui_data.points_table.ValueChangedFcn = @(src, event)selectPoint(gui_fig, src, event);
 gui_data.points_table.Layout.Row = probePointsBoxPosition(1);
 gui_data.points_table.Layout.Column = [probePointsBoxPosition(2), probePointsBoxPosition(3)];
@@ -229,11 +252,11 @@ gui_data.prev_spline_fit = repmat(0.1, gui_data.n_probes, 1);
 % curr_probe
 gui_data.curr_probe = 1;
 
-% Create a cell array of probe names or identifiers
+% Assuming gui_data.probe_color holds RGB values for each probe's color
 probes_list = arrayfun(@(x) sprintf('Probe %d', x), 1:gui_data.n_probes, 'UniformOutput', false);
 
 % Probe dropdown menu
-gui_data.probe_dropdown = uidropdown(g, 'Items', probes_list);
+gui_data.probe_dropdown = uidropdown(g, 'Items', probes_list, 'FontColor', [1,1,1],'BackgroundColor', [0.2,0.2,0.2]);
 gui_data.probe_dropdown.ValueChangedFcn = @(src, event)updateProbe(gui_fig);
 gui_data.probe_dropdown.Layout.Row = probeDropdownBoxPosition(1);
 gui_data.probe_dropdown.Layout.Column = [probeDropdownBoxPosition(2), probeDropdownBoxPosition(3)];
@@ -305,19 +328,19 @@ end
 %% general functions: update probe, slice, create fit, probe buttons
 function update_curr_probe(gui_fig, curr_probe)
 % Get guidata
-    gui_data = guidata(gui_fig);
-    gui_data.curr_probe = curr_probe;
+gui_data = guidata(gui_fig);
+gui_data.curr_probe = ismember(gui_data.probe_dropdown.Items, curr_probe);
+curr_probe = gui_data.curr_probe;
+set(gui_data.histology_ax_title, 'String', ['Draw control points for probe ', num2str(curr_probe)]);
 
-    set(gui_data.histology_ax_title, 'String', ['Draw control points for probe ', num2str(curr_probe)]);
-
-    % Specify the axes for drawpoint
-    curr_point = drawpoint('Parent', gui_data.histology_ax);
+% Specify the axes for drawpoint
+curr_point = drawpoint('Parent', gui_data.histology_ax);
 
 
 % Storing Bezier control points instead of probe points
 
 gui_data.bezier_control_points{curr_probe} = ...
-    [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
++    [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
 [~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:, 3)); % sort points by slice # 1+
 gui_data.bezier_control_points{curr_probe} = ...
     gui_data.bezier_control_points{curr_probe}(sortIdx, :);
@@ -348,10 +371,10 @@ end
 curr_point.delete;
 thesePoints = gui_data.bezier_control_points{curr_probe}(:, 3) == gui_data.curr_slice;
 % Ensure set command is applied to the correct plot object
-    if isgraphics(gui_data.probe_points{curr_probe})
-        set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
-            'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
-    end
+if isgraphics(gui_data.probe_points{curr_probe})
+    set(gui_data.probe_points{curr_probe}, 'XData', gui_data.bezier_control_points{curr_probe}(thesePoints, 1), 'YData', gui_data.bezier_control_points{curr_probe}(thesePoints, 2), ...
+        'MarkerFaceColor', gui_data.probe_color(curr_probe, :), 'MarkerEdgeColor', gui_data.probe_color(curr_probe, :));
+end
 % store points
 gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
     gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice, 1:2);
@@ -359,6 +382,7 @@ gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
 guidata(gui_fig, gui_data);
 
 populate_points_table(gui_fig);
+updateLegend(gui_fig)
 end
 
 function update_slice(gui_fig)
@@ -413,8 +437,9 @@ set(gui_data.histology_ax_title, 'String', ...
 
 % Upload gui data
 guidata(gui_fig, gui_data);
-populate_points_table(gui_fig);
 
+populate_points_table(gui_fig);
+updateLegend(gui_fig)
 end
 
 function plot_probe(gui_data, probe_ccf)
@@ -422,7 +447,7 @@ function plot_probe(gui_data, probe_ccf)
 % Plot probe trajectories
 figure('Name', 'Probe trajectories');
 axes_atlas = axes;
-[~, brain_outline] = plotBrainGrid([], axes_atlas);
+[~, brain_outline] = plotBrainGrid([], axes_atlas, [], 1);
 set(axes_atlas, 'ZDir', 'reverse');
 hold(axes_atlas, 'on');
 axis vis3d equal off manual
@@ -526,10 +551,10 @@ for curr_probe = 1:length(probe_ccf)
 end
 
 % Plot probe areas
-figure('Name', 'Trajectory areas');
+figure('Name', 'Trajectory areas', 'Color', 'k');
 % (load the colormap - located in the repository, find by associated fcn)
-allenCCF_path = fileparts(which('allenCCFbregma'));
-cmap_filename = [allenCCF_path, filesep, 'allen_ccf_colormap_2017.mat'];
+filePath = fileparts(matlab.desktop.editor.getActiveFilename);
+cmap_filename = [filePath, filesep, 'allen_ccf_colormap_2017.mat'];
 load(cmap_filename);
 for curr_probe = 1:length(probe_ccf)
     slice_points = find(~cellfun(@isempty, gui_data.probe_points_histology(:, curr_probe)'));
@@ -557,10 +582,14 @@ for curr_probe = 1:length(probe_ccf)
         set(curr_axes, 'XTick', []);
 
         if curr_probe == 1
-            title(['Probe ', num2str(curr_probe)]);
+            title(['Probe ', num2str(curr_probe)], 'Color', gui_data.probe_color(curr_probe, :));
         else
-            title([num2str(curr_probe)]);
+            title([num2str(curr_probe)], 'Color', gui_data.probe_color(curr_probe, :));
         end
+        set(gca,'color','k');
+        set(gca,'YColor','w');
+        set(gca,'XColor','w');
+        set(gca,'GridColor','w');
     end
 
 end
@@ -571,7 +600,7 @@ function updateProbe(gui_fig)
 gui_data = guidata(gui_fig);
 
 % Get the selected probe index
-selected_probe_idx = ismember(gui_data.probe_dropdown.Items ,get(gui_data.probe_dropdown, 'Value'));
+selected_probe_idx = ismember(gui_data.probe_dropdown.Items, get(gui_data.probe_dropdown, 'Value'));
 
 % Set the current probe in gui_data
 gui_data.curr_probe = selected_probe_idx;
@@ -582,8 +611,9 @@ gui_data.points_table.Value = gui_data.points_table.Items(gui_data.selected_row)
 
 % Save gui_data
 guidata(gui_fig, gui_data);
-populate_points_table(gui_fig);
 
+populate_points_table(gui_fig);
+updateLegend(gui_fig)
 end
 
 function updateProbe_slider(gui_fig, curr_probe)
@@ -633,6 +663,51 @@ curr_point.delete;
 guidata(gui_fig, gui_data);
 end
 
+function updateLegend(gui_fig)
+gui_data = guidata(gui_fig);
+
+% Define the positions for the legend items
+ncolProbes = size(gui_data.probe_color, 1);
+if ncolProbes < gui_data.n_probes
+    hold(gui_data.legendAxes, 'on');
+    % add any missing
+    for i = ncolProbes+1:nProbes
+        gui_data.probeLegendText{iProbe} = text(gui_data.legendAxes, (floor((i-1)/10)) * 0.3, 0.9  -0.08 * (i - (floor((i-1)/10))*10) , ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :),...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
+    end
+    hold(gui_data.legendAxes, 'off');
+end
+
+% update curr probe and slice probes 
+nonEmptyCells = ~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice,:));
+theseProbes = unique([nonEmptyCells, gui_data.curr_probe]);
+
+for iProbe = 1:gui_data.n_probes
+    if ismember(iProbe, theseProbes)
+        gui_data.probeLegendText(iProbe).FontWeight = 'Bold';
+        gui_data.probeLegendText(iProbe).FontSize = 16;
+    else
+        gui_data.probeLegendText(iProbe).FontWeight = 'Normal';
+        gui_data.probeLegendText(iProbe).FontSize = 14;
+    end
+end
+
+% gui_data.points_table.BackgroundColor = gui_data.probe_color(gui_data.curr_probe,:);
+% if sum(gui_data.points_table.BackgroundColor) < 1.5
+%     gui_data.points_table.FontColor = [1,1,1];
+% else
+%     gui_data.points_table.FontColor = [0,0,0];
+% end
+
+gui_data.probe_dropdown.BackgroundColor = gui_data.probe_color(gui_data.curr_probe,:);
+if sum(gui_data.probe_dropdown.BackgroundColor) < 1.5
+    gui_data.probe_dropdown.FontColor = [1,1,1];
+else
+    gui_data.probe_dropdown.FontColor = [0,0,0];
+end
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
 %% bezier functions
 function selectPoint(gui_fig, table, event)
 gui_data = guidata(gui_fig);
@@ -684,7 +759,6 @@ end
 set(gui_data.points_table, 'Items', pointStrings);
 guidata(gui_fig, gui_data);
 end
-
 
 function deleteSelectedPoint(~, ~, gui_fig)
 gui_data = guidata(gui_fig);
@@ -751,12 +825,7 @@ end
 
 % Update the position of the point
 selectedIdx = gui_data.selected_row;
-try
-    ss = strrep(selectedIdx, '[CURR] ', '');
-    selected_point = contains(gui_data.points_table.Items, ss(1:11));
-catch
-    selected_point =  gui_data.selected_row;
-end
+selected_point = contains(gui_data.points_table.Items, selectedIdx(1:17));
 
 gui_data.bezier_control_points{gui_data.curr_probe}(selected_point, 1:2) = draggedPos;
 gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}(selected_point, 1:2) = draggedPos;
@@ -769,11 +838,11 @@ B = bezier_curve(t, gui_data.bezier_control_points{gui_data.curr_probe});
 
 % Filter based on z-slice
 z_slice_tolerance = 0.1; % define a tolerance for how close the z-value of the Bezier curve has to be to z_slice to be displayed
-indices = find(abs(B(:, 3) - gui_data.curr_slice) < z_slice_tolerance); % find indices of points on the Bezier curve close to z_slice
+indices = find(abs(B(:, 3)-gui_data.curr_slice) < z_slice_tolerance); % find indices of points on the Bezier curve close to z_slice
 B_slice = B(indices, :);
 
 
-gui_data.bezier_curves(gui_data.curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color',...
+gui_data.bezier_curves(gui_data.curr_probe) = plot(B_slice(:, 1), B_slice(:, 2), 'Color', ...
     gui_data.probe_color(gui_data.curr_probe, :), 'Parent', gui_data.histology_ax, 'LineWidth', 2);
 
 
@@ -792,9 +861,7 @@ guidata(gui_fig, gui_data);
 update_slice(gui_fig);
 end
 
-
 % Bezier curve function
-
 function B = bezier_curve(t, control_points)
 n = size(control_points, 1) - 1; % degree of the polynomial
 B = zeros(3, length(t)); % Change to 2 for 3D
@@ -1177,12 +1244,12 @@ if size(probe_ccf, 1) > gui_data.n_probes
         % Use scatter for start and stop points
         gui_data.start_points_scatter{iNewProbe} = scatter(gui_data.histology_ax, NaN, NaN, 'rx');
         gui_data.stop_points_scatter{iNewProbe} = scatter(gui_data.histology_ax, NaN, NaN, 'rx');
-        
-        if size(gui_data.stop_points,1) < iNewProbe
-        gui_data.stop_points(iNewProbe, 1:3) = nan(1, 3);
+
+        if size(gui_data.stop_points, 1) < iNewProbe
+            gui_data.stop_points(iNewProbe, 1:3) = nan(1, 3);
         end
-        if size(gui_data.start_points,1) < iNewProbe
-        gui_data.start_points(iNewProbe, 1:3) = nan(1, 3);
+        if size(gui_data.start_points, 1) < iNewProbe
+            gui_data.start_points(iNewProbe, 1:3) = nan(1, 3);
         end
     end
 
@@ -1191,6 +1258,7 @@ end
 
 
 gui_data.probe_points_histology = probe_points;
+gui_data.n_probes = size(gui_data.probe_points_histology,2);
 for iProbe = 1:gui_data.n_probes
     non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, iProbe)));
     for iSlice = 1:size(non_empty_slices, 1)
@@ -1208,35 +1276,40 @@ disp('loaded data')
 % Upload gui data
 set(gui_data.histology_ax_title, 'String', previous_string)
 guidata(gui_fig, gui_data);
-populate_points_table(gui_fig)
+
+populate_points_table(gui_fig);
+updateLegend(gui_fig)
 
 end
 
 function addProbe(gui_fig)
-    % Get guidata
-    gui_data = guidata(gui_fig);
+% Get guidata
+gui_data = guidata(gui_fig);
 
-    % Add a probe
-    gui_data.n_probes = gui_data.n_probes + 1;
-    gui_data.probe_color = lines(gui_data.n_probes);
-    gui_data.probe_points_histology(:, gui_data.n_probes) = cell(length(gui_data.slice_im), 1);
-    gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
-    gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
-    gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
-    gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
-    gui_data.bezier_control_points = [gui_data.bezier_control_points; cell(1, 1)];
-    
-    % Specify the parent axes for the plot commands
-    gui_data.bezier_curves(gui_data.n_probes) = plot(gui_data.histology_ax, NaN, NaN);
-    gui_data.probe_dropdown.Items{gui_data.n_probes} = ['Probe ', num2str(gui_data.n_probes)];
-    gui_data.start_points_scatter{gui_data.n_probes} = plot(gui_data.histology_ax, NaN, NaN, 'rx');
-    gui_data.stop_points_scatter{gui_data.n_probes} = plot(gui_data.histology_ax, NaN, NaN, 'rx');
+% Add a probe
+gui_data.n_probes = gui_data.n_probes + 1;
+gui_data.probe_color = lines(gui_data.n_probes);
+gui_data.probe_points_histology(:, gui_data.n_probes) = cell(length(gui_data.slice_im), 1);
+gui_data.probe_points{gui_data.n_probes} = gobjects(10, 1);
+gui_data.probe_inflection_pts(gui_data.n_probes) = gobjects(1, 1);
+gui_data.probe_fit_lines(gui_data.n_probes) = gobjects(1, 1);
+gui_data.prev_spline_fit(gui_data.n_probes) = 0.1;
+gui_data.bezier_control_points = [gui_data.bezier_control_points; cell(1, 1)];
 
-    gui_data.stop_points = [gui_data.stop_points; nan(1, 3)];
-    gui_data.start_points = [gui_data.start_points; nan(1, 3)];
+% Specify the parent axes for the plot commands
+gui_data.bezier_curves(gui_data.n_probes) = plot(gui_data.histology_ax, NaN, NaN);
+gui_data.probe_dropdown.Items{gui_data.n_probes} = ['Probe ', num2str(gui_data.n_probes)];
+gui_data.start_points_scatter{gui_data.n_probes} = plot(gui_data.histology_ax, NaN, NaN, 'rx');
+gui_data.stop_points_scatter{gui_data.n_probes} = plot(gui_data.histology_ax, NaN, NaN, 'rx');
 
-    % Upload gui data
-    guidata(gui_fig, gui_data);
+gui_data.stop_points = [gui_data.stop_points; nan(1, 3)];
+gui_data.start_points = [gui_data.start_points; nan(1, 3)];
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+populate_points_table(gui_fig);
+updateLegend(gui_fig);
 end
 
 function toggleVisiblityProbeButtonPushed(gui_fig)

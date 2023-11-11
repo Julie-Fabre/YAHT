@@ -145,14 +145,13 @@ bd_plotHistoPerMouse(outputDir, st)
 
 % plot/generate a video of all your probe tracks across mice
 paths = {[outputDir, '/probe_ccf.mat'], [outputDir, '/probe_ccf.mat']};
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], paths, regionNames, '', '') 
+bd_plotAllProbeTracksInROIs(paths, regionsNames, '', '') 
 
 % plot/generate a video all probe tracks in certain regions, across mice
 regionNames = {'CP', 'GPe', 'SNr'};
-regionColors = [0, 0.7461, 1; 0.1797, 0.5430, 0.3398;1, 0.4102, 0.7031];
+regionColors = {[0 0.7461 1];[0.1797 0.5430 0.3398];[1 0.4102 0.7031]};
 regionPlotSide = [-1, 1, -1];
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], paths, regionNames, regionColors, regionPlotSide) 
+bd_plotAllProbeTracksInROIs(paths, regionsNames, regionColors, regionPlotSide) 
 
 % plot a brain outline with certain brain regions
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], {}, regionNames, regionColors, regionPlotSide);
-
+bd_plotAllProbeTracksInROIs({}, regionsNames, regionColors, regionPlotSide);
