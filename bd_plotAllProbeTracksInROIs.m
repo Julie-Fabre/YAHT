@@ -1,30 +1,35 @@
-function bd_plotAllProbeTracksInROIs(atlasBrainRegLocation, paths, regionNames, regionColors, regionPlotSide, makeMovie, saveMoviePath)
+function bd_plotAllProbeTracksInROIs(allenAtlasPath, atlasBrainRegLocation, paths, regionNames, regionColors, regionPlotSide, plotPatch,...
+    makeMovie, saveMoviePath)
 
-if nargin < 2 || isempty(paths)
+if nargin < 3 || isempty(paths)
     paths = {};
 end
 
-if nargin < 3 || isempty(regionNames)
+if nargin < 4 || isempty(regionNames)
     regionNames = [];
 end
 
-if nargin < 4 || isempty(regionColors)
+if nargin < 5 || isempty(regionColors)
     regionColors = bd_getColors(length(regionNames));
 end
 
-if nargin < 5 || isempty(regionPlotSide)
+if nargin < 6 || isempty(regionPlotSide)
     regionPlotSide = repmat([-1, 1], ceil(length(regionNames)/2));
 end
 
-if nargin < 6 || isempty(makeMovie)
+if nargin < 7 || isempty(plotPatch)
+    plotPatch = 0;
+end
+
+if nargin < 8 || isempty(makeMovie)
     makeMovie = 1;
 end
 
-if nargin < 7 || isempty(saveMoviePath)
+if nargin < 9 || isempty(saveMoviePath)
     saveMoviePath = pwd;
 end
 
-allenAtlasPath = fileparts(matlab.desktop.editor.getActiveFilename);
+%allenAtlasPath = fileparts(matlab.desktop.editor.getActiveFilename);
 
 tv = readNPY([allenAtlasPath, filesep, 'template_volume_10um.npy']);
 av = readNPY([allenAtlasPath, filesep, 'annotation_volume_10um_by_index.npy']);
@@ -33,7 +38,11 @@ bregma = [540, 0, 570];
 slice_spacing = 10;
 structure_alpha = 0.2;
 
-[~, brain_outline] = plotBrainGrid([], []);
+if plotPatch
+    bd_plotBrainSurface(allenAtlasPath) 
+else
+    [~, brain_outline] = plotBrainGrid([], []);
+end
 
 if ~isempty(regionNames)
     [~, ~, st_br, ~] = bd_loadAllenAtlas(atlasBrainRegLocation);

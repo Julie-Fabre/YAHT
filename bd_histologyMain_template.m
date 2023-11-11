@@ -6,7 +6,8 @@ clearvars -global % releases previous GUIs, if there are any
 animal = 'JF096';
 brainsawPath = ['/home/netshare/zaru/', animal, '/Histology/downsampled_stacks/025_micron/'];
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
-allenAtlasPath = fileparts(matlab.desktop.editor.getActiveFilename); %for the colormap;
+allenAtlasPath = '/home/julie/Dropbox/Atlas/allenCCF'; % location of the allencff downloaded files
+
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
 % is the most posterior, superior, left part of the brain
@@ -145,14 +146,21 @@ bd_plotHistoPerMouse(outputDir, st)
 
 % plot/generate a video of all your probe tracks across mice
 paths = {[outputDir, '/probe_ccf.mat'], [outputDir, '/probe_ccf.mat']};
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], paths, regionNames, '', '') 
+bd_plotAllProbeTracksInROIs(allenAtlasPath, [atlasLocation.folder, filesep, atlasLocation.name], paths, regionNames, '', '') 
 
 % plot/generate a video all probe tracks in certain regions, across mice
 regionNames = {'CP', 'GPe', 'SNr'};
 regionColors = [0, 0.7461, 1; 0.1797, 0.5430, 0.3398;1, 0.4102, 0.7031];
 regionPlotSide = [-1, 1, -1];
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], paths, regionNames, regionColors, regionPlotSide) 
+bd_plotAllProbeTracksInROIs(allenAtlasPath, [atlasLocation.folder, filesep, atlasLocation.name],...
+    paths, regionNames, regionColors, regionPlotSide) 
 
 % plot a brain outline with certain brain regions
-bd_plotAllProbeTracksInROIs([atlasLocation.folder, filesep, atlasLocation.name], {}, regionNames, regionColors, regionPlotSide);
+bd_plotAllProbeTracksInROIs(allenAtlasPath, [atlasLocation.folder, filesep, atlasLocation.name],...
+    {}, regionNames, regionColors, regionPlotSide);
+
+% use a patch outline rather than grid
+plotPatch = 1;
+bd_plotAllProbeTracksInROIs(allenAtlasPath, [atlasLocation.folder, filesep, atlasLocation.name],...
+    {}, regionNames, regionColors, regionPlotSide, plotPatch);
 
