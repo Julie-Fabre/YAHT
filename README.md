@@ -1,6 +1,6 @@
-# YAHT: Yet Another Histology Tool
+# 🚢 YAHT: Yet Another Histology Tool
 
-🧰 YAHT: Yet Another Histology Tool. The goal of this toolbox is to have an all-in-one pipeline to quickly go from histology to highly accurately-tracked probes.
+ YAHT: Yet Another Histology Tool. The goal of this toolbox is to have an all-in-one pipeline to quickly go from histology to highly accurately-tracked probes.
 
 <img style="float: right;" src="./images/brain.gif" width=100% height=100%>
 
