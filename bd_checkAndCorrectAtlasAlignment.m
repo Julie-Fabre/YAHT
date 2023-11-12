@@ -1,4 +1,4 @@
-function bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredIm, saveDir, screenToUse)
+function bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredIm, saveDir, screenPortrait)
 % based on:
 % AP_manual_align_histology_ccf(tv,av,st,slice_im_path)
 %
@@ -18,11 +18,14 @@ gui_data.tv = tv;
 gui_data.av = av;
 gui_data.st = st;
 
+if nargin < 6 || isempty(screenPortrait)
+    screenPortrait = 1;
+end
 % Load in slice images
 gui_data.slice_im_path = saveDir;
 
-SCRSZ = screensize(screenToUse);   %Get user's screen size
-screenPortrait = SCRSZ(4)>SCRSZ(3);
+SCRSZ = get(0,'screensize');
+%screenPortrait = SCRSZ(4)>SCRSZ(3);
    
 gui_data.slice_im = cell(size(registeredIm,3),1);
 for curr_slice = 1:size(registeredIm,3)
@@ -43,7 +46,7 @@ end
 
 % Create figure, set button functions
 gui_fig = figure('KeyPressFcn',@keypress, 'Color', 'k');
-gui_data.curr_slice = 1;
+gui_data.curr_slice = 120;
 
 % Set up axis for histology image
 
@@ -56,20 +59,20 @@ else %assume portrait mode
 end
     
 hold on; colormap(gray); axis image off;
-gui_data.histology_im_h = imagesc(gui_data.slice_im{1}, ...
+gui_data.histology_im_h = imagesc(gui_data.slice_im{gui_data.curr_slice}, ...
     'Parent',gui_data.histology_ax,'ButtonDownFcn',@mouseclick_histology);
 colormap(gray)
 
 % Set up histology-aligned atlas overlay
 % (and make it invisible to mouse clicks)
 histology_aligned_atlas_boundaries_init = ...
-    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{1},2));
+    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{gui_data.curr_slice},2));
 gui_data.histology_aligned_atlas_boundaries = ...
     imagesc(histology_aligned_atlas_boundaries_init,'Parent',gui_data.histology_ax, ...
     'AlphaData',histology_aligned_atlas_boundaries_init,'PickableParts','none');
 
 structure_aligned_atlas_boundaries_init = ...
-    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{1},2));
+    zeros(size(gui_data.slice_im{1},1),size(gui_data.slice_im{gui_data.curr_slice},2));
 gui_data.structure_aligned_atlas_boundaries = ...
     imagesc(structure_aligned_atlas_boundaries_init,'Parent',gui_data.histology_ax, ...
     'AlphaData',structure_aligned_atlas_boundaries_init,'PickableParts','none');
@@ -248,9 +251,7 @@ guidata(gui_fig, gui_data);
 
 % If equal number of histology/atlas control points > 3, draw boundaries
 if size(gui_data.histology_control_points{gui_data.curr_slice},1) == ...
-        size(gui_data.atlas_control_points{gui_data.curr_slice},1) || ...
-        (size(gui_data.histology_control_points{gui_data.curr_slice},1) > 3 && ...
-        size(gui_data.atlas_control_points{gui_data.curr_slice},1) > 3)
+        size(gui_data.atlas_control_points{gui_data.curr_slice},1) 
     align_ccf_to_histology(gui_fig)
 end
 end
@@ -295,7 +296,7 @@ gui_data = guidata(gui_fig);
 num_points = size(gui_data.histology_control_points{gui_data.curr_slice},1);
 weight_manual = min(num_points, 10) / 10; % Weight increases with number of points, max of 1
 
-if num_points >= 6   && numel(gui_data.atlas_control_points{gui_data.curr_slice}) ==...
+if num_points >= 3   && numel(gui_data.atlas_control_points{gui_data.curr_slice}) ==...
         numel(gui_data.histology_control_points{gui_data.curr_slice})
     % Use control point alignment for manual transformation
     tform_manual = fitgeotrans(gui_data.atlas_control_points{gui_data.curr_slice}, ...
@@ -401,7 +402,6 @@ guidata(gui_fig, gui_data);
 align_ccf_to_histology(gui_fig)
 
 end
-
 
 
 

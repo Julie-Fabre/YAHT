@@ -2,6 +2,8 @@
 
 🧰 YAHT: Yet Another Histology Tool. The goal of this toolbox is to have an all-in-one pipeline to quickly go from histology to highly accurately-tracked probes.
 
+<img style="float: right;" src="./images/brain.gif" width=100% height=100%>
+
 YAHT allows for:
 - preprocessing of histology images to get higher quality data,
 - automated histology slice registration to a common atlas (using [brainreg](https://github.com/brainglobe/brainreg)),
@@ -29,7 +31,7 @@ Other dependencies alrerady integrated in YAHT:
 
 Adjust the paths in `bd_histologyMain_template` an run through the sections to get started.
 
-### Pipeline steps
+### 🔗 Pipeline steps
 - Step 0: preprocessing
 
 Optionally, despeckle and remove outliers from your data to improve the fit to the common atlas. 
@@ -38,19 +40,30 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 
 - Step 2: Correct any orientation issues
 
-<img style="float: right;" src="./image/altasOrientationFix.png" width=100% height=100%>
+<img style="float: right;" src="./images/checkOrientation.gif" width=100% height=100%>
 
 - Step 3: Fine tune the stretch factors on a slice-by-slice basis 
 
+<img style="float: right;" src="./images/checkAlignement.gif" width=100% height=100%>
+
 - Step 4: Draw probes
+
+<img style="float: right;" src="./images/drawProbe.gif" width=100% height=100%>
 
 - Step 5: Assign probes to ephys days/sites
 
-
 - Step 6: Align probes and ephys
 
+
+<img style="float: right;" src="./images/alignEphysHistology.gif" width=100% height=100%>
+
 - Step 7: Generate some beautiful plots and videos 
-![Alt text](image/brainPatch.png)
+![Alt text](images/brainPatch.png)
+
+<img style="float: right;" src="./images/brain.gif" width=100% height=100%>
+
+<img style="float: right;" src="./images/brain2.gif" width=100% height=100%>
+
 
 
 

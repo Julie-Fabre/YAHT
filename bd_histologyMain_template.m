@@ -49,10 +49,10 @@ end
 % and this transformation will then be applied to all other slices and saved in a histology_ccf.mat file.
 % If you register several slices, the average transform will be applied to
 % all other slices and saved.
-bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse);
+bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir);
 
 %% ~~ Check adjust border alignement/scaling ~~
-bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir, screenToUse)
+bd_checkAndCorrectAtlasAlignment(tv, av, st, registeredImage, outputDir)
 % histology_ccf.mat : corresponding CCF slices
 % atlas2histology_tform.mat : ccf to histology alignement/warp
 

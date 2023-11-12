@@ -1,9 +1,11 @@
+patchBrain = 0;
+
 % to do
 % add probe depths, types, and mutli color if several regions of interest
 % plot only probe in the region of interest?
-myPaths;
+cl_myPaths;
 bregma = [540, 0, 570];
-theseAnimals = {'JF096', 'JF097', 'JF099', 'JF106'};%{'JF091', 'JF093', 'JF107', 'JF105'};%{'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};
+theseAnimals = {'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};%{'JF091', 'JF093', 'JF107', 'JF105'};%{'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};{'JF096', 'JF097', 'JF099', 'JF106'};%
 %theseAnimals = {'JF093', 'JF091', 'JF107', 'JF104', 'JF105'};
 animalsType = {'Naive'};
 regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
@@ -38,7 +40,11 @@ for iType = 1:size(animalsType, 2)
     structure_alpha = 0.2;
     %get colors (overrride allen)
     %figure();
-    [~, brain_outline] = plotBrainGrid([], []);
+    if patchBrain
+        bd_plotBrainSurface(allenAtlasPath)
+    else
+        [~, brain_outline] = plotBrainGrid([], []);
+    end
 
     %overlay regions
     for iRegion = [1,2,5]
@@ -141,3 +147,5 @@ OptionZ.FrameRate = 15;
 OptionZ.Duration = 5.5;
 OptionZ.Periodic = true;
 CaptureFigVid([-20, 10; -110, 10; -190, 80; -290, 10; -380, 10], 'WellMadeVid', OptionZ)
+
+

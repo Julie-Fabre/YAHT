@@ -229,13 +229,13 @@ lfp = NaN;
 AP_cellrasterJF({stimOn_times}, {trial_conditions(:, 1)})
 
 if max(template_depths) > 2880
-     template_depths = 3840;
+     probeLength = 3840;
 elseif max(template_depths) > 1500
-    template_depths = 2880;
+    probeLength = 2880;
 elseif max(template_depths) > 750
-    template_depths = 1500;
+    probeLength = 1500;
 elseif  max(template_depths) <= 750
-    template_depths = 750;
+    probeLength = 750;
 end
 
 

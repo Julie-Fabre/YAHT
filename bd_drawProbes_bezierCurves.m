@@ -157,8 +157,7 @@ gui_data.histology_ax.Colormap = gray; % Set colormap to gray
 gui_data.histology_ax.Visible = 'off'; % Turn off axis lines and labels
 gui_data.histology_ax.DataAspectRatioMode = 'manual';
 gui_data.histology_ax.DataAspectRatio = [1, 1, 1]; % Maintain aspect ratio
-gui_data.histology_ax.PlotBoxAspectRatioMode = 'manual';
-gui_data.histology_ax.PlotBoxAspectRatio = [1, 1, 1];
+
 
 % Image processing and displaying
 gui_data.slice_im{1}(gui_data.slice_im{1} > 1200) = 0;
@@ -687,8 +686,11 @@ for iProbe = 1:gui_data.n_probes
         gui_data.probeLegendText(iProbe).FontWeight = 'Bold';
         gui_data.probeLegendText(iProbe).FontSize = 16;
     else
+        try
         gui_data.probeLegendText(iProbe).FontWeight = 'Normal';
         gui_data.probeLegendText(iProbe).FontSize = 14;
+        catch
+        end
     end
 end
 

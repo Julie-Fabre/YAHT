@@ -1,4 +1,4 @@
-function bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredIm, outputDir, screenToUse)
+function bd_checkAndCorrectAtlasOrientation(tv, av, st, registeredIm, outputDir, screenPortrait)
 % Grab CCF slices corresponding to histology slices
 % Andy Peters (peters.andrew.j@gmail.com)
 
@@ -11,8 +11,9 @@ gui_data.st = st;
 % Load in slice images
 gui_data.slice_im_path = [outputDir, filesep, 'manual'];
 
-SCRSZ = screensize(screenToUse); %Get user's screen size
-screenPortrait = SCRSZ(4) > SCRSZ(3);
+if nargin < 6 || isempty(screenPortrait)
+    screenPortrait = 0;
+end
 
 gui_data.slice_im = cell(size(registeredIm, 3), 1);
 for curr_slice = 1:size(registeredIm, 3)
@@ -399,7 +400,6 @@ gui_data = guidata(gui_fig);
 set(gui_data.atlas_slice_plot, 'XData', plane_ap, 'YData', plane_ml, 'ZData', plane_dv, 'CData', tv_slice);
 
 % Boundaries
-% boudaries
 [tv_slice, av_slice, plane_ap, plane_ml, plane_dv] = grab_atlas_slice(gui_data, 1);
 
 av_slice(isnan(av_slice)) = 0;

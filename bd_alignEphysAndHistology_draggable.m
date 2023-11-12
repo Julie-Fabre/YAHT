@@ -226,6 +226,14 @@ function keypress(gui_fig, eventdata)
 % Get guidata
 gui_data = guidata(gui_fig);
 
+% Set amounts to move by with/without shift
+if any(strcmp(eventdata.Modifier, 'shift'))
+    y_change = 100;
+    s_change = 0.1;
+else
+    y_change = 1;
+    s_change = 0.01;
+end
 
 switch eventdata.Key
 
