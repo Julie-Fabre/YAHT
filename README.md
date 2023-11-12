@@ -17,7 +17,7 @@ Largely based on [AP_histology](https://github.com/petersaj/AP_histology) and [a
 ### ⚒️ Installation
 
 YAHT requires: 
-- brainreg to be installed locally (use `pip install brainreg` in your favorite python enivronment)
+- brainreg to be installed locally (use `pip install brainreg` in your favorite python environment)
 - the files located [here](https://osf.io/fv7ed/#!) to be downloaded locally
 
 Dependencies to install: 
