@@ -58,6 +58,7 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 <img style="float: right;" src="./images/alignEphysHistology.gif" width=100% height=100%>
 
 - Step 7: Generate some beautiful plots and videos 
+
 ![Alt text](images/brainPatch.png)
 
 <img style="float: right;" src="./images/brain.gif" width=100% height=100%>
