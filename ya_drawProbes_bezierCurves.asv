@@ -59,7 +59,7 @@ if strcmp(screenOrientation, 'portrait')
     g = uigridlayout(gui_fig, [7, 8], 'BackgroundColor', 'k'); % 7 rows, 8 columns grid layout
     g.RowHeight = {'fit', 'fit', '6x', '1x', 'fit', '2x', 'fit'};
     g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
-    
+
     % row start, col start, col stop, row stop
     mainAxisPosition = [3, 1, 8, 4];
     autoButtonPosition = [2, 1, 2];
@@ -82,26 +82,26 @@ if strcmp(screenOrientation, 'portrait')
 else % landscape mode
     g = uigridlayout(gui_fig, [5, 10], 'BackgroundColor', 'k'); % grid layout
     g.RowHeight = {'fit', 'fit', 'fit', '2x', 'fit'};
-    g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '10x', '1x'};
+    g.ColumnWidth = {'10x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
 
     % row start, col start, col stop, row stop
-    mainAxisPosition = [1, 9, 10, 5];
-    autoButtonPosition = [2, 1, 2];
-    brightnessSliderPosition = [2, 3];
-    brightnessTextPosition = [1, 3];
-    contrastSliderPosition = [2, 4];
-    contrastTextPosition = [1, 4];
-    pointSliderPosition = [2, 5];
-    pointTextPosition = [1, 5];
-    saveButtonPosition = [2, 6];
-    loadButtonPosition = [2, 7];
-    plotButtonPosition = [2, 8];
-    delButtonPosition = [5, 1, 2];
-    startButtonPosition = [5, 3, 4];
-    stopButtonPosition = [5, 5, 6];
-    probePointsBoxPosition = [4, 1, 6];
-    probeDropdownBoxPosition = [3, 1, 6];
-    legendPosition = [3, 7, 8, 5];
+    mainAxisPosition = [1, 1, 2, 5];
+    autoButtonPosition = [2, 3, 4];
+    brightnessSliderPosition = [2, 5];
+    brightnessTextPosition = [1, 5];
+    contrastSliderPosition = [2, 6];
+    contrastTextPosition = [1, 6];
+    pointSliderPosition = [2, 7];
+    pointTextPosition = [1, 7];
+    saveButtonPosition = [2, 8];
+    loadButtonPosition = [2, 9];
+    plotButtonPosition = [2, 10];
+    delButtonPosition = [5, 3, 4];
+    startButtonPosition = [5, 5, 6];
+    stopButtonPosition = [5, 7, 8];
+    probePointsBoxPosition = [4, 3, 8];
+    probeDropdownBoxPosition = [3, 3, 8];
+    legendPosition = [3, 9, 10, 5];
 end
 
 % Position and size of histology axis
@@ -334,6 +334,18 @@ switch eventdata.Key
         gui_data.curr_probe = max(1, gui_data.curr_probe-1);
         guidata(gui_fig, gui_data);
         updateProbe_slider(gui_fig, gui_data.curr_probe)
+
+    case 'z' % zoom in
+        zoomInFunction(gui_fig);
+
+    case 'x' % zoom out
+        zoomOutFunction(gui_fig);
+
+    case 'p' % pan
+        panFunction(gui_fig);
+
+    case 'r' % reset
+        resetFunction(gui_fig);
 
     case 'escape'
         opts.Default = 'Yes';
@@ -734,6 +746,45 @@ end
 % Upload gui data
 guidata(gui_fig, gui_data);
 end
+
+%% zoom/ pan function
+function zoomInFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function zoomOutFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function panFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'off');
+pan(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function resetFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 1);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
 
 %% bezier functions
 function selectPoint(gui_fig, table, event)

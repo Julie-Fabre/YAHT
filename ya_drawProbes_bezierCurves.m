@@ -59,7 +59,7 @@ if strcmp(screenOrientation, 'portrait')
     g = uigridlayout(gui_fig, [7, 8], 'BackgroundColor', 'k'); % 7 rows, 8 columns grid layout
     g.RowHeight = {'fit', 'fit', '6x', '1x', 'fit', '2x', 'fit'};
     g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
-    
+
     % row start, col start, col stop, row stop
     mainAxisPosition = [3, 1, 8, 4];
     autoButtonPosition = [2, 1, 2];
@@ -82,7 +82,7 @@ if strcmp(screenOrientation, 'portrait')
 else % landscape mode
     g = uigridlayout(gui_fig, [5, 10], 'BackgroundColor', 'k'); % grid layout
     g.RowHeight = {'fit', 'fit', 'fit', '2x', 'fit'};
-    g.ColumnWidth = {'10x' '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
+    g.ColumnWidth = {'10x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
 
     % row start, col start, col stop, row stop
     mainAxisPosition = [1, 1, 2, 5];
@@ -334,6 +334,18 @@ switch eventdata.Key
         gui_data.curr_probe = max(1, gui_data.curr_probe-1);
         guidata(gui_fig, gui_data);
         updateProbe_slider(gui_fig, gui_data.curr_probe)
+
+    case 'z' % zoom in
+        zoomInFunction(gui_fig);
+
+    case 'x' % zoom out
+        zoomOutFunction(gui_fig);
+
+    case 'p' % pan
+        panFunction(gui_fig);
+
+    case 'r' % reset
+        resetFunction(gui_fig);
 
     case 'escape'
         opts.Default = 'Yes';
@@ -734,6 +746,45 @@ end
 % Upload gui data
 guidata(gui_fig, gui_data);
 end
+
+%% zoom/ pan function
+function zoomInFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function zoomOutFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function panFunction(gui_fig)
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 'off');
+pan(gui_data.histology_ax, 'on');
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
+function resetFunction(gui_fig) %BUGGY
+gui_data = guidata(gui_fig);
+
+zoom(gui_data.histology_ax, 1);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+end
+
 
 %% bezier functions
 function selectPoint(gui_fig, table, event)
