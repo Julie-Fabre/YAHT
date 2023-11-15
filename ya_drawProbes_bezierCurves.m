@@ -55,13 +55,13 @@ end
 gui_fig = uifigure('KeyPressFcn', @keypress, 'Color', 'k');
 
 % Portrait mode positions
-g = uigridlayout(gui_fig, [11, 8], 'BackgroundColor', 'k'); % 10 rows, 3 columns grid layout
-g.RowHeight = {'fit', 'fit', 'fit', 'fit', 'fit', 'fit', '1x', 'fit', 'fit', '1x', 'fit'};
-g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'}; % Columns equally share the width
+g = uigridlayout(gui_fig, [7, 8], 'BackgroundColor', 'k'); % 10 rows, 3 columns grid layout
+g.RowHeight = {'fit', 'fit', '6x', '1x', 'fit', '2x', 'fit'};
+g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
 
-% Position and size of histology axe
+% Position and size of histology axis
 gui_data.histology_ax = uiaxes(g);
-gui_data.histology_ax.Layout.Row = [3, 8];
+gui_data.histology_ax.Layout.Row = [3, 4];
 gui_data.histology_ax.Layout.Column = [1, 8];
 gui_data.histology_ax.YDir = 'reverse';
 
@@ -77,12 +77,12 @@ if strcmp(screenOrientation, 'portrait')
     saveButtonPosition = [2, 6];
     loadButtonPosition = [2, 7];
     plotButtonPosition = [2, 8];
-    delButtonPosition = [11, 1, 2];
-    startButtonPosition = [11, 3, 4];
-    stopButtonPosition = [11, 5, 6];
-    probePointsBoxPosition = [10, 1, 6];
-    probeDropdownBoxPosition = [9, 1, 6];
-    legendPosition = [10, 7, 8, 11];
+    delButtonPosition = [7, 1, 2];
+    startButtonPosition = [7, 3, 4];
+    stopButtonPosition = [7, 5, 6];
+    probePointsBoxPosition = [6, 1, 6];
+    probeDropdownBoxPosition = [5, 1, 6];
+    legendPosition = [5, 7, 8, 7];
 else
 end
 
