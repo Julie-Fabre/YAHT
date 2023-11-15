@@ -54,19 +54,14 @@ end
 % Create figure, set button functions
 gui_fig = uifigure('KeyPressFcn', @keypress, 'Color', 'k');
 
-% Portrait mode positions
-g = uigridlayout(gui_fig, [13, 8], 'BackgroundColor', 'k'); % 10 rows, 3 columns grid layout
-g.RowHeight = {'fit', 'fit', 'fit', 'fit', 'fit', 'fit', '1x', 'fit', 'fit', '1x', 'fit'};
-g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'}; % Columns equally share the width
-
-% Position and size of histology axe
-gui_data.histology_ax = uiaxes(g);
-gui_data.histology_ax.Layout.Row = [3, 10];
-gui_data.histology_ax.Layout.Column = [1, 8];
-gui_data.histology_ax.YDir = 'reverse';
-
 % Row and col position for other GUI elements
 if strcmp(screenOrientation, 'portrait')
+    g = uigridlayout(gui_fig, [7, 8], 'BackgroundColor', 'k'); % 7 rows, 8 columns grid layout
+    g.RowHeight = {'fit', 'fit', '6x', '1x', 'fit', '2x', 'fit'};
+    g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x'};
+    
+    % row start, col start, col stop, row stop
+    mainAxisPosition = [3, 1, 8, 4];
     autoButtonPosition = [2, 1, 2];
     brightnessSliderPosition = [2, 3];
     brightnessTextPosition = [1, 3];
@@ -77,17 +72,46 @@ if strcmp(screenOrientation, 'portrait')
     saveButtonPosition = [2, 6];
     loadButtonPosition = [2, 7];
     plotButtonPosition = [2, 8];
-    delButtonPosition = [11, 1, 2];
-    startButtonPosition = [11, 3, 4];
-    stopButtonPosition = [11, 5, 6];
-    probePointsBoxPosition = [12, 1, 6];
-    probeDropdownBoxPosition = [11, 1, 6];
-    legendPosition = [12, 7, 8, 11];
-else
+    delButtonPosition = [7, 1, 2];
+    startButtonPosition = [7, 3, 4];
+    stopButtonPosition = [7, 5, 6];
+    probePointsBoxPosition = [6, 1, 6];
+    probeDropdownBoxPosition = [5, 1, 6];
+    legendPosition = [5, 7, 8, 7];
+
+else % landscape mode
+    g = uigridlayout(gui_fig, [5, 10], 'BackgroundColor', 'k'); % grid layout
+    g.RowHeight = {'fit', 'fit', 'fit', '2x', 'fit'};
+    g.ColumnWidth = {'1x', '1x', '1x', '1x', '1x', '1x', '1x', '1x', '10x', '1x'};
+
+    % row start, col start, col stop, row stop
+    mainAxisPosition = [1, 9, 10, 5];
+    autoButtonPosition = [2, 1, 2];
+    brightnessSliderPosition = [2, 3];
+    brightnessTextPosition = [1, 3];
+    contrastSliderPosition = [2, 4];
+    contrastTextPosition = [1, 4];
+    pointSliderPosition = [2, 5];
+    pointTextPosition = [1, 5];
+    saveButtonPosition = [2, 6];
+    loadButtonPosition = [2, 7];
+    plotButtonPosition = [2, 8];
+    delButtonPosition = [5, 1, 2];
+    startButtonPosition = [5, 3, 4];
+    stopButtonPosition = [5, 5, 6];
+    probePointsBoxPosition = [4, 1, 6];
+    probeDropdownBoxPosition = [3, 1, 6];
+    legendPosition = [3, 7, 8, 5];
 end
 
+% Position and size of histology axis
+gui_data.histology_ax = uiaxes(g);
+gui_data.histology_ax.Layout.Row = [mainAxisPosition(1), mainAxisPosition(4)];
+gui_data.histology_ax.Layout.Column = [mainAxisPosition(2), mainAxisPosition(3)];
+gui_data.histology_ax.YDir = 'reverse';
+
 % auto contrast/brightness button
-gui_data.auto_contrast_btn = uibutton(g, 'Text', 'Auto brightness + contrast', 'BackgroundColor', [1, 0.08, 0.58], 'FontColor', [1,1,1], 'FontSize', 14);
+gui_data.auto_contrast_btn = uibutton(g, 'Text', 'Auto brightness + contrast', 'BackgroundColor', [1, 0.08, 0.58], 'FontColor', [1, 1, 1], 'FontSize', 14);
 gui_data.auto_contrast_btn.ButtonPushedFcn = @(varargin) autoContrastButtonPushed(gui_fig);
 gui_data.auto_contrast_btn.Layout.Row = autoButtonPosition(1);
 gui_data.auto_contrast_btn.Layout.Column = [autoButtonPosition(2), autoButtonPosition(3)];
@@ -135,13 +159,13 @@ gui_data.save_btn.Layout.Row = saveButtonPosition(1);
 gui_data.save_btn.Layout.Column = saveButtonPosition(2);
 
 % Load previous datapoints
-gui_data.load_btn = uibutton(g, 'Text', 'Load', 'BackgroundColor', [1, 0.27, 0], 'FontColor', [0.3,0.3,0.3], 'FontSize', 14); % OrangeRed color
+gui_data.load_btn = uibutton(g, 'Text', 'Load', 'BackgroundColor', [1, 0.27, 0], 'FontColor', [0.3, 0.3, 0.3], 'FontSize', 14); % OrangeRed color
 gui_data.load_btn.ButtonPushedFcn = @(varargin) loadButtonPushed(gui_fig);
 gui_data.load_btn.Layout.Row = loadButtonPosition(1);
 gui_data.load_btn.Layout.Column = loadButtonPosition(2);
 
 % Plot probes
-gui_data.plot_btn = uibutton(g, 'Text', 'Plot', 'BackgroundColor', [1, 0.65, 0], 'FontColor', [0.3,0.3,0.3], 'FontSize', 14); % Orange color
+gui_data.plot_btn = uibutton(g, 'Text', 'Plot', 'BackgroundColor', [1, 0.65, 0], 'FontColor', [0.3, 0.3, 0.3], 'FontSize', 14); % Orange color
 gui_data.plot_btn.ButtonPushedFcn = @(varargin) plotProbeButtonPushed(gui_fig);
 gui_data.plot_btn.Layout.Row = plotButtonPosition(1);
 gui_data.plot_btn.Layout.Column = plotButtonPosition(2);
@@ -200,7 +224,7 @@ nProbes = size(gui_data.probe_color, 1);
 % Plot each probe's color in the legend
 gui_data.probeLegendText = gobjects(nProbes, 1);
 for i = 1:nProbes
-    gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i-1)/10)) * 0.3 +0.3, 0.9  -0.08 * (i - (floor((i-1)/10))*10) , ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :),...
+    gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i - 1)/10))*0.3+0.3, 0.9-0.08*(i - (floor((i - 1)/10))*10), ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :), ...
         'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
 end
 hold(gui_data.legendAxes, 'off');
@@ -211,7 +235,7 @@ gui_data.bezier_control_points = cell(gui_data.n_probes, 1);
 gui_data.bezier_curves = gobjects(gui_data.n_probes, 1);
 
 % Points table
-gui_data.points_table = uilistbox(g, 'FontColor', [1 ,1, 1], 'BackgroundColor', [0.1, 0.1, 0.1]);
+gui_data.points_table = uilistbox(g, 'FontColor', [1, 1, 1], 'BackgroundColor', [0.1, 0.1, 0.1]);
 gui_data.points_table.ValueChangedFcn = @(src, event)selectPoint(gui_fig, src, event);
 gui_data.points_table.Layout.Row = probePointsBoxPosition(1);
 gui_data.points_table.Layout.Column = [probePointsBoxPosition(2), probePointsBoxPosition(3)];
@@ -255,7 +279,7 @@ gui_data.curr_probe = 1;
 probes_list = arrayfun(@(x) sprintf('Probe %d', x), 1:gui_data.n_probes, 'UniformOutput', false);
 
 % Probe dropdown menu
-gui_data.probe_dropdown = uidropdown(g, 'Items', probes_list, 'FontColor', [1,1,1],'BackgroundColor', [0.2,0.2,0.2]);
+gui_data.probe_dropdown = uidropdown(g, 'Items', probes_list, 'FontColor', [1, 1, 1], 'BackgroundColor', [0.2, 0.2, 0.2]);
 gui_data.probe_dropdown.ValueChangedFcn = @(src, event)updateProbe(gui_fig);
 gui_data.probe_dropdown.Layout.Row = probeDropdownBoxPosition(1);
 gui_data.probe_dropdown.Layout.Column = [probeDropdownBoxPosition(2), probeDropdownBoxPosition(3)];
@@ -339,7 +363,7 @@ curr_point = drawpoint('Parent', gui_data.histology_ax);
 % Storing Bezier control points instead of probe points
 
 gui_data.bezier_control_points{curr_probe} = ...
-+    [gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
+    +[gui_data.bezier_control_points{curr_probe}; curr_point.Position, gui_data.curr_slice];
 [~, sortIdx] = sort(gui_data.bezier_control_points{curr_probe}(:, 3)); % sort points by slice # 1+
 gui_data.bezier_control_points{curr_probe} = ...
     gui_data.bezier_control_points{curr_probe}(sortIdx, :);
@@ -585,10 +609,10 @@ for curr_probe = 1:length(probe_ccf)
         else
             title([num2str(curr_probe)], 'Color', gui_data.probe_color(curr_probe, :));
         end
-        set(gca,'color','k');
-        set(gca,'YColor','w');
-        set(gca,'XColor','w');
-        set(gca,'GridColor','w');
+        set(gca, 'color', 'k');
+        set(gca, 'YColor', 'w');
+        set(gca, 'XColor', 'w');
+        set(gca, 'GridColor', 'w');
     end
 
 end
@@ -670,15 +694,15 @@ ncolProbes = size(gui_data.probe_color, 1);
 if ncolProbes < gui_data.n_probes
     hold(gui_data.legendAxes, 'on');
     % add any missing
-    for i = ncolProbes+1:nProbes
-        gui_data.probeLegendText{iProbe} = text(gui_data.legendAxes, (floor((i-1)/10)) * 0.3, 0.9  -0.08 * (i - (floor((i-1)/10))*10) , ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :),...
+    for i = ncolProbes + 1:nProbes
+        gui_data.probeLegendText{iProbe} = text(gui_data.legendAxes, (floor((i - 1)/10))*0.3, 0.9-0.08*(i - (floor((i - 1)/10))*10), ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :), ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
     end
     hold(gui_data.legendAxes, 'off');
 end
 
-% update curr probe and slice probes 
-nonEmptyCells = ~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice,:));
+% update curr probe and slice probes
+nonEmptyCells = ~cellfun(@isempty, gui_data.probe_points_histology(gui_data.curr_slice, :));
 theseProbes = unique([nonEmptyCells, gui_data.curr_probe]);
 
 for iProbe = 1:gui_data.n_probes
@@ -687,8 +711,8 @@ for iProbe = 1:gui_data.n_probes
         gui_data.probeLegendText(iProbe).FontSize = 16;
     else
         try
-        gui_data.probeLegendText(iProbe).FontWeight = 'Normal';
-        gui_data.probeLegendText(iProbe).FontSize = 14;
+            gui_data.probeLegendText(iProbe).FontWeight = 'Normal';
+            gui_data.probeLegendText(iProbe).FontSize = 14;
         catch
         end
     end
@@ -701,15 +725,16 @@ end
 %     gui_data.points_table.FontColor = [0,0,0];
 % end
 
-gui_data.probe_dropdown.BackgroundColor = gui_data.probe_color(gui_data.curr_probe,:);
+gui_data.probe_dropdown.BackgroundColor = gui_data.probe_color(gui_data.curr_probe, :);
 if sum(gui_data.probe_dropdown.BackgroundColor) < 1.5
-    gui_data.probe_dropdown.FontColor = [1,1,1];
+    gui_data.probe_dropdown.FontColor = [1, 1, 1];
 else
-    gui_data.probe_dropdown.FontColor = [0,0,0];
+    gui_data.probe_dropdown.FontColor = [0, 0, 0];
 end
 % Upload gui data
 guidata(gui_fig, gui_data);
 end
+
 %% bezier functions
 function selectPoint(gui_fig, table, event)
 gui_data = guidata(gui_fig);
@@ -1260,7 +1285,7 @@ end
 
 
 gui_data.probe_points_histology = probe_points;
-gui_data.n_probes = size(gui_data.probe_points_histology,2);
+gui_data.n_probes = size(gui_data.probe_points_histology, 2);
 for iProbe = 1:gui_data.n_probes
     non_empty_slices = find(~cellfun(@isempty, gui_data.probe_points_histology(:, iProbe)));
     for iSlice = 1:size(non_empty_slices, 1)
