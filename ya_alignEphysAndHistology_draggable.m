@@ -192,22 +192,23 @@ set(probe_areas_ax, 'Clipping', 'off');
 probe_ccf(use_probe).probe_depths_linear = areas_linear_depth;
 probe_ccf(use_probe).probe_areas_linear = areas_linear;
 
-% get unique region chunks 
+% get unique region chunks and their scaling 
 unique_cols = probe_image.CData(round(trajectory_area_centers(area_dv_sort_idx)));
+scaling_per_region = ones(length(unique_cols),1);
 
 % Package into gui
-
 gui_data.probe_ccf_fn = probe_ccf_fn;
 gui_data.probe_ccf = probe_ccf;
 gui_data.use_probe = use_probe;
 gui_data.unique_cols = unique_cols;
+gui_data.scaling_per_region = scaling_per_region;
+
 % axes
 gui_data.unit_ax = unit_ax;
 gui_data.multiunit_ax = multiunit_ax;
 gui_data.probe_areas_ax = probe_areas_ax;
 gui_data.probe_areas_ax_ylim = ylim(probe_areas_ax);
 gui_data.probe_image = probe_image;
-
 
 % trajectory and boundaries
 gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
@@ -319,13 +320,27 @@ gui_data = guidata(fig);
         newLine_location = src.UserData(1, 2);
         lineTag = str2num(get(src, 'Tag'));
         gui_data = guidata(fig);
-        origin_depth = gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag)); % up or down?
-        depth_change_stretch = newLine_location > origin_depth;
+       % original_depth = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag));
+        prev_depth = gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag)); % up or down?
+        depth_change_stretch = newLine_location > prev_depth;
         
         % (get new area boundaries)
         new_colors = gui_data.probe_image.CData;
         gui_data.new_region_boundaries = gui_data.original_region_boundaries;
         gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first');
+
+        % update scaling factor 
+        original_size_up = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag)) -...
+            gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag-1));
+        new_size_up = gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag)) -...
+            gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag-1));
+        gui_data.scaling_per_region(lineTag-1) = new_size_up/original_size_up;
+        
+        original_size_down = gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag+1)) -...
+            gui_data.probe_trajectory_depths(gui_data.original_region_boundaries(lineTag));
+        new_size_down = gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag+1)) -...
+            gui_data.probe_trajectory_depths(gui_data.new_region_boundaries(lineTag));
+        gui_data.scaling_per_region(lineTag) = new_size_down/original_size_down;
     
         % (update image)
         if depth_change_stretch == 1 % stretch up
