@@ -18,7 +18,7 @@ atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
 
 
-%% ~ Images info
+%% ~ Images info ~
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] = ...
     ya_getLocations(brainglobeLocation, brainsawPath, channelColToRegister, ...
@@ -99,6 +99,7 @@ probe2ephys(4).certainty = 1;
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 
 %% ~ Align ephys and histology ~
+load([outputDir, '/probe2ephys.mat']);
 iProbe = 1;
 %% Run this section for each probe 
 % run this section for each probe, one at a time (otherwise the alignements
@@ -111,7 +112,7 @@ iProbe = iProbe + 1;
 site = probe2ephys(iProbe).site;
 day = probe2ephys(iProbe).day;
 shank = probe2ephys(iProbe).shank;
-pathToEphys = ['/home/netshare/zaru/', animal, filesep, day, filesep, 'ephys', filesep 'site']; % EDIT ME 
+pathToEphys = ['/home/netshare/zaru/', animal, filesep, num2str(day), filesep, 'ephys', filesep 'site']; % EDIT ME 
 probeLength = 3840; % EDIT ME, size of recording sites in um. E.g: 3840 for NP1, 2880 for NP2, ect. 
 ephys_sample_rate = 3000; % EDIT ME ephys sample rate (samples per second). 
 
