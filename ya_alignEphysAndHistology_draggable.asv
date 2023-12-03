@@ -149,7 +149,7 @@ trajectory_area_boundary_idx = ...
     [1; find(diff(double(areas_linear)) ~= 0) + 1; size(areas_linear, 1)];
 
 
-trajectory_area_boundaries = areas_linear_depth(trajectory_area_boundary_idx) ;
+trajectory_area_boundaries = areas_linear_depth(trajectory_area_boundary_idx);
 
 trajectory_area_centers = nan(size(trajectory_area_boundaries, 2)-1, 1);
 for iBoundary = 1:size(trajectory_area_boundaries, 2) - 1
@@ -170,7 +170,7 @@ end
 probe_image = image([], areas_linear_depth*25, areas_linear);
 colormap(probe_areas_ax, cmap);
 caxis([1, size(cmap, 1)])
-set(probe_areas_ax, 'YTick', trajectory_area_centers(area_dv_sort_idx)*25, ...
+set(probe_areas_ax, 'YTick', (trajectory_area_centers(area_dv_sort_idx)-0.5)*25, ...
     'YTickLabels', trajectory_area_labels(area_dv_sort_idx));
 set(probe_areas_ax, 'XTick', []);
 set(probe_areas_ax, 'YAxisLocation', 'right')
@@ -183,7 +183,7 @@ set(probe_areas_ax, 'FontSize', 10)
 boundary_lines = gobjects(length(trajectory_area_boundaries), 1);
 for curr_boundary = 1:length(trajectory_area_boundaries)
     boundary_lines(curr_boundary) = line(probe_areas_ax, [-13.5, 1.5], ...
-        repmat((trajectory_area_boundaries(curr_boundary) -1)*25, 1, 2), 'color', 'b', ...
+        repmat((trajectory_area_boundaries(curr_boundary)-0.5)*25, 1, 2), 'color', 'b', ...
         'linewidth', 2, 'Tag', num2str(curr_boundary));
     draggable_line(boundary_lines(curr_boundary), probe_areas_ax, gui_fig);
 end
@@ -323,17 +323,7 @@ gui_data = guidata(fig);
         new_colors = gui_data.probe_image.CData;
         gui_data.new_region_boundaries = gui_data.original_region_boundaries;
         gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first');
-
-        % (update image)
-        if depth_change_stretch == 1 % stretch up
-            new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag)))...
-                = curr_area_color;
-        else % stretch down
-            new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag)))...
-                = curr_area_color;
-        end
-        set(gui_data.probe_image, 'CData', new_colors) % update color
-
+    
         % (update centers)
         gui_data.area_centers = nan(size(gui_data.new_region_boundaries, 2)-1, 1);
         for iBoundary = 1:size(gui_data.new_region_boundaries, 2) - 1
@@ -342,6 +332,18 @@ gui_data = guidata(fig);
         end
         set(probe_areas_ax, 'YTick', gui_data.area_centers*25, ...
             'YTickLabels', gui_data.trajectory_area_labels);
+        
+        % (update image)
+        if depth_change_stretch == 1 % stretch up
+            new_colors(round(gui_data.areas_center(lineTag-1)):find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'))...
+                = curr_area_color;
+        else % stretch down
+            new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag)))...
+                = curr_area_color;
+        end
+        set(gui_data.probe_image, 'CData', new_colors) % update color
+
+        
 
         % (update coordinates) + ineed to update this when shifting, no
         % longer only in saving. or just have an updates stretch factpor

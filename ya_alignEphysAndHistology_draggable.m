@@ -319,16 +319,18 @@ gui_data = guidata(fig);
         depth_change_stretch = newLine_location > origin_depth;
 
         % (get new area boundaries)
-        curr_area_color = gui_data.probe_image.CData(round(gui_data.areas_center(lineTag)));
         new_colors = gui_data.probe_image.CData;
         gui_data.new_region_boundaries = gui_data.original_region_boundaries;
         gui_data.new_region_boundaries(lineTag) = find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first');
-
+    
+       
         % (update image)
         if depth_change_stretch == 1 % stretch up
-            new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag)))...
+            curr_area_color = gui_data.probe_image.CData(round(gui_data.areas_center(lineTag-1)));
+            new_colors(round(gui_data.areas_center(lineTag-1)):find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'))...
                 = curr_area_color;
         else % stretch down
+            curr_area_color = gui_data.probe_image.CData(round(gui_data.areas_center(lineTag)));
             new_colors(find(gui_data.probe_trajectory_depths >= newLine_location, 1, 'first'):round(gui_data.areas_center(lineTag)))...
                 = curr_area_color;
         end
@@ -340,7 +342,7 @@ gui_data = guidata(fig);
             gui_data.area_centers(iBoundary) = (gui_data.new_region_boundaries(iBoundary) + ...
                 gui_data.new_region_boundaries(iBoundary+1)) ./ 2;
         end
-        set(probe_areas_ax, 'YTick', gui_data.area_centers*25, ...
+        set(probe_areas_ax, 'YTick', (gui_data.area_centers -0.5)*25, ...
             'YTickLabels', gui_data.trajectory_area_labels);
 
         % (update coordinates) + ineed to update this when shifting, no
