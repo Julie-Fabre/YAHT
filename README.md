@@ -23,8 +23,8 @@ YAHT requires:
 Dependencies to install: 
 - [npy-matlab](https://github.com/kwikteam/npy-matlab)
 
-Other dependencies alrerady integrated in YAHT:
-- [allenCCF](https://github.com/cortex-lab/allenCCF) (bundle in this repository as a subtree - no need to download it)
+Other dependencies already integrated in YAHT (no need to download them):
+- [allenCCF](https://github.com/cortex-lab/allenCCF)
 - [Multipage TIFF stack](https://uk.mathworks.com/matlabcentral/fileexchange/35684-multipage-tiff-stack)
 
 ### 🏁 Quick start 
