@@ -114,63 +114,60 @@ load(cmap_filename);
 
 probe_areas_ax = subplot('Position', [0.8, 0.1, 0.05, 0.8]);
 
-
 % Convert probe CCF coordinates to linear depth (*25 to convert to um)
 % (use the dorsal-most coordinate as the reference point)
 [~, dv_sort_idx] = sort(probe_ccf(use_probe).trajectory_coords(:, 2));
 
-
 probe_trajectory_depths = ...
     pdist2(probe_ccf(use_probe).trajectory_coords, ...
-    probe_ccf(use_probe).trajectory_coords((dv_sort_idx == 1), :));
-
-%probe_trajectory_depths = probe_ccf(use_probe).trajectory_coords(:,2);
+    probe_ccf(use_probe).trajectory_coords((dv_sort_idx == 1), :))*25;
 
 trajectory_area_boundary_idx_non_linear = ...
     [1; find(diff(double(probe_ccf(use_probe).trajectory_areas)) ~= 0) + 1];
 if trajectory_area_boundary_idx_non_linear(end) ~= size(probe_ccf(use_probe).trajectory_areas, 1)
     trajectory_area_boundary_idx_non_linear = [trajectory_area_boundary_idx_non_linear; size(probe_ccf(use_probe).trajectory_areas, 1)];
 end
-% recreate linearily spaced areas
-areas_linear_depth = min(probe_trajectory_depths):max(probe_trajectory_depths);
+%trajectory_area_boundary_idx_non_linear = [trajectory_area_boundary_idx_non_linear; trajectory_area_boundary_idx_non_linear(end)+1];
 
+% recreate linearily spaced areas 
+% - depths
+areas_linear_depth = min(probe_trajectory_depths):max(probe_trajectory_depths);
 areas_linear = nan(size(areas_linear_depth, 1), 1, 1);
 
-for iBoundary = 1:size(trajectory_area_boundary_idx_non_linear, 1) - 1
-
-    theseDepths = find(areas_linear_depth >= probe_trajectory_depths(trajectory_area_boundary_idx_non_linear(iBoundary)) & ...
-        areas_linear_depth <= probe_trajectory_depths(trajectory_area_boundary_idx_non_linear(iBoundary+1)));
-
-    areas_linear(theseDepths) = probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx_non_linear(iBoundary)+1);
-
+for iArea = 1:size(trajectory_area_boundary_idx_non_linear, 1) - 1
+    theseDepths = find(areas_linear_depth >= probe_trajectory_depths(trajectory_area_boundary_idx_non_linear(iArea)) & ...
+        areas_linear_depth <= probe_trajectory_depths(trajectory_area_boundary_idx_non_linear(iArea+1)));
+    areas_linear(theseDepths) = probe_ccf(use_probe).trajectory_areas(trajectory_area_boundary_idx_non_linear(iArea)+1);
 end
 areas_linear = areas_linear';
+
+% - boundaries
 trajectory_area_boundary_idx = ...
     [1; find(diff(double(areas_linear)) ~= 0) + 1; size(areas_linear, 1)];
 
-
 trajectory_area_boundaries = areas_linear_depth(trajectory_area_boundary_idx);
 
+% - centers 
 trajectory_area_centers = nan(size(trajectory_area_boundaries, 2)-1, 1);
 for iBoundary = 1:size(trajectory_area_boundaries, 2) - 1
     trajectory_area_centers(iBoundary) = (trajectory_area_boundaries(iBoundary) + ...
         trajectory_area_boundaries(iBoundary+1)) ./ 2;
 end
 
-
+% -labels
 trajectory_area_labels = cell(size(trajectory_area_boundaries, 2)-1, 1);
 for iArea = 1:size(trajectory_area_boundaries, 2)
     trajectory_area_labels(iArea) = st.acronym(st.id == ...
         areas_linear(trajectory_area_boundary_idx(iArea)));
 end
-%trajectory_area_labels = st.acronym(st.id ==areas_linear(trajectory_area_boundary_idx));
 
+% plot
 [~, area_dv_sort_idx] = sort(trajectory_area_centers);
 
-probe_image = image([], areas_linear_depth*25, areas_linear);
+probe_image = image([], areas_linear_depth, areas_linear);
 colormap(probe_areas_ax, cmap);
 caxis([1, size(cmap, 1)])
-set(probe_areas_ax, 'YTick', (trajectory_area_centers(area_dv_sort_idx)-0.5)*25, ...
+set(probe_areas_ax, 'YTick', (trajectory_area_centers(area_dv_sort_idx)-0.5), ...
     'YTickLabels', trajectory_area_labels(area_dv_sort_idx));
 set(probe_areas_ax, 'XTick', []);
 set(probe_areas_ax, 'YAxisLocation', 'right')
@@ -183,7 +180,7 @@ set(probe_areas_ax, 'FontSize', 10)
 boundary_lines = gobjects(length(trajectory_area_boundaries), 1);
 for curr_boundary = 1:length(trajectory_area_boundaries)
     boundary_lines(curr_boundary) = line(probe_areas_ax, [-13.5, 1.5], ...
-        repmat((trajectory_area_boundaries(curr_boundary)-0.5)*25, 1, 2), 'color', 'b', ...
+        repmat((trajectory_area_boundaries(curr_boundary)-0.5), 1, 2), 'color', 'b', ...
         'linewidth', 2, 'Tag', num2str(curr_boundary));
     draggable_line(boundary_lines(curr_boundary), probe_areas_ax, gui_fig);
 end
@@ -212,7 +209,7 @@ gui_data.probe_image = probe_image;
 
 % trajectory and boundaries
 gui_data.probe_trajectory_depths_non_linear = probe_trajectory_depths;
-gui_data.probe_trajectory_depths = areas_linear_depth * 25;
+gui_data.probe_trajectory_depths = areas_linear_depth;
 gui_data.original_region_boundaries = trajectory_area_boundaries;
 gui_data.new_region_boundaries = gui_data.original_region_boundaries;
 gui_data.areas_center = trajectory_area_centers(area_dv_sort_idx);
@@ -234,10 +231,8 @@ gui_data = guidata(gui_fig);
 % Set amounts to move by with/without shift
 if any(strcmp(eventdata.Modifier, 'shift'))
     y_change = 100;
-    s_change = 0.1;
 else
     y_change = 1;
-    s_change = 0.01;
 end
 
 switch eventdata.Key
@@ -264,6 +259,57 @@ switch eventdata.Key
         if strcmp(user_confirm, 'Yes')
 
             probe_ccf = gui_data.probe_ccf;
+
+            % shift the non-linear to the linear 
+            iProbe = gui_data.use_probe;
+            probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths -...
+                 (probe_ccf(iProbe).probe_depths_linear(1) - probe_ccf(iProbe).probe_depths(1));
+            
+            % region boundaries 
+            probe_ccf(iProbe).trajectory_coords_aligned = probe_ccf(iProbe).trajectory_coords;
+            probe_ccf(iProbe).trajectory_areas_aligned = probe_ccf(iProbe).trajectory_areas;
+            
+            unique_blocks = [];
+            boundaries = [];
+            current_block = probe_ccf(iProbe).trajectory_areas_aligned(1);
+            block_start = 1;
+            
+            for i = 2:length(probe_ccf(iProbe).trajectory_areas_aligned)
+                if probe_ccf(iProbe).trajectory_areas_aligned(i) ~= current_block
+                    unique_blocks = [unique_blocks; current_block];
+                    boundaries = [boundaries; block_start, i-1];
+                    current_block = probe_ccf(iProbe).trajectory_areas_aligned(i);
+                    block_start = i;
+                end
+            end
+            
+            % Adding the last block
+            unique_blocks = [unique_blocks; current_block];
+            boundaries = [boundaries; block_start, length(probe_ccf(iProbe).trajectory_areas_aligned)];
+
+            % scale 
+            for iArea = 1:size(unique_blocks)
+                thisArea = unique_blocks(iArea);
+                thisArea_boundaries = boundaries(iArea,:);
+                depths_area_ori = probe_ccf(iProbe).probe_depths(thisArea_boundaries(2)) - ...
+                    probe_ccf(iProbe).probe_depths(thisArea_boundaries(1));
+                new_depths_area = depths_area_ori * (1/gui_data.scaling_per_region(iArea));
+
+            end
+            
+            % save scaling
+            probe_ccf(iProbe).area_scaling = gui_data.scaling_per_region;
+            
+
+            
+            for iArea = 1:size(unique_blocks,1)
+                thisArea = unique_blocks(iArea);
+                thisArea_boundaries = boundaries(iArea,:);
+
+                probe_ccf(iProbe).trajectory_areas_aligned(boundaries(iArea,1):boundaries(iArea,2))
+                probe_ccf(iProbe).trajectory_coords_aligned
+
+            end
 
             % Get the probe depths corresponding to the trajectory areas
             probe_depths_linear = gui_data.probe_trajectory_depths - ...
