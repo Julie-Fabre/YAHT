@@ -100,6 +100,7 @@ plot(smoothdata(goodUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+bin
 plot(smoothdata(noiseUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
 plot(smoothdata(nonSomaUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
 legend({'good', 'noise', 'non-soma'})
+set(unittype_ax, 'YDir', 'reverse' )
 
 %caxis([0,max(mua_corr(mua_corr ~= 1))]); colormap(hot);
 ylim([min_depths, max_depths]);

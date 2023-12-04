@@ -192,26 +192,29 @@ save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 % - add "5 min histology recs" look at
 % - check out imro file , plot
 % - plot probe in image overlay (rotated on probe axis)
-load([outputDir, '/probe2ephys.mat'])
 
+load([outputDir, '/probe2ephys.mat'])
 load([outputDir, '/probe_ccf.mat'])
 
-%for iProbe = 1
-iProbe = 5
-site = probe2ephys(iProbe).site;
-%if ~isnan(site)
-keep probe2ephys animal iProbe site st outputDir
+iProbe = iProbe + 1
+keep probe2ephys animal iProbe st outputDir
+
+% experiment info
+site = probe2ephys(iProbe).site;%if ~isnan(site)
 experiments = AP_find_experimentsJF(animal, '', true);
 experiments = experiments([experiments.ephys]);
 day_num = probe2ephys(iProbe).day;
 day = experiments(day_num).day;
+shank = probe2ephys(iProbe).shank;
 
+% recording
 if isfield(probe2ephys, 'recording') && ~isempty(probe2ephys(iProbe).recording)
     recording = probe2ephys(iProbe).recording(1);
 else
     recording = [];
 end
-shank = probe2ephys(iProbe).shank;
+
+% select experiment number 
 if site == 1 || site == 2
     experiment = 1;
 elseif site == 3 || site == 4
@@ -219,15 +222,22 @@ elseif site == 3 || site == 4
 elseif site == 5 || site == 6
     experiment = 1;
 end
+
+% load ephys data 
 load_sync = true;
 load_parts.cam = false;
 loadClusters = 0;
 load_parts.ephys = true;
+%lfp_channel = 'all'; 
+%loadLFP = true;
 JF_load_experiment;
+
+% plot PSTH
 curr_shank = shank;
 lfp = NaN;
 AP_cellrasterJF({stimOn_times}, {trial_conditions(:, 1)})
 
+% get probe length specs 
 if max(template_depths) > 2880
      probeLength = 3840;
 elseif max(template_depths) > 1500
@@ -238,14 +248,15 @@ elseif  max(template_depths) <= 750
     probeLength = 750;
 end
 
+% get quality metrics 
 rerunQM = 0;
 [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment,[], rerunQM, 0, 1);
 
+% align
 ya_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, ...
     spike_xdepths, template_xdepths, lfp, channel_positions(:, 2), channel_positions(:, 1), ...
     iProbe, probeLength, shank, unitType);
 
-%%
 
 %% ~ Various useful plotting functions ~
