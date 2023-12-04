@@ -238,11 +238,13 @@ elseif  max(template_depths) <= 750
     probeLength = 750;
 end
 
+rerunQM = 0;
+[unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment,[], rerunQM, 0, 1);
 
 ya_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, ...
     spike_xdepths, template_xdepths, lfp, channel_positions(:, 2), channel_positions(:, 1), ...
-    iProbe, probeLength, shank);
+    iProbe, probeLength, shank, unitType);
 
 %%
 

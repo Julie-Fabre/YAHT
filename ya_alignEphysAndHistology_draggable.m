@@ -1,6 +1,6 @@
 function ya_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, spike_xdepths, template_xdepths, ...
-    lfp, lfp_channel_positions, lfp_channel_xpositions, use_probe, probeLength, curr_shank)
+    lfp, lfp_channel_positions, lfp_channel_xpositions, use_probe, probeLength, curr_shank, unitType)
 % based on the great AP_align_probe_histology(st,slice_path,spike_times,spike_templates,template_depths,lfp,lfp_channel_positions,use_probe)
 
 % If no probe specified, use probe 1
@@ -80,7 +80,7 @@ set(unit_ax, 'FontSize', 12)
 ylabel('Depth (\mum)');
 
 % Plot multiunit correlation
-multiunit_ax = subplot('Position', [0.2, 0.1, 0.3, 0.8]);
+multiunit_ax = subplot('Position', [0.2, 0.1, 0.2, 0.8]);
 imagesc(depth_group_centers, depth_group_centers, mua_corr);
 %caxis([0,max(mua_corr(mua_corr ~= 1))]); colormap(hot);
 ylim([min_depths, max_depths]);
@@ -88,6 +88,25 @@ set(multiunit_ax, 'YTick', []);
 title('MUA correlation');
 set(multiunit_ax, 'FontSize', 12)
 xlabel(multiunit_ax, 'Multiunit depth');
+
+binSize = n_corr_groups;
+units_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths));
+noiseUnits_perDepth = histcounts(template_depths(unitType == 0), min(template_depths):binSize:max(template_depths))./units_perDepth;
+goodUnits_perDepth = histcounts(template_depths(unitType == 1), min(template_depths):binSize:max(template_depths))./units_perDepth;
+nonSomaUnits_perDepth = histcounts(template_depths(unitType == 3), min(template_depths):binSize:max(template_depths))./units_perDepth;
+
+unittype_ax = subplot('Position', [0.4, 0.1, 0.1, 0.8]); hold on;
+plot(smoothdata(goodUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
+plot(smoothdata(noiseUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
+plot(smoothdata(nonSomaUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
+legend({'good', 'noise', 'non-soma'})
+
+%caxis([0,max(mua_corr(mua_corr ~= 1))]); colormap(hot);
+ylim([min_depths, max_depths]);
+set(unittype_ax, 'YTick', []);
+title('Unit type');
+set(unittype_ax, 'FontSize', 12)
+xlabel(unittype_ax, 'Fraction');
 
 % Plot LFP median-subtracted correlation
 if length(lfp) > 1
