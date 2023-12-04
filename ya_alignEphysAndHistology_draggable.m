@@ -244,6 +244,7 @@ switch eventdata.Key
         gui_data.probe_areas_ax_ylim = new_ylim;
         % Upload gui data
         guidata(gui_fig, gui_data);
+
     case 'downarrow'
         new_ylim = gui_data.probe_areas_ax_ylim + y_change;
         ylim(gui_data.probe_areas_ax, new_ylim);
@@ -251,8 +252,8 @@ switch eventdata.Key
         % Upload gui data
         guidata(gui_fig, gui_data);
 
-        % escape: save and quit
-    case 'escape'
+       
+    case 'escape' % escape: save and quit
         opts.Default = 'Yes';
         opts.Interpreter = 'tex';
         user_confirm = questdlg('\fontsize{15} Save and quit?', 'Confirm exit', opts);
@@ -262,8 +263,11 @@ switch eventdata.Key
 
             % shift the non-linear to the linear 
             iProbe = gui_data.use_probe;
-            probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths -...
-                 (probe_ccf(iProbe).probe_depths_linear(1) - probe_ccf(iProbe).probe_depths(1));
+            probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths - probe_ccf(iProbe).probe_depths(1) ...
+                 - gui_data.probe_areas_ax_ylim(1);
+
+            % previous: probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths - gui_data.probe_areas_ax_ylim(1);
+
             
             % region boundaries 
             probe_ccf(iProbe).trajectory_coords_aligned = probe_ccf(iProbe).trajectory_coords;
@@ -288,34 +292,40 @@ switch eventdata.Key
             boundaries = [boundaries; block_start, length(probe_ccf(iProbe).trajectory_areas_aligned)];
 
             % scale 
-            for iArea = 1:size(unique_blocks)
+            for iArea = 1:size(gui_data.scaling_per_region, 1)
                 thisArea = unique_blocks(iArea);
-                thisArea_boundaries = boundaries(iArea,:);
-                depths_area_ori = probe_ccf(iProbe).probe_depths(thisArea_boundaries(2)) - ...
-                    probe_ccf(iProbe).probe_depths(thisArea_boundaries(1));
-                new_depths_area = depths_area_ori * (1/gui_data.scaling_per_region(iArea));
+                thisArea_boundaries = boundaries(iArea, :);
+                if iArea > 1
+                    extraVal = 1;
+                else
+                    extraVal = 0;
+                end
+               
+                % this area's new scaled depths
+                new_depths = (probe_ccf(iProbe).probe_depths(thisArea_boundaries(1) - extraVal:thisArea_boundaries(2)) -...
+                    probe_ccf(iProbe).probe_depths(thisArea_boundaries(1) - extraVal)) *  gui_data.scaling_per_region(iArea) +...
+                    probe_ccf(iProbe).probe_depths(thisArea_boundaries(1) - extraVal);
 
+                 % adjust depths below 
+                probe_ccf(iProbe).probe_depths(thisArea_boundaries(2)+1:end) = ...
+                    probe_ccf(iProbe).probe_depths(thisArea_boundaries(2)+1:end) +...
+                    (new_depths(end) - probe_ccf(iProbe).probe_depths(thisArea_boundaries(2))) ;
+
+                % store area scaled depths 
+                probe_ccf(iProbe).probe_depths(thisArea_boundaries(1):thisArea_boundaries(2)) = new_depths(1 + extraVal:end);
+
+            end
+
+            % new bounds - sanity check 
+            newbounds =[];
+            for iArea = 1:size(gui_data.scaling_per_region, 1)
+               thisArea = unique_blocks(iArea);
+               thisArea_boundaries = boundaries(iArea, :);
+               newbounds(iArea,:) = [probe_ccf(iProbe).probe_depths(thisArea_boundaries(1)), probe_ccf(iProbe).probe_depths(thisArea_boundaries(2))];
             end
             
             % save scaling
             probe_ccf(iProbe).area_scaling = gui_data.scaling_per_region;
-            
-
-            
-            for iArea = 1:size(unique_blocks,1)
-                thisArea = unique_blocks(iArea);
-                thisArea_boundaries = boundaries(iArea,:);
-
-                probe_ccf(iProbe).trajectory_areas_aligned(boundaries(iArea,1):boundaries(iArea,2))
-                probe_ccf(iProbe).trajectory_coords_aligned
-
-            end
-
-            % Get the probe depths corresponding to the trajectory areas
-            probe_depths_linear = gui_data.probe_trajectory_depths - ...
-                gui_data.probe_areas_ax_ylim(1);
-
-            probe_ccf(gui_data.use_probe).probe_depths_linear = probe_depths_linear;
 
             % Save the appended probe_ccf structure
             save(gui_data.probe_ccf_fn, 'probe_ccf');
@@ -406,7 +416,7 @@ gui_data = guidata(fig);
             gui_data.area_centers(iBoundary) = (gui_data.new_region_boundaries(iBoundary) + ...
                 gui_data.new_region_boundaries(iBoundary+1)) ./ 2;
         end
-        set(probe_areas_ax, 'YTick', (gui_data.area_centers -0.5)*25, ...
+        set(probe_areas_ax, 'YTick', (gui_data.area_centers -0.5), ...
             'YTickLabels', gui_data.trajectory_area_labels);
 
         % (update coordinates) + ineed to update this when shifting, no
