@@ -225,18 +225,13 @@ nProbes = size(gui_data.probe_color, 1);
 gui_data.probeLegendText = gobjects(nProbes, 1);
 for i = 1:nProbes
     if strcmp(screenOrientation, 'portrait')
-        n_probe_per_col = 10;
-        horiz_spacing_factor = 0.3;
-        vert_spacing_factor = 0.08;
-    else
-        n_probe_per_col = 25;
-        horiz_spacing_factor = 0.5;
-        vert_spacing_factor = 0.03;
-    end
-        gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i - 1)/n_probe_per_col))*horiz_spacing_factor+0.3,...
-            0.9-vert_spacing_factor*(i - (floor((i - 1)/n_probe_per_col))*n_probe_per_col), ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :), ...
+        gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i - 1)/10))*0.3+0.3, 0.9-0.08*(i - (floor((i - 1)/10))*10), ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :), ...
             'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
-
+    
+    else
+         gui_data.probeLegendText(i) = text(gui_data.legendAxes, (floor((i - 1)/20))*0.5+0.3, 0.9-0.03*(i - (floor((i - 1)/20))*20), ['Probe ', num2str(i)], 'Color', gui_data.probe_color(i, :), ...
+            'HorizontalAlignment', 'center', 'VerticalAlignment', 'top', 'FontSize', 14);
+    end
 end
 hold(gui_data.legendAxes, 'off');
 

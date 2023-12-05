@@ -12,7 +12,7 @@
 clearvars -global % releases previous GUIs, if there are any
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m.
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF096';
+animal = 'JF097';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -24,9 +24,10 @@ atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
 
+brainsawPath_curr = [AP_cortexlab_filenameJF(animal,'','','histo_folder','','', ''), '/downsampled_stacks/025_micron'];
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] = ...
-    ya_getLocations(brainglobeLocation, brainsawPath, animal, channelColToRegister, ...
+    ya_getLocations(brainglobeLocation, brainsawPath_curr, channelColToRegister, ...
     channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
 
 %% ~ Load in images and template ~
