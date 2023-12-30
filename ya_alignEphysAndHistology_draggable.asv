@@ -24,7 +24,7 @@ if ~isnan(curr_shank)
     new_spike_idx = nan(max(spike_templates), 1);
     new_spike_idx(good_templates_idx) = 1:length(good_templates_idx);
     spike_templates = new_spike_idx(spike_templates);
-    unitType = unitType(theseTemplates);
+    unitType = unitType()
     template_depths = template_depths(theseTemplates);
     [~, ~, spike_templates_reidx] = unique(spike_templates);
     norm_template_spike_n = mat2gray(log10(accumarray(spike_templates_reidx, 1)+1));

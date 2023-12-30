@@ -71,7 +71,8 @@ end
 %% ~ Draw probes + adjust probe fits ~
 transformedImageDir = dir([outputDir, filesep, 'downsampled_standard_*.tiff']);
 transformedImage = loadtiff([transformedImageDir.folder, filesep, transformedImageDir.name]);
-ya_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir, screenToUse)
+screenOri = 'portrait';
+ya_drawProbes_bezierCurves(tv, av, st, transformedImage, outputDir, screenOri)
 
 %% ~ Assign probes to days/sites ~
 load([outputDir, '/probe_ccf.mat'])
@@ -193,7 +194,7 @@ save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 % - add "5 min histology recs" look at
 % - check out imro file , plot
 % - plot probe in image overlay (rotated on probe axis)
-
+iProbe = 0; 
 load([outputDir, '/probe2ephys.mat'])
 load([outputDir, '/probe_ccf.mat'])
 
@@ -229,8 +230,6 @@ load_sync = true;
 load_parts.cam = false;
 loadClusters = 0;
 load_parts.ephys = true;
-%lfp_channel = 'all'; 
-%loadLFP = true;
 JF_load_experiment;
 
 % plot PSTH
