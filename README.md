@@ -29,7 +29,7 @@ Other dependencies already integrated in YAHT (no need to download them):
 
 ### 🏁 Quick start 
 
-Adjust the paths in `ya_histologyMain_template` an run through the sections to get started.
+Adjust the paths in `ya_histologyMain_template` an run through the sections to get started. So far, this pipeline has not been widely used and tested. You will likely run into some issues and incompatibilities. Please contact me at julie[dot]mfabre[at]gmail[dot]com if that's the case. I'm happy to help! 
 
 ### 🔗 Pipeline steps
 - Step 0: preprocessing
