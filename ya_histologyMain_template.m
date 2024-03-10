@@ -3,7 +3,7 @@
 clearvars -global % releases previous GUIs, if there are any
 
 % EDIT ME :
-animal = 'JF096';
+animal = 'JF117';
 brainsawPath = ['/home/netshare/zaru/', animal, '/Histology/downsampled_stacks/025_micron/'];
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
 allenAtlasPath = '/home/julie/Dropbox/Atlas/allenCCF'; % location of the allencff downloaded files

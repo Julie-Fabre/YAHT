@@ -1361,8 +1361,12 @@ for iProbe = 1:gui_data.n_probes
             probe_points{non_empty_slices(iSlice), iProbe}, ...
             repmat(non_empty_slices(iSlice), numel(probe_points{non_empty_slices(iSlice), iProbe})./2, 1)];
     end
-    [~, idx] = sort(gui_data.bezier_control_points{iProbe}(:, 3));
-    gui_data.bezier_control_points{iProbe} = gui_data.bezier_control_points{iProbe}(idx, :);
+    try
+        [~, idx] = sort(gui_data.bezier_control_points{iProbe}(:, 3));
+        gui_data.bezier_control_points{iProbe} = gui_data.bezier_control_points{iProbe}(idx, :);
+    catch
+        gui_data.bezier_control_points{iProbe} = [];
+    end
 
 end
 set(gui_data.histology_ax_title, 'String', 'successfully loaded')

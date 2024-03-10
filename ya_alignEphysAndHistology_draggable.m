@@ -46,13 +46,13 @@ else
     n_corr_groups = 40;
 end
 max_depths = probeLength;
-if min(template_depths) < 1440 % single shank 
+% if min(template_depths) < 1440 % single shank 
     min_depths = 0;
-elseif min(template_depths) < 2175 % 2 shanks
-    min_depths = 1440;
-else % 4shanks
-    min_depths = 2175;
-end
+% elseif min(template_depths) < 2175 % 2 shanks
+%     min_depths = 1440;
+% else % 4shanks
+%     min_depths = 2175;
+% end
 depth_group_edges = linspace(min_depths, max_depths, n_corr_groups+1);
 
 
@@ -219,6 +219,9 @@ probe_ccf(use_probe).probe_areas_linear = areas_linear;
 unique_cols = probe_image.CData(round(trajectory_area_centers(area_dv_sort_idx)));
 scaling_per_region = ones(length(unique_cols),1);
 
+% probe_depths (classic) 
+gui_data.probe_trajectory_depths_simple = probe_trajectory_depths; 
+
 % Package into gui
 gui_data.probe_ccf_fn = probe_ccf_fn;
 gui_data.probe_ccf = probe_ccf;
@@ -289,6 +292,8 @@ switch eventdata.Key
 
             % shift the non-linear to the linear 
             iProbe = gui_data.use_probe;
+          
+           probe_ccf(iProbe).probe_depths = gui_data.probe_trajectory_depths_simple;
             probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths - probe_ccf(iProbe).probe_depths(1) ...
                  - gui_data.probe_areas_ax_ylim(1);
 

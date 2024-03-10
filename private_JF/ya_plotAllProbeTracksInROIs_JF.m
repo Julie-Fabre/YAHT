@@ -1,11 +1,18 @@
 patchBrain = 0;
-
+passive = 0;
+gonogo=0;
 % to do
 % add probe depths, types, and mutli color if several regions of interest
 % plot only probe in the region of interest?
 cl_myPaths;
 bregma = [540, 0, 570];
-theseAnimals = {'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};%{'JF091', 'JF093', 'JF107', 'JF105'};%{'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};{'JF096', 'JF097', 'JF099', 'JF106'};%
+if passive
+    theseAnimals = {'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};
+elseif gonogo
+    theseAnimals = {'JF091', 'JF093', 'JF107', 'JF105'};
+else
+    theseAnimals = {'JF096', 'JF097', 'JF099', 'JF106'};
+end%{'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};{'JF096', 'JF097', 'JF099', 'JF106'};%
 %theseAnimals = {'JF093', 'JF091', 'JF107', 'JF104', 'JF105'};
 animalsType = {'Naive'};
 regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
@@ -143,7 +150,7 @@ view([90, 90])
 view([0, 0])
 %save as .avi rotating vid
 set(gcf, 'Color', 'w')
-OptionZ.FrameRate = 15;
+OptionZ.FrameRate = 5;
 OptionZ.Duration = 5.5;
 OptionZ.Periodic = true;
 CaptureFigVid([-20, 10; -110, 10; -190, 80; -290, 10; -380, 10], 'WellMadeVid', OptionZ)

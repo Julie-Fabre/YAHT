@@ -9,10 +9,11 @@
 % - GUI to assign probes
 
 %% ~ Images info
+clear all;
 clearvars -global % releases previous GUIs, if there are any
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m.
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF097';
+animal = 'JF065';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -24,7 +25,7 @@ atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
 brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
 
-brainsawPath_curr = [AP_cortexlab_filenameJF(animal,'','','histo_folder','','', ''), '/downsampled_stacks/025_micron'];
+brainsawPath_curr = [cl_cortexlab_filename(animal,'','','histo_folder','','', ''), '/downsampled_stacks/025_micron'];
 % registration location/files
 [atlasLocation, imgToRegister, imgToTransform, outputDir] = ...
     ya_getLocations(brainglobeLocation, brainsawPath_curr, channelColToRegister, ...
@@ -79,7 +80,7 @@ load([outputDir, '/probe_ccf.mat'])
 ya_plotHistoPerMouse(outputDir, st);
 
 % duplicate probes if several recordings (eg botRow+0, botRow+48, ...)
-probe_ccf(end+1) = probe_ccf(1);
+probe_ccf(10) = probe_ccf(9);
 probe_ccf(end+1) = probe_ccf(2);
 probe_ccf(end+1) = probe_ccf(3);
 probe_ccf(end+1) = probe_ccf(4);
@@ -189,7 +190,23 @@ probe2ephys(18).shank = NaN;
 probe2ephys(18).certainty = 0;
 
 save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
+save([outputDir, '/probe2ephys', date, '.mat'], 'probe2ephys')
 
+save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
+save([outputDir, '/probe_ccf', date, '.mat'], 'probe_ccf')
+
+%%
+probe_points2 = probe_points;
+nonEmptyCells = find(~cellfun(@isempty,probe_points2(:,16)));
+
+for iNonEmptyCells = 1:size(nonEmptyCells,1)
+    thisCell = nonEmptyCells(iNonEmptyCells);
+    probe_points2(thisCell - 18, 13) = probe_points2(thisCell ,16);
+end
+
+
+probe_points = probe_points2;
+save([outputDir, '/probe_points.mat'], 'probe_points')
 %% ~ Align ephys and histology ~
 % - add "5 min histology recs" look at
 % - check out imro file , plot
@@ -197,45 +214,50 @@ save([outputDir, '/probe2ephys.mat'], 'probe2ephys')
 iProbe = 0; 
 load([outputDir, '/probe2ephys.mat'])
 load([outputDir, '/probe_ccf.mat'])
-
-iProbe = iProbe + 1
-keep probe2ephys animal iProbe st outputDir
+%%
+%for iProbe = 1:17
+iProbe = 8
+keep probe2ephys animal iProbe st outputDir tv av
 
 % experiment info
 site = probe2ephys(iProbe).site;%if ~isnan(site)
-experiments = AP_find_experimentsJF(animal, '', true);
+experiments = cl_find_experiments(animal, '', true);
 experiments = experiments([experiments.ephys]);
 day_num = probe2ephys(iProbe).day;
-day = experiments(day_num).day;
+thisDate = experiments(day_num).thisDate;
 shank = probe2ephys(iProbe).shank;
+
+% select experiment number 
+if site == 1 || site == 2
+    experiment = 3;
+elseif site == 3 || site == 4
+    experiment = 1;
+elseif site == 5 || site == 6
+    experiment = 5;
+end
+
 
 % recording
 if isfield(probe2ephys, 'recording') && ~isempty(probe2ephys(iProbe).recording)
     recording = probe2ephys(iProbe).recording(1);
+    experiment = 5;
 else
     recording = [];
+    
 end
 
-% select experiment number 
-if site == 1 || site == 2
-    experiment = 1;
-elseif site == 3 || site == 4
-    experiment = 1;
-elseif site == 5 || site == 6
-    experiment = 1;
-end
 
 % load ephys data 
 load_sync = true;
 load_parts.cam = false;
 loadClusters = 0;
 load_parts.ephys = true;
-JF_load_experiment;
+cl_load_experiment;
 
 % plot PSTH
 curr_shank = shank;
 lfp = NaN;
-AP_cellrasterJF({stimOn_times}, {trial_conditions(:, 1)})
+cl_cellraster({stimOn_times}, {trial_conditions(:, 1)})
 
 % get probe length specs 
 if max(template_depths) > 2880
@@ -249,14 +271,32 @@ elseif  max(template_depths) <= 750
 end
 
 % get quality metrics 
-rerunQM = 0;
-[unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, day, site, recording, experiment,[], rerunQM, 0, 1);
+try
+    rerunQM = 0;
 
+    [unitType, qMetric] = bc_qualityMetricsPipeline_JF(animal, thisDate, site, recording, experiment,[], rerunQM, 0, 1);
+catch
+    unitType = zeros(size(template_depths,1),1);
+end
 % align
 ya_alignEphysAndHistology_draggable(st, outputDir, ...
     spike_times, spike_templates, template_depths, ...
     spike_xdepths, template_xdepths, lfp, channel_positions(:, 2), channel_positions(:, 1), ...
     iProbe, probeLength, shank, unitType);
+%end
+% copy to backup 
+%copyfile([outputDir, '/probe_ccf.mat'],['/media/julie/Expansion/Histology_backup/', animal, '/probe_ccf.mat'])
 
+%% final
+copyfile([outputDir, '/probe_ccf.mat'],['/media/julie/Expansion/Histology_backup/', animal, '/probe_ccf.mat'])
+copyfile([outputDir, '/probe2ephys.mat'],['/media/julie/Expansion/Histology_backup/', animal, '/probe2ephys.mat'])
 
+%% 
+load([outputDir, '/probe_ccf.mat'])
+probe_ccf_new = probe_ccf;
+load(['/media/julie/Expansion/Histology_backup/', animal, '/probe_ccf.mat'])
+probe_ccf(1) = probe_ccf_new(1);
+probe_ccf(2) = probe_ccf_new(2);
+probe_ccf(5) = probe_ccf_new(5);
+save([outputDir, '/probe_ccf.mat'], 'probe_ccf')
 %% ~ Various useful plotting functions ~
