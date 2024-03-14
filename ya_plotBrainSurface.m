@@ -13,7 +13,7 @@ if nargin < 3 || isempty(patchAlphaValue)
 end
 
 av = readNPY([allenAtlasPath, filesep, 'annotation_volume_10um_by_index.npy']);
-st = loadStructureTreeJF([allenAtlasPath, filesep, 'structure_tree_safe_2017.csv']);
+st = ya_loadStructureTree([allenAtlasPath, filesep, 'structure_tree_safe_2017.csv']);
 
 slice_spacing = 10;
 
