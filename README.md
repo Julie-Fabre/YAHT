@@ -67,6 +67,6 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 
 ## Bonus: load data and plot projections from the Allen Connectivity Atlas!
 
-[ more details coming soon!]
+[see [neuro_street_view](https://github.com/Julie-Fabre/neuro_street_view)]
 
 
