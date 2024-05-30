@@ -70,3 +70,7 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 [see [neuro_street_view](https://github.com/Julie-Fabre/neuro_street_view)]
 
 
+### 🤗 Support and citing
+
+If you find this repo useful in your work, we would like a citation [more details coming soon-ish]. Contact us for more information. Cheers! 
+
