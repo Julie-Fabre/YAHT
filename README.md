@@ -65,6 +65,12 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 
 <img style="float: right;" src="./images/brain2.gif" width=100% height=100%>
 
+## Bonus: load data and plot projections from the Allen Connectivity Atlas!
+
+[see [neuro_street_view](https://github.com/Julie-Fabre/neuro_street_view)]
 
 
+### 🤗 Support and citing
+
+If you find this repo useful in your work, we would like a citation [more details coming soon-ish]. Contact us for more information. Cheers! 
 
