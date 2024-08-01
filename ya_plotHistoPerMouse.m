@@ -145,4 +145,3 @@ for curr_probe = 1:length(probe_ccf)
 
 end
 %prettify_plot('all', 'all')
-

@@ -96,11 +96,18 @@ set(multiunit_ax, 'FontSize', 12)
 xlabel(multiunit_ax, 'Multiunit depth');
 
 binSize = n_corr_groups;
+try
 units_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths));
 noiseUnits_perDepth = histcounts(template_depths(unitType == 0), min(template_depths):binSize:max(template_depths))./units_perDepth;
 goodUnits_perDepth = histcounts(template_depths(unitType == 1), min(template_depths):binSize:max(template_depths))./units_perDepth;
 nonSomaUnits_perDepth = histcounts(template_depths(unitType == 3), min(template_depths):binSize:max(template_depths))./units_perDepth;
+catch
+    units_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths));
+noiseUnits_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths))./units_perDepth;
+goodUnits_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths))./units_perDepth;
+nonSomaUnits_perDepth = histcounts(template_depths, min(template_depths):binSize:max(template_depths))./units_perDepth;
 
+end
 unittype_ax = subplot('Position', [0.4, 0.1, 0.1, 0.8]); hold on;
 plot(smoothdata(goodUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);
 plot(smoothdata(noiseUnits_perDepth, 'gaussian', [2 2]), min(template_depths)+binSize/2:binSize:max(template_depths)-binSize/2);

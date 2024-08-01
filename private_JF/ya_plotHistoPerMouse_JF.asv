@@ -1,8 +1,9 @@
 function ya_plotHistoPerMouse_JF(animal, outputDir, st)
 cl_myPaths;
-slice_spacing = 25;
+slice_spacing = 10
+;
 structure_alpha = 0.2;
-scalingFactor = 2.5;
+scalingFactor = 1;
  old_histo = false;
 if ~isempty(animal)
     probe2ephys_location = cl_cortexlab_filename(animal, [], [], 'probe2ephys');
