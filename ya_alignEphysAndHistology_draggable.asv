@@ -325,28 +325,27 @@ switch eventdata.Key
             end
 
             % new depths: value 1 + (diff * scale vectors)
+            cc=cumsum(depth_diff_vector .* depth_scale_vector(2:end));
             scaled_depths = [probe_ccf(iProbe).probe_depths(1);...
                 probe_ccf(iProbe).probe_depths(1) + cumsum(depth_diff_vector .* depth_scale_vector(2:end))];
             
-            % % sanity checks 
-            % probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==1022, 1, 'first'))
-            % 
-            % probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'first'))
-            % probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'last'))
-            % 
-            % probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'first'))
-            % probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'last'))
-            % 
-            %  % sanity checks 
-            % scaled_depths(find(probe_ccf(iProbe).trajectory_areas==1022, 1, 'first'))
-            % 
-            % scaled_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'first'))
-            % scaled_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'last'))
-            % 
-            % scaled_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'first'))
-            % scaled_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'last'))
+            % sanity checks 
+            probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==1022, 1, 'first'))
 
-            probe_ccf(iProbe).probe_depths=scaled_depths;
+            probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'first'))
+            probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'last'))
+
+            probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'first'))
+            probe_ccf(iProbe).probe_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'last'))
+
+             % sanity checks 
+            scaled_depths(find(probe_ccf(iProbe).trajectory_areas==1022, 1, 'first'))
+
+           scaled_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'first'))
+            scaled_depths(find(probe_ccf(iProbe).trajectory_areas==6, 1, 'last'))
+
+            scaled_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'first'))
+            scaled_depths(find(probe_ccf(iProbe).trajectory_areas==672, 1, 'last'))
 
 
             % previous: probe_ccf(iProbe).probe_depths =  probe_ccf(iProbe).probe_depths - gui_data.probe_areas_ax_ylim(1);

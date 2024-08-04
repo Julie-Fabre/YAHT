@@ -15,7 +15,7 @@ close all;
 clearvars -global % releases previous GUIs, if there are any
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m.
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF109';
+animal = 'JF090';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -280,7 +280,7 @@ load([outputDir, '/probe_ccf.mat'])
 %%
 %for iProbe = 1:17
 %$for iProbe = 5%[20,21,22,23,26,27]
-for iProbe = 6%[2,3,4,10,11]
+for iProbe = 11%[2,3,4,10,11]
 
     keep probe2ephys animal iProbe st outputDir tv av
 
@@ -294,7 +294,7 @@ for iProbe = 6%[2,3,4,10,11]
 
     % select experiment number
     %if site == 1 || site == 2
-    experiment = 3;
+    experiment = 2;
     %elseif site == 3 || site == 4
     %    experiment = 1;
     %elseif site == 5 || site == 6
@@ -312,7 +312,6 @@ for iProbe = 6%[2,3,4,10,11]
     end
 
     try
-        experiment= 2
         % load ephys data
         load_sync = true;
         load_parts.cam = false;
