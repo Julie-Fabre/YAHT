@@ -73,8 +73,10 @@ if strcmp(screenOrientation, 'portrait')
     loadButtonPosition = [2, 7];
     plotButtonPosition = [2, 8];
     delButtonPosition = [7, 1, 2];
-    startButtonPosition = [7, 3, 4];
-    stopButtonPosition = [7, 5, 6];
+    prevButtonPosition = [7, 3];
+    nextButtonPosition = [7, 4];
+    startButtonPosition = [7, 5];
+    stopButtonPosition = [7, 6];
     probePointsBoxPosition = [6, 1, 6];
     probeDropdownBoxPosition = [5, 1, 6];
     legendPosition = [5, 7, 8, 7];
@@ -97,8 +99,10 @@ else % landscape mode
     loadButtonPosition = [2, 9];
     plotButtonPosition = [2, 10];
     delButtonPosition = [5, 3, 4];
-    startButtonPosition = [5, 5, 6];
-    stopButtonPosition = [5, 7, 8];
+    prevButtonPosition = [5, 5];
+    nextButtonPosition = [5, 6];
+    startButtonPosition = [5, 7];
+    stopButtonPosition = [5, 8];
     probePointsBoxPosition = [4, 3, 8];
     probeDropdownBoxPosition = [3, 3, 8];
     legendPosition = [3, 9, 10, 5];
@@ -170,6 +174,18 @@ gui_data.plot_btn.ButtonPushedFcn = @(varargin) plotProbeButtonPushed(gui_fig);
 gui_data.plot_btn.Layout.Row = plotButtonPosition(1);
 gui_data.plot_btn.Layout.Column = plotButtonPosition(2);
 
+% Previous slice button
+gui_data.prevButton = uibutton(g, 'Text', 'Previous', 'BackgroundColor', [0.2, 0.5, 0.8]); % Blue color
+gui_data.prevButton.ButtonPushedFcn = @(varargin) previousSlice(gui_fig);
+gui_data.prevButton.Layout.Row = prevButtonPosition(1);
+gui_data.prevButton.Layout.Column = prevButtonPosition(2);
+
+% Next slice button
+gui_data.nextButton = uibutton(g, 'Text', 'Next', 'BackgroundColor', [0.2, 0.5, 0.8]); % Blue color
+gui_data.nextButton.ButtonPushedFcn = @(varargin) nextSlice(gui_fig);
+gui_data.nextButton.Layout.Row = nextButtonPosition(1);
+gui_data.nextButton.Layout.Column = nextButtonPosition(2);
+
 % Set up axis for histology image
 gui_data.curr_slice = 150;
 gui_data.visibility = 1;
@@ -190,6 +206,7 @@ img(img == 1) = 0;
 
 % Display image in the specified axes
 gui_data.histology_im_h = image(gui_data.histology_ax, img);
+set(gui_data.histology_im_h, 'ButtonDownFcn', @(src,event)mouseclick_histology(gui_fig, event));
 colormap(gui_data.histology_ax, gray); % Apply colormap again to ensure consistency
 % Ensure 'hold on' for histology axes
 hold(gui_data.histology_ax, 'on');
@@ -859,24 +876,58 @@ function deleteSelectedPoint(~, ~, gui_fig)
 gui_data = guidata(gui_fig);
 selectedIdx = ismember(gui_data.points_table.Items, gui_data.selected_row);
 
-if ~isempty(selectedIdx) && ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe})
-    gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}( ...
-        ismember(gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}, ...
-        gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, 1:2), 'rows'), :) = [];
-    gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = [];
+if any(selectedIdx) && ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+    % Find which points are on the current slice
+    curr_slice_points = gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice;
+    curr_slice_indices = find(curr_slice_points);
+    
+    if ~isempty(curr_slice_indices)
+        % Find the actual index in bezier_control_points to delete
+        selected_point_idx = find(selectedIdx);
+        if selected_point_idx <= length(curr_slice_indices)
+            actual_idx = curr_slice_indices(selected_point_idx);
+            % Remove from bezier_control_points
+            gui_data.bezier_control_points{gui_data.curr_probe}(actual_idx, :) = [];
+            
+            % Update probe_points_histology for current slice
+            gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
+                gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice, 1:2);
+        end
+    end
 end
 gui_data.pointSelected = true;
 guidata(gui_fig, gui_data);
 removeHighlighted(gui_fig);
-if selectedIdx > 1
-    selectedIdx = find(selectedIdx) - 1;
+
+% Update the points table first
+populate_points_table(gui_fig);
+
+% Then check if there are still items to select
+if ~isempty(gui_data.points_table.Items)
+    selectedIdx = find(selectedIdx);
+    if ~isempty(selectedIdx)
+        if selectedIdx(1) > 1
+            newIdx = selectedIdx(1) - 1;
+        else
+            newIdx = min(selectedIdx(1) + 1, length(gui_data.points_table.Items));
+        end
+        if newIdx <= length(gui_data.points_table.Items)
+            gui_data.points_table.Value = gui_data.points_table.Items(newIdx);
+            gui_data.selected_row = gui_data.points_table.Items(newIdx);
+        else
+            gui_data.points_table.Value = {};
+            gui_data.selected_row = {};
+        end
+    else
+        gui_data.points_table.Value = {};
+        gui_data.selected_row = {};
+    end
 else
-    selectedIdx = find(selectedIdx) + 1;
+    gui_data.points_table.Value = {};
+    gui_data.selected_row = {};
 end
-gui_data.points_table.Value = gui_data.points_table.Items(selectedIdx);
-gui_data.selected_row = gui_data.points_table.Items(selectedIdx);
+
 guidata(gui_fig, gui_data);
-populate_points_table(gui_fig)
 update_slice(gui_fig);
 
 end
@@ -1082,17 +1133,22 @@ for curr_probe = 1:gui_data.n_probes
 
 
             for curr_point = 1:length(use_points)
-                ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                    plane_ap(probe_points_atlas_y(curr_point), ...
-                    probe_points_atlas_x(curr_point));
+                try
+                    ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                        plane_ap(probe_points_atlas_y(curr_point), ...
+                        probe_points_atlas_x(curr_point));
                 ccf_ml = gui_data.histology_ccf(curr_slice). ...
                     plane_dv(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
                 ccf_dv = gui_data.histology_ccf(curr_slice). ...
                     plane_ml(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
-                probe_ccf(curr_probe).points = ...
-                    vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+                    probe_ccf(curr_probe).points = ...
+                        vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+                catch
+                    % Skip this point if there's an indexing error
+                    fprintf('Warning: Skipping point %d on slice %d due to indexing error\n', curr_point, curr_slice);
+                end
             end
         end
 
@@ -1123,9 +1179,10 @@ for curr_probe = 1:gui_data.n_probes
             % (CCF coordinates are in [AP,DV,ML])
             use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
             for curr_point = 1:length(use_points)
-                ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                    plane_ap(probe_points_atlas_y(curr_point), ...
-                    probe_points_atlas_x(curr_point));
+                try
+                    ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                        plane_ap(probe_points_atlas_y(curr_point), ...
+                        probe_points_atlas_x(curr_point));
                 ccf_ml = gui_data.histology_ccf(curr_slice). ...
                     plane_dv(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
@@ -1509,17 +1566,22 @@ for curr_probe = 1:gui_data.n_probes
 
 
             for curr_point = 1:length(use_points)
-                ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                    plane_ap(probe_points_atlas_y(curr_point), ...
-                    probe_points_atlas_x(curr_point));
+                try
+                    ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                        plane_ap(probe_points_atlas_y(curr_point), ...
+                        probe_points_atlas_x(curr_point));
                 ccf_ml = gui_data.histology_ccf(curr_slice). ...
                     plane_dv(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
                 ccf_dv = gui_data.histology_ccf(curr_slice). ...
                     plane_ml(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
-                probe_ccf(curr_probe).points = ...
-                    vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+                    probe_ccf(curr_probe).points = ...
+                        vertcat(probe_ccf(curr_probe).points, [ccf_ap, ccf_dv, ccf_ml]);
+                catch
+                    % Skip this point if there's an indexing error
+                    fprintf('Warning: Skipping point %d on slice %d due to indexing error\n', curr_point, curr_slice);
+                end
             end
         end
 
@@ -1550,9 +1612,10 @@ for curr_probe = 1:gui_data.n_probes
             % (CCF coordinates are in [AP,DV,ML])
             use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
             for curr_point = 1:length(use_points)
-                ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                    plane_ap(probe_points_atlas_y(curr_point), ...
-                    probe_points_atlas_x(curr_point));
+                try
+                    ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                        plane_ap(probe_points_atlas_y(curr_point), ...
+                        probe_points_atlas_x(curr_point));
                 ccf_ml = gui_data.histology_ccf(curr_slice). ...
                     plane_dv(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
@@ -1718,9 +1781,10 @@ if contains(gui_data.viewFit(curr_probe).String, 'iew')
             % (CCF coordinates are in [AP,DV,ML])
             use_points = find(~isnan(probe_points_atlas_x) & ~isnan(probe_points_atlas_y));
             for curr_point = 1:length(use_points)
-                ccf_ap = gui_data.histology_ccf(curr_slice). ...
-                    plane_ap(probe_points_atlas_y(curr_point), ...
-                    probe_points_atlas_x(curr_point));
+                try
+                    ccf_ap = gui_data.histology_ccf(curr_slice). ...
+                        plane_ap(probe_points_atlas_y(curr_point), ...
+                        probe_points_atlas_x(curr_point));
                 ccf_ml = gui_data.histology_ccf(curr_slice). ...
                     plane_dv(probe_points_atlas_y(curr_point), ...
                     probe_points_atlas_x(curr_point));
@@ -1921,4 +1985,58 @@ delete(gui_data.probe_fit_lines(:))
 % Upload gui data
 guidata(gui_fig, gui_data);
 
+end
+
+%% Mouse click function
+function mouseclick_histology(gui_fig, eventdata)
+% Add probe points on mouse click
+
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get click position
+click_pos = eventdata.IntersectionPoint(1:2);
+
+% Add point to current probe's bezier control points
+new_point = [click_pos(1), click_pos(2), gui_data.curr_slice];
+
+if isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+    gui_data.bezier_control_points{gui_data.curr_probe} = new_point;
+else
+    gui_data.bezier_control_points{gui_data.curr_probe} = [gui_data.bezier_control_points{gui_data.curr_probe}; new_point];
+end
+
+% Sort points by slice number for better curve fitting
+[~, sort_idx] = sort(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3));
+gui_data.bezier_control_points{gui_data.curr_probe} = gui_data.bezier_control_points{gui_data.curr_probe}(sort_idx, :);
+
+% Update probe_points_histology for current slice (same as line 426-427)
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
+    gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice, 1:2);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice to show the new point
+update_slice(gui_fig);
+
+% Update the points table
+populate_points_table(gui_fig);
+
+end
+
+function previousSlice(gui_fig)
+% Navigate to previous slice
+gui_data = guidata(gui_fig);
+gui_data.curr_slice = max(gui_data.curr_slice-1, 1);
+guidata(gui_fig, gui_data);
+update_slice(gui_fig);
+end
+
+function nextSlice(gui_fig)
+% Navigate to next slice
+gui_data = guidata(gui_fig);
+gui_data.curr_slice = min(gui_data.curr_slice+1, length(gui_data.slice_im));
+guidata(gui_fig, gui_data);
+update_slice(gui_fig);
 end
