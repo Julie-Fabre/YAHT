@@ -224,7 +224,7 @@ for iMouse = 1:length(theseAnimals)
     % Create a dummy line for legend
     h_legend = plot3(NaN, NaN, NaN, 'color', mouseColors(iMouse, :), 'linewidth', 3);
     legendHandles(end+1) = h_legend;
-    legendEntries{end+1} = theseAnimals{iMouse};
+    legendEntries{end+1} = strrep(theseAnimals{iMouse},'_', '-');
 end
 
 % Create legend
