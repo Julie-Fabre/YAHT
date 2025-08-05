@@ -75,8 +75,8 @@ if strcmp(screenOrientation, 'portrait')
     delButtonPosition = [7, 1, 2];
     prevButtonPosition = [7, 3];
     nextButtonPosition = [7, 4];
-    startButtonPosition = [7, 5];
-    stopButtonPosition = [7, 6];
+    startButtonPosition = [7, 3, 4];
+    stopButtonPosition = [7, 5, 6];
     probePointsBoxPosition = [6, 1, 6];
     probeDropdownBoxPosition = [5, 1, 6];
     legendPosition = [5, 7, 8, 7];
@@ -311,6 +311,28 @@ gui_data.probe_dropdown = uidropdown(g, 'Items', probes_list, 'FontColor', [1, 1
 gui_data.probe_dropdown.ValueChangedFcn = @(src, event)updateProbe(gui_fig);
 gui_data.probe_dropdown.Layout.Row = probeDropdownBoxPosition(1);
 gui_data.probe_dropdown.Layout.Column = [probeDropdownBoxPosition(2), probeDropdownBoxPosition(3)];
+
+% Previous/Next Probe buttons
+gui_data.prevProbeButton = uibutton(g, 'Text', 'Prev Probe', 'BackgroundColor', [0.4, 0.4, 0.8]);
+gui_data.prevProbeButton.ButtonPushedFcn = @(varargin)cycleToPrevProbe(gui_fig);
+gui_data.prevProbeButton.Layout.Row = 5;
+gui_data.prevProbeButton.Layout.Column = 7;
+
+gui_data.nextProbeButton = uibutton(g, 'Text', 'Next Probe', 'BackgroundColor', [0.4, 0.4, 0.8]);
+gui_data.nextProbeButton.ButtonPushedFcn = @(varargin)cycleToNextProbe(gui_fig);
+gui_data.nextProbeButton.Layout.Row = 5;
+gui_data.nextProbeButton.Layout.Column = 8;
+
+% Previous/Next Slice buttons
+gui_data.prevSliceButton = uibutton(g, 'Text', '< Prev Slice', 'BackgroundColor', [0.4, 0.7, 0.4]);
+gui_data.prevSliceButton.ButtonPushedFcn = @(varargin)previousSlice(gui_fig);
+gui_data.prevSliceButton.Layout.Row = 7;
+gui_data.prevSliceButton.Layout.Column = 7;
+
+gui_data.nextSliceButton = uibutton(g, 'Text', 'Next Slice >', 'BackgroundColor', [0.4, 0.7, 0.4]);
+gui_data.nextSliceButton.ButtonPushedFcn = @(varargin)nextSlice(gui_fig);
+gui_data.nextSliceButton.Layout.Row = 7;
+gui_data.nextSliceButton.Layout.Column = 8;
 
 % Save gui_data
 guidata(gui_fig, gui_data);
@@ -2046,3 +2068,30 @@ gui_data.curr_slice = min(gui_data.curr_slice+1, length(gui_data.slice_im));
 guidata(gui_fig, gui_data);
 update_slice(gui_fig);
 end
+
+function cycleToNextProbe(gui_fig)
+% Cycle to next probe
+gui_data = guidata(gui_fig);
+gui_data.curr_probe = gui_data.curr_probe + 1;
+if gui_data.curr_probe > gui_data.n_probes
+    gui_data.curr_probe = 1;
+end
+guidata(gui_fig, gui_data);
+update_slice(gui_fig);
+populate_points_table(gui_fig);
+updateLegend(gui_fig);
+end
+
+function cycleToPrevProbe(gui_fig)
+% Cycle to previous probe
+gui_data = guidata(gui_fig);
+gui_data.curr_probe = gui_data.curr_probe - 1;
+if gui_data.curr_probe < 1
+    gui_data.curr_probe = gui_data.n_probes;
+end
+guidata(gui_fig, gui_data);
+update_slice(gui_fig);
+populate_points_table(gui_fig);
+updateLegend(gui_fig);
+end
+

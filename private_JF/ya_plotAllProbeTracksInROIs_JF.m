@@ -1,43 +1,56 @@
-patchBrain = 0;
-passive = 0;
-gonogo=0;
-% to do
-% add probe depths, types, and mutli color if several regions of interest
-% plot only probe in the region of interest?
+function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBrain, onlyROIProbes)
+% ya_plotAllProbeTracksInROIs_JF - Plot probe tracks for multiple animals with regions of interest
+%
+% Inputs:
+%   theseAnimals - Cell array of animal names (e.g., {'JF058', 'JF059'})
+%   regionsOfInterest - Cell array of region names to highlight (e.g., {'CP', 'GPe', 'SNr'})
+%                       If empty or not provided, defaults to {'CP', 'GPe', 'GPi', 'STN', 'SNr'}
+%   patchBrain - Boolean to use surface patch (1) or wire grid (0) for brain. Default: 0
+%   onlyROIProbes - Boolean to plot only probes that pass through ROIs (1) or all probes (0). Default: 0
+%
+% Example:
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1); % Only ROI probes
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0); % All probes
+
+% Set defaults
+if nargin < 2 || isempty(regionsOfInterest)
+    regionsOfInterest = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
+end
+if nargin < 3
+    patchBrain = 0;
+end
+if nargin < 4
+    onlyROIProbes = 0;
+end
+
+% Initialize paths and parameters
 cl_myPaths;
-bregma = [540, 0, 570];
-if passive
-    theseAnimals = {'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};
-elseif gonogo
-    theseAnimals = {'JF091', 'JF093', 'JF107', 'JF105'};
-else
-    theseAnimals = {'JF096', 'JF097', 'JF099', 'JF106'};
-end%{'JF058', 'JF059', 'JF088', 'JF089', 'JF101', 'JF108', 'JF109', 'JF110'};{'JF096', 'JF097', 'JF099', 'JF106'};%
-%theseAnimals = {'JF093', 'JF091', 'JF107', 'JF104', 'JF105'};
+% Bregma will be set after loading atlas
 animalsType = {'Naive'};
-regionsNames = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
-regions = {'DMS', 'GPe', 'GPi', 'STN', 'SNr'};
-regionPlotLoc = [-1, 1, -1, 1, -1];
-%recordingInfo = readtable('/home/julie/Dropbox/Analysis/RecNew.csv');
-% all animals probes
-cl_myPaths;
-allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
+regionsNames = regionsOfInterest;
+regions = regionsOfInterest;
+regionPlotLoc = repmat([-1], 1, length(regionsOfInterest)); % Default to left hemisphere
+
+% Load Allen atlas - use 10um version as expected by the original code
+allen_atlas_path = '/home/jf5479/Dropbox/Atlas/allenCCF';
 tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
 av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
 st = ya_loadStructureTree([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
-    slice_spacing = 10;
+slice_spacing = 10;
 
-[~, ~, st_br, ~] = ya_loadAllenAtlas(atlasBrainRegLocation);
+% Also load the 25um atlas for st_br compatibility
+brainglobeLocation = '/home/jf5479/Dropbox/Atlas/brainglobe/';
+atlasType = 'allen';
+atlasSpecies = 'mouse';
+atlasResolution_um = 25;
+atlasLocation = dir([brainglobeLocation, atlasType, '_', atlasSpecies, '_', num2str(atlasResolution_um), 'um*']);
+[~, ~, st_br, ~] = ya_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
 n_str = 0;
 n_gpe =0;
 n_snr =0;
-theseColors =     {[          0 0.7461 1];...
-    [0.1797 0.5430 0.3398];...  
-    [0.8594 0.0781 0.2344];...
-    [     1 0.4102 0.7031];...
-    [          1 0.5469 0];...
-    [               0 0 0];...
-    [0.6445 0.1641 0.1641]};
+% Generate colors for regions
+theseColors = lines(length(regionsNames));
+theseColors = mat2cell(theseColors, ones(size(theseColors,1),1), 3);
 %add probe types, depths
 for iType = 1:size(animalsType, 2)
     %theseTypes = strcmp(recordingInfo.Type, animalsType{iType});
@@ -53,20 +66,15 @@ for iType = 1:size(animalsType, 2)
         [~, brain_outline] = plotBrainGrid([], []);
     end
 
-    %overlay regions
-    for iRegion = [1,2,5]
+    %overlay regions - plot bilaterally (both hemispheres)
+    for iRegion = 1:length(regionsNames)
         curr_plot_structure = find(strcmp(st.acronym, regionsNames{iRegion}));
-        if regionPlotLoc(iRegion) == -1
-            structure_3d = isosurface(permute(av(1:slice_spacing:end, ...
-                1:slice_spacing:end, 1:slice_spacing:(1140 / 2)) == curr_plot_structure, [3, 1, 2]), 0);
-        else
-            structure_3d = isosurface(permute(av(1:slice_spacing:end, ...
-                1:slice_spacing:end, (1140 / 2)+1:slice_spacing:end) == curr_plot_structure, [3, 1, 2]), 0);
-            structure_3d.vertices(:, 2) = structure_3d.vertices(:, 2) + (1140 / 2 / slice_spacing);
-        end
-        %midpoint only
-
-        if strcmp(regionsNames{iRegion}, 'STR') == 0
+        
+        % Plot the full structure (both hemispheres)
+        structure_3d = isosurface(permute(av(1:slice_spacing:end, ...
+            1:slice_spacing:end, 1:slice_spacing:end) == curr_plot_structure, [3, 1, 2]), 0);
+        
+        if strcmp(regionsNames{iRegion}, 'STR') == 0 && ~isempty(structure_3d.vertices)
             hold on;
             axis vis3d equal off manual
             view([-30, 25]);
@@ -79,80 +87,107 @@ for iType = 1:size(animalsType, 2)
                 'Faces', structure_3d.faces, ...
                 'FaceColor', theseColors{iRegion, :}, 'EdgeColor', 'none', 'FaceAlpha', structure_alpha);
         end
-        %plot probe tracks
-        %theseProbes = ones((size(recordingInfo.Location, 1)),1);
-        %get animal and probe, load track
-        %theseAnimals = recordingInfo.Mouse(theseTypes);
-        qqqq = unique(theseAnimals);
-        for iAnimal = 1:size(theseAnimals, 2)
+    end % end region plotting loop
+    
+    % Plot probe tracks for all animals
+    for iAnimal = 1:size(theseAnimals, 2)
             %iAnimal = iAnimal + 1;
-            probe_ccf_location = cl_cortexlab_filename(theseAnimals{iAnimal}, [], [], 'histo');
+            % Load probe data using the same path pattern as ya_histologyMain_JF_wittenLab
+            outputDir = ['/home/jf5479/cup/Chris/data/cta_backwards/' theseAnimals{iAnimal} '/histology/alignedAllen/'];
+            probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+            
+            % Check if file exists
+            if ~exist(probe_ccf_location, 'file')
+                warning('probe_ccf.mat not found for %s at %s', theseAnimals{iAnimal}, probe_ccf_location);
+                continue;
+            end
+            
             load(probe_ccf_location)
 
             %thisAnimal = strcmp(recordingInfo.Mouse, qqqq{iAnimal});
             %ttP = (recordingInfo.HistologyProbe( thisAnimal & theseProbes));
             %thisProbe = recordingInfo.HistologyProbe(find(thisAnimal & theseProbes));
+            % Get colors for this animal
+            animalColors = lines(size(probe_ccf, 1));
+            
             for iProbe = 1:size(probe_ccf, 1)
-                
-
-
-                %iProbe = iProbe +1
                 curr_probe = iProbe;
-                %animalIdx=find(thisAnimal);
-                %ex=recordingInfo.Exclude(animalIdx(iProbe));
-                %if  isempty(ex{:})
-
-               struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
-                if (any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)) %|| (iAnimal == 2 && ismember(iProbe,ttP))
-                    if iRegion == 1
-                    n_str = n_str+1;
-                elseif iRegion == 2
-                    n_gpe = n_gpe+1;
-                else
-                    n_snr = n_snr+1;
-                end
-                    thesePoints = probe_ccf(curr_probe).points * 2.5 ; % QQ 2.5 to correct for atlas 25 um where we draw probes and 10 um in plotBrainGrid
-                    if regionPlotLoc(iRegion) == -1
-                        thesePoints(thesePoints(:,2)>570,2) =  570 - thesePoints(thesePoints(:,2)>570,2); %528? 320? 456?
-                    else
-                        thesePoints(thesePoints(:,2)<570,2) =  570 + (570 - thesePoints(thesePoints(:,2)<570,2)); %528? 320? 456?
-               
+                
+                % Check if probe has points
+                if isfield(probe_ccf(iProbe), 'points') && ~isempty(probe_ccf(iProbe).points)
+                    
+                    % Check if we should plot this probe based on ROI filtering
+                    plotThisProbe = true;
+                    if onlyROIProbes
+                        plotThisProbe = false;
+                        % Only plot if probe passes through any of the ROIs
+                        if isfield(probe_ccf(iProbe), 'trajectory_areas')
+                            for iRegion = 1:length(regionsNames)
+                                struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
+                                if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
+                                    plotThisProbe = true;
+                                    break;
+                                end
+                            end
+                        end
                     end
-                     r0 = mean(thesePoints, 1);
-                    xyz = bsxfun(@minus, thesePoints, r0);
-                    [~, ~, V] = svd(xyz, 0);
-                    %V= permute(V, [3, 2, 1]);
-                    histology_probe_direction = V(:, 1);
-                    % (make sure the direction goes down in DV - flip if it's going up)
-                    if histology_probe_direction(2) < 0
-                        histology_probe_direction = -histology_probe_direction;
-                    end
+                    
+                    if plotThisProbe
+                        thesePoints = probe_ccf(curr_probe).points * 2.5; % Scale to match brain grid
+                        
+                        % Fit line through points
+                        r0 = mean(thesePoints, 1);
+                        xyz = bsxfun(@minus, thesePoints, r0);
+                        [~, ~, V] = svd(xyz, 0);
+                        histology_probe_direction = V(:, 1);
+                        
+                        % Make sure the direction goes down in DV - flip if it's going up
+                        if histology_probe_direction(2) < 0
+                            histology_probe_direction = -histology_probe_direction;
+                        end
 
-                    line_eval = [-1000, 1000];
-                    probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
-                    plot3(thesePoints(:, 1), ...
-                        thesePoints(:, 2), ...
-                        thesePoints(:, 3), ...
-                        '.', 'color', theseColors{iRegion, :}, 'MarkerSize', 20);
-                    line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-                        'color', theseColors{iRegion, :}, 'linewidth', 2)
+                        line_eval = [-1000, 1000];
+                        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
+                        
+                        % Plot probe points and fitted line
+                        plot3(thesePoints(:, 1), ...
+                            thesePoints(:, 2), ...
+                            thesePoints(:, 3), ...
+                            '.', 'color', animalColors(iProbe, :), 'MarkerSize', 20);
+                        line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+                            'color', animalColors(iProbe, :), 'linewidth', 2)
+                    end
+                    
+                    % Count probes per region (regardless of plotting)
+                    if isfield(probe_ccf(iProbe), 'trajectory_areas')
+                        for iRegion = 1:length(regionsNames)
+                            struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
+                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
+                                % Count probes per region
+                                if strcmpi(regionsNames{iRegion}, 'CP') || strcmpi(regionsNames{iRegion}, 'STR')
+                                    n_str = n_str+1;
+                                elseif strcmpi(regionsNames{iRegion}, 'GPe')
+                                    n_gpe = n_gpe+1;
+                                elseif strcmpi(regionsNames{iRegion}, 'SNr')
+                                    n_snr = n_snr+1;
+                                end
+                            end
+                        end
+                    end
                 end
             end
-            %                 probe_vector = [probe_ref_vector(:, 1), diff(probe_ref_vector, [], 2) ./ ...
-            %                     norm(diff(probe_ref_vector, [], 2)) * probe_length + probe_ref_vector(:, 1)];
-            %end
-        end
+    end % end animal loop
+end % end animalsType loop
+% Set final view
+view([-30, 25]);
+set(gcf, 'Color', 'w');
 
-    end
+% Enable 3D rotation
+h = rotate3d(gca);
+h.Enable = 'on';
+
+% Add title
+title(sprintf('Probe tracks for %d animals in %s', length(theseAnimals), strjoin(regionsNames, ', ')));
+
 end
-view([90, 0])
-view([90, 90])
-view([0, 0])
-%save as .avi rotating vid
-set(gcf, 'Color', 'w')
-OptionZ.FrameRate = 5;
-OptionZ.Duration = 5.5;
-OptionZ.Periodic = true;
-CaptureFigVid([-20, 10; -110, 10; -190, 80; -290, 10; -380, 10], 'WellMadeVid', OptionZ)
-
 
