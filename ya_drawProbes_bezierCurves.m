@@ -190,6 +190,7 @@ img(img == 1) = 0;
 
 % Display image in the specified axes
 gui_data.histology_im_h = image(gui_data.histology_ax, img);
+set(gui_data.histology_im_h, 'ButtonDownFcn', @(src,event)mouseclick_histology(gui_fig, event));
 colormap(gui_data.histology_ax, gray); % Apply colormap again to ensure consistency
 % Ensure 'hold on' for histology axes
 hold(gui_data.histology_ax, 'on');
@@ -983,26 +984,9 @@ gui_data = guidata(gui_fig);
 % solve β by plugging it into the formula where g(i, j)=0 and
 % f(i, j)=minimum_gray
 
-curr_slice_min = double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
-curr_slice_max = double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
-
-% Calculate contrast value for slider (0-1 range)
-% Map the full data range to 0-255 display range
-if curr_slice_max > curr_slice_min
-    gui_data.contrast_alpha = 255 / (curr_slice_max - curr_slice_min);
-else
-    gui_data.contrast_alpha = 1;
-end
-
-gui_data.brightness_beta = -(gui_data.contrast_alpha * curr_slice_min);
-
-% Clamp contrast to slider limits [0, 1]
-% If contrast_alpha > 1, we need to scale it down
-if gui_data.contrast_alpha > 1
-    % Scale brightness accordingly
-    gui_data.brightness_beta = gui_data.brightness_beta / gui_data.contrast_alpha;
-    gui_data.contrast_alpha = 1;
-end
+gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all')- ...
+    min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
+gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
 
 % update bright and contast slider values
 gui_data.brightness_slider.Value = gui_data.brightness_beta;
@@ -1937,5 +1921,36 @@ delete(gui_data.probe_fit_lines(:))
 
 % Upload gui data
 guidata(gui_fig, gui_data);
+
+end
+
+%% Mouse click function
+function mouseclick_histology(gui_fig, eventdata)
+% Add probe points on mouse click
+
+% Get guidata
+gui_data = guidata(gui_fig);
+
+% Get click position
+click_pos = eventdata.IntersectionPoint(1:2);
+
+% Add point to current probe's bezier control points
+new_point = [click_pos(1), click_pos(2), gui_data.curr_slice];
+
+if isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+    gui_data.bezier_control_points{gui_data.curr_probe} = new_point;
+else
+    gui_data.bezier_control_points{gui_data.curr_probe} = [gui_data.bezier_control_points{gui_data.curr_probe}; new_point];
+end
+
+% Sort points by slice number for better curve fitting
+[~, sort_idx] = sort(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3));
+gui_data.bezier_control_points{gui_data.curr_probe} = gui_data.bezier_control_points{gui_data.curr_probe}(sort_idx, :);
+
+% Upload gui data
+guidata(gui_fig, gui_data);
+
+% Update slice to show the new point
+update_slice(gui_fig);
 
 end
