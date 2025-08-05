@@ -1,4 +1,4 @@
-function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBrain, onlyROIProbes)
+function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBrain, onlyROIProbes, showPoints, useBezierFit)
 % ya_plotAllProbeTracksInROIs_JF - Plot probe tracks for multiple animals with regions of interest
 %
 % Inputs:
@@ -7,10 +7,12 @@ function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBr
 %                       If empty or not provided, defaults to {'CP', 'GPe', 'GPi', 'STN', 'SNr'}
 %   patchBrain - Boolean to use surface patch (1) or wire grid (0) for brain. Default: 0
 %   onlyROIProbes - Boolean to plot only probes that pass through ROIs (1) or all probes (0). Default: 0
+%   showPoints - Boolean to show probe points (1) or just fitted lines (0). Default: 1
+%   useBezierFit - Boolean to use Bezier curve fit (1) or linear fit (0). Default: 1
 %
 % Example:
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1); % Only ROI probes
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0); % All probes
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1, 1, 1); % ROI probes, show points, Bezier fit
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1); % All probes, no points, Bezier fit
 
 % Set defaults
 if nargin < 2 || isempty(regionsOfInterest)
@@ -21,6 +23,12 @@ if nargin < 3
 end
 if nargin < 4
     onlyROIProbes = 0;
+end
+if nargin < 5
+    showPoints = 1;
+end
+if nargin < 6
+    useBezierFit = 1;
 end
 
 % Initialize paths and parameters
@@ -90,6 +98,9 @@ for iType = 1:size(animalsType, 2)
     end % end region plotting loop
     
     % Plot probe tracks for all animals
+    % Get colors for each animal (same color per mouse)
+    mouseColors = lines(length(theseAnimals));
+    
     for iAnimal = 1:size(theseAnimals, 2)
             %iAnimal = iAnimal + 1;
             % Load probe data using the same path pattern as ya_histologyMain_JF_wittenLab
@@ -104,11 +115,8 @@ for iType = 1:size(animalsType, 2)
             
             load(probe_ccf_location)
 
-            %thisAnimal = strcmp(recordingInfo.Mouse, qqqq{iAnimal});
-            %ttP = (recordingInfo.HistologyProbe( thisAnimal & theseProbes));
-            %thisProbe = recordingInfo.HistologyProbe(find(thisAnimal & theseProbes));
-            % Get colors for this animal
-            animalColors = lines(size(probe_ccf, 1));
+            % Get color for this animal (same for all probes from this mouse)
+            animalColor = mouseColors(iAnimal, :);
             
             for iProbe = 1:size(probe_ccf, 1)
                 curr_probe = iProbe;
@@ -135,27 +143,47 @@ for iType = 1:size(animalsType, 2)
                     if plotThisProbe
                         thesePoints = probe_ccf(curr_probe).points * 2.5; % Scale to match brain grid
                         
-                        % Fit line through points
-                        r0 = mean(thesePoints, 1);
-                        xyz = bsxfun(@minus, thesePoints, r0);
-                        [~, ~, V] = svd(xyz, 0);
-                        histology_probe_direction = V(:, 1);
-                        
-                        % Make sure the direction goes down in DV - flip if it's going up
-                        if histology_probe_direction(2) < 0
-                            histology_probe_direction = -histology_probe_direction;
+                        % Plot probe points if requested
+                        if showPoints
+                            plot3(thesePoints(:, 1), ...
+                                thesePoints(:, 2), ...
+                                thesePoints(:, 3), ...
+                                '.', 'color', animalColor, 'MarkerSize', 20);
                         end
-
-                        line_eval = [-1000, 1000];
-                        probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
                         
-                        % Plot probe points and fitted line
-                        plot3(thesePoints(:, 1), ...
-                            thesePoints(:, 2), ...
-                            thesePoints(:, 3), ...
-                            '.', 'color', animalColors(iProbe, :), 'MarkerSize', 20);
-                        line(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-                            'color', animalColors(iProbe, :), 'linewidth', 2)
+                        % Fit curve through points
+                        if useBezierFit && size(thesePoints, 1) >= 3
+                            % Use Bezier curve fitting
+                            % Sort points by one dimension (e.g., DV) to get proper curve order
+                            [~, sort_idx] = sort(thesePoints(:, 2)); % Sort by DV (y-axis)
+                            sorted_points = thesePoints(sort_idx, :);
+                            
+                            % Create Bezier curve
+                            t = linspace(0, 1, 1000);
+                            bezier_curve_points = bezier_curve(t, sorted_points);
+                            
+                            % Plot Bezier curve
+                            plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
+                                'color', animalColor, 'linewidth', 2);
+                        else
+                            % Use linear fit (original method)
+                            r0 = mean(thesePoints, 1);
+                            xyz = bsxfun(@minus, thesePoints, r0);
+                            [~, ~, V] = svd(xyz, 0);
+                            histology_probe_direction = V(:, 1);
+                            
+                            % Make sure the direction goes down in DV - flip if it's going up
+                            if histology_probe_direction(2) < 0
+                                histology_probe_direction = -histology_probe_direction;
+                            end
+
+                            line_eval = [-1000, 1000];
+                            probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
+                            
+                            % Plot linear fit
+                            plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+                                'color', animalColor, 'linewidth', 2);
+                        end
                     end
                     
                     % Count probes per region (regardless of plotting)
@@ -189,5 +217,33 @@ h.Enable = 'on';
 % Add title
 title(sprintf('Probe tracks for %d animals in %s', length(theseAnimals), strjoin(regionsNames, ', ')));
 
+% Add legend for mouse colors
+legendEntries = {};
+legendHandles = [];
+for iMouse = 1:length(theseAnimals)
+    % Create a dummy line for legend
+    h_legend = plot3(NaN, NaN, NaN, 'color', mouseColors(iMouse, :), 'linewidth', 3);
+    legendHandles(end+1) = h_legend;
+    legendEntries{end+1} = theseAnimals{iMouse};
+end
+
+% Create legend
+if ~isempty(legendHandles)
+    legend(legendHandles, legendEntries, 'Location', 'bestoutside', 'FontSize', 10);
+end
+
+end
+
+function B = bezier_curve(t, control_points)
+% Bezier curve function
+n = size(control_points, 1) - 1; % degree of the polynomial
+B = zeros(3, length(t)); % 3D curve
+
+[~, control_points_idx] = sort(control_points(:, 3));
+control_points = control_points(control_points_idx, :);
+for i = 0:n
+    B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
+end
+B = B';
 end
 
