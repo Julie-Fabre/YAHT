@@ -983,9 +983,26 @@ gui_data = guidata(gui_fig);
 % solve β by plugging it into the formula where g(i, j)=0 and
 % f(i, j)=minimum_gray
 
-gui_data.contrast_alpha = 255 / double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all')- ...
-    min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
-gui_data.brightness_beta = -(gui_data.contrast_alpha * double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all')));
+curr_slice_min = double(min(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
+curr_slice_max = double(max(gui_data.slice_im{gui_data.curr_slice}, [], 'all'));
+
+% Calculate contrast value for slider (0-1 range)
+% Map the full data range to 0-255 display range
+if curr_slice_max > curr_slice_min
+    gui_data.contrast_alpha = 255 / (curr_slice_max - curr_slice_min);
+else
+    gui_data.contrast_alpha = 1;
+end
+
+gui_data.brightness_beta = -(gui_data.contrast_alpha * curr_slice_min);
+
+% Clamp contrast to slider limits [0, 1]
+% If contrast_alpha > 1, we need to scale it down
+if gui_data.contrast_alpha > 1
+    % Scale brightness accordingly
+    gui_data.brightness_beta = gui_data.brightness_beta / gui_data.contrast_alpha;
+    gui_data.contrast_alpha = 1;
+end
 
 % update bright and contast slider values
 gui_data.brightness_slider.Value = gui_data.brightness_beta;
