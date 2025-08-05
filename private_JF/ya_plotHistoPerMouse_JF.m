@@ -10,7 +10,7 @@ if ~isempty(animal)
     probe_ccf_location = cl_cortexlab_filename(animal, [], [], 'histo');
     load(probe_ccf_location)
     if isfield(probe2ephys, 'shank')% new histo
-        st = readtable([atlasBrainRegLocation, filesep, 'structures.csv']);
+%        st = readtable([atlasBrainRegLocation, filesep, 'structures.csv']);
         st(size(st,1)+1,1) = {'all'};
         st(size(st,1),2) = {0};
         st(size(st,1),3) = {'all'};

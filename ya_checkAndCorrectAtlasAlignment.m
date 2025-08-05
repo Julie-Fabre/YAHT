@@ -42,6 +42,12 @@ auto_ccf_alignment_fn = [saveDir filesep '/manual/atlas2histology_tform.mat'];
 if exist(auto_ccf_alignment_fn,'file')
     load(auto_ccf_alignment_fn);
     gui_data.histology_ccf_auto_alignment = atlas2histology_tform;
+else
+    % Initialize with identity transforms if no auto alignment exists
+    gui_data.histology_ccf_auto_alignment = cell(length(gui_data.slice_im),1);
+    for i = 1:length(gui_data.slice_im)
+        gui_data.histology_ccf_auto_alignment{i} = eye(3);
+    end
 end
 
 % Create figure, set button functions
@@ -184,7 +190,7 @@ switch eventdata.Key
     case 's'
         atlas2histology_tform = ...
             gui_data.histology_ccf_manual_alignment;
-        save_fn = [gui_data.slice_im_path filesep 'atlas2histology_tform.mat'];
+        save_fn = [gui_data.slice_im_path filesep 'manual' filesep 'atlas2histology_tform.mat'];
         save(save_fn,'atlas2histology_tform');
         disp(['Saved ' save_fn]);
         
@@ -196,7 +202,7 @@ switch eventdata.Key
         if strcmp(user_confirm,'Yes')            
             atlas2histology_tform = ...
                 gui_data.histology_ccf_manual_alignment;
-            save_fn = [gui_data.slice_im_path filesep 'atlas2histology_tform.mat'];
+            save_fn = [gui_data.slice_im_path filesep 'manual' filesep 'atlas2histology_tform.mat'];
             save(save_fn,'atlas2histology_tform');
             disp(['Saved ' save_fn]);
             close(gui_fig);            

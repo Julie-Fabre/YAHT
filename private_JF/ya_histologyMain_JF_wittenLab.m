@@ -15,7 +15,7 @@ close all;
 clearvars -global % releases previous GUIs, if there are any
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m.
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'JF090';
+animal = 'jf_001';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -25,17 +25,14 @@ channelColToTransform = 'red'; % channel you want to use to draw probes
 atlasResolution_um = 25; % voxel size. currently in all dimensions, both for atlas and acquired image
 atlasSpecies = 'mouse'; % atlas species
 atlasType = 'allen'; % atlas name
-brainglobeLocation = '/home/julie/.brainglobe/'; % where your brainglobe data lives
+brainglobeLocation = '/home/jf5479/Dropbox/Atlas/brainglobe/'; % where your brainglobe data lives
 
 atlasLocation = dir([brainglobeLocation, atlasType, '_',...
     atlasSpecies, '_', num2str(atlasResolution_um), 'um*']); % atlas location
 
 
 brainsawPath_curr = [cl_cortexlab_filename(animal, '', '', 'histo_folder', '', '', ''), '/downsampled_stacks/025_micron'];
-% registration location/files
-[atlasLocation, imgToRegister, imgToTransform, outputDir] = ...
-    ya_getLocations(brainglobeLocation, brainsawPath_curr, channelColToRegister, ...
-    channelColToTransform, atlasType, atlasSpecies, atlasResolution_um);
+outputDir = ['/home/jf5479/cup/Chris/data/cta_backwards/' animal '/histology/alignedAllen/'];
 
 %% ~ Load in images and template ~
 [tv, av, st, bregma] = ya_loadAllenAtlas([atlasLocation.folder, filesep, atlasLocation.name]);
@@ -64,6 +61,7 @@ screenToUse = 2; % on which of your displays to create the following plots. 1 = 
 % and this transformation will then be applied to all other slices and saved in a histology_ccf.mat file.
 % If you register several slices, the average transform will be applied to
 % all other slices and saved.
+mkdir([outputDir, filesep, 'manual'])
 if isempty(dir([outputDir, filesep, 'manual', filesep, 'histology_ccf.mat']))
     ya_checkAndCorrectAtlasOrientation(tv, av, st, registeredImage, outputDir, screenToUse);
 end

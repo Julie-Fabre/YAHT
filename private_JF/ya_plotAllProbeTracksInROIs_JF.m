@@ -24,7 +24,7 @@ cl_myPaths;
 allen_atlas_path = '/home/julie/Dropbox/Atlas/allenCCF';
 tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
 av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
-st = loadStructureTreeJF([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
+st = ya_loadStructureTree([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
     slice_spacing = 10;
 
 [~, ~, st_br, ~] = ya_loadAllenAtlas(atlasBrainRegLocation);
@@ -86,7 +86,7 @@ for iType = 1:size(animalsType, 2)
         qqqq = unique(theseAnimals);
         for iAnimal = 1:size(theseAnimals, 2)
             %iAnimal = iAnimal + 1;
-            probe_ccf_location = AP_cortexlab_filenameJF(theseAnimals{iAnimal}, [], [], 'histo');
+            probe_ccf_location = cl_cortexlab_filename(theseAnimals{iAnimal}, [], [], 'histo');
             load(probe_ccf_location)
 
             %thisAnimal = strcmp(recordingInfo.Mouse, qqqq{iAnimal});
