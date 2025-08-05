@@ -1,6 +1,6 @@
 # 🚢 YAHT: Yet Another Histology Tool
 
- YAHT: Yet Another Histology Tool. The goal of this toolbox is to have an all-in-one pipeline to quickly go from histology to highly accurately-tracked probes.
+ YAHT: Yet Another Histology Tool. The goal of this toolbox is to have an all-in-one pipeline to quickly go from histology to tracked probes.
 
 <img style="float: right;" src="./images/brain.gif" width=100% height=100%>
 
@@ -69,8 +69,4 @@ Optionally, despeckle and remove outliers from your data to improve the fit to t
 
 [see [neuro_street_view](https://github.com/Julie-Fabre/neuro_street_view)]
 
-
-### 🤗 Support and citing
-
-If you find this repo useful in your work, we would like a citation [more details coming soon-ish]. Contact us for more information. Cheers! 
 
