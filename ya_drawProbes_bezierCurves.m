@@ -860,24 +860,58 @@ function deleteSelectedPoint(~, ~, gui_fig)
 gui_data = guidata(gui_fig);
 selectedIdx = ismember(gui_data.points_table.Items, gui_data.selected_row);
 
-if ~isempty(selectedIdx) && ~isempty(gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe})
-    gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}( ...
-        ismember(gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe}, ...
-        gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, 1:2), 'rows'), :) = [];
-    gui_data.bezier_control_points{gui_data.curr_probe}(selectedIdx, :) = [];
+if any(selectedIdx) && ~isempty(gui_data.bezier_control_points{gui_data.curr_probe})
+    % Find which points are on the current slice
+    curr_slice_points = gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice;
+    curr_slice_indices = find(curr_slice_points);
+    
+    if ~isempty(curr_slice_indices)
+        % Find the actual index in bezier_control_points to delete
+        selected_point_idx = find(selectedIdx);
+        if selected_point_idx <= length(curr_slice_indices)
+            actual_idx = curr_slice_indices(selected_point_idx);
+            % Remove from bezier_control_points
+            gui_data.bezier_control_points{gui_data.curr_probe}(actual_idx, :) = [];
+            
+            % Update probe_points_histology for current slice
+            gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
+                gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice, 1:2);
+        end
+    end
 end
 gui_data.pointSelected = true;
 guidata(gui_fig, gui_data);
 removeHighlighted(gui_fig);
-if selectedIdx > 1
-    selectedIdx = find(selectedIdx) - 1;
+
+% Update the points table first
+populate_points_table(gui_fig);
+
+% Then check if there are still items to select
+if ~isempty(gui_data.points_table.Items)
+    selectedIdx = find(selectedIdx);
+    if ~isempty(selectedIdx)
+        if selectedIdx(1) > 1
+            newIdx = selectedIdx(1) - 1;
+        else
+            newIdx = min(selectedIdx(1) + 1, length(gui_data.points_table.Items));
+        end
+        if newIdx <= length(gui_data.points_table.Items)
+            gui_data.points_table.Value = gui_data.points_table.Items(newIdx);
+            gui_data.selected_row = gui_data.points_table.Items(newIdx);
+        else
+            gui_data.points_table.Value = {};
+            gui_data.selected_row = {};
+        end
+    else
+        gui_data.points_table.Value = {};
+        gui_data.selected_row = {};
+    end
 else
-    selectedIdx = find(selectedIdx) + 1;
+    gui_data.points_table.Value = {};
+    gui_data.selected_row = {};
 end
-gui_data.points_table.Value = gui_data.points_table.Items(selectedIdx);
-gui_data.selected_row = gui_data.points_table.Items(selectedIdx);
+
 guidata(gui_fig, gui_data);
-populate_points_table(gui_fig)
 update_slice(gui_fig);
 
 end
@@ -1947,10 +1981,17 @@ end
 [~, sort_idx] = sort(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3));
 gui_data.bezier_control_points{gui_data.curr_probe} = gui_data.bezier_control_points{gui_data.curr_probe}(sort_idx, :);
 
+% Update probe_points_histology for current slice (same as line 426-427)
+gui_data.probe_points_histology{gui_data.curr_slice, gui_data.curr_probe} = ...
+    gui_data.bezier_control_points{gui_data.curr_probe}(gui_data.bezier_control_points{gui_data.curr_probe}(:, 3) == gui_data.curr_slice, 1:2);
+
 % Upload gui data
 guidata(gui_fig, gui_data);
 
 % Update slice to show the new point
 update_slice(gui_fig);
+
+% Update the points table
+populate_points_table(gui_fig);
 
 end
