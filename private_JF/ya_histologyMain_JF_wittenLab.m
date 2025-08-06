@@ -15,7 +15,7 @@ close all;
 clearvars -global % releases previous GUIs, if there are any
 cl_myPaths; % see https://github.com/Julie-Fabre/JF_Scripts_CortexLab/blob/master/load/myPaths.m.
 % loads in a bunch of paths, of which only one is used in this script: brainsawPath
-animal = 'jf_001';
+animal = 'jf_003';
 
 % registration parameters
 orientationType = 'psl'; % psl (for posterior, superior, left), means the first, top left voxel
@@ -441,3 +441,11 @@ probe_ccf(5) = probe_ccf_new(5);
 c
 
 %% ~ Various useful plotting functions ~
+
+ya_plotAllProbeTracksInROIs_JF({'jf_001', 'jf_002', 'jf_003'},{'CEAc', 'CEAl', 'CEAm'}, 0, 0, 0, 1, 1, 'allen', 1, 2.0);
+%save as .avi rotating vid
+%set(gcf, 'Color', 'w')
+OptionZ.FrameRate = 10;
+OptionZ.Duration = 10;
+OptionZ.Periodic = true;
+CaptureFigVid([-20, 10; -110, 10; -190, 80; -290, 10; -380, 10], 'WellMadeVid', OptionZ)
