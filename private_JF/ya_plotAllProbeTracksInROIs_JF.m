@@ -1,4 +1,4 @@
-function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBrain, onlyROIProbes, showPoints, useBezierFit, showRegionPlot, regionColors, blackBackground, thickBrainLines)
+function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBrain, onlyROIProbes, showPoints, useBezierFit, showRegionPlot, regionColors, blackBackground, thickBrainLines, plotHemisphere)
 % ya_plotAllProbeTracksInROIs_JF - Plot probe tracks for multiple animals with regions of interest
 %
 % Inputs:
@@ -13,39 +13,46 @@ function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBr
 %   regionColors - Cell array of RGB colors for each region, or 'allen' to use Allen CCF colormap. Default: 'allen'
 %   blackBackground - Boolean to use black background (1) or white (0). Default: 0
 %   thickBrainLines - Line width for brain grid (default: 0.5, thicker: 2.0). Default: 0.5
+%   plotHemisphere - Array specifying hemisphere for each region: -1 for left, 1 for right, 0 for both.
+%                    If a probe passes through multiple regions with different hemispheres, it will be plotted multiple times.
+%                    Default: empty (plots probes in their actual positions)
 %
 % Example:
 %   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1, 1, 1, 1); % All features with Allen colors
 %   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 0, {[1 0 0], [0 1 0]}); % Custom colors
 %   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 1, 'allen', 1, 2); % Black background, thick lines
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 1, 'allen', 0, 0.5, [-1, 1]); % CP on left, SNr on right
 
 % Set defaults
 if nargin < 2 || isempty(regionsOfInterest)
-    regionsOfInterest = {'CP', 'GPe', 'GPi', 'STN', 'SNr'};
+    regionsOfInterest = {'CP', 'GPe', 'SNr'};
 end
-if nargin < 3
+if nargin < 3 || isempty(patchBrain)
     patchBrain = 0;
 end
-if nargin < 4
+if nargin < 4 || isempty(onlyROIProbes)
     onlyROIProbes = 0;
 end
-if nargin < 5
+if nargin < 5 || isempty(showPoints)
     showPoints = 1;
 end
-if nargin < 6
+if nargin < 6 || isempty(useBezierFit)
     useBezierFit = 1;
 end
-if nargin < 7
+if nargin < 7 || isempty(showRegionPlot)
     showRegionPlot = 1;
 end
 if nargin < 8 || isempty(regionColors)
     regionColors = 'allen';
 end
-if nargin < 9
+if nargin < 9 || isempty(blackBackground)
     blackBackground = 0;
 end
-if nargin < 10
+if nargin < 10 || isempty(thickBrainLines)
     thickBrainLines = 0.5;
+end
+if nargin < 11 || isempty(plotHemisphere)
+    plotHemisphere = [];
 end
 
 % Initialize paths and parameters
@@ -54,17 +61,26 @@ cl_myPaths;
 animalsType = {'Naive'};
 regionsNames = regionsOfInterest;
 regions = regionsOfInterest;
-regionPlotLoc = repmat([-1], 1, length(regionsOfInterest)); % Default to left hemisphere
+% Set up hemisphere plotting preferences
+if ~isempty(plotHemisphere)
+    if length(plotHemisphere) ~= length(regionsOfInterest)
+        error('plotHemisphere must have the same length as regionsOfInterest');
+    end
+    regionPlotLoc = plotHemisphere;
+else
+    regionPlotLoc = zeros(1, length(regionsOfInterest)); % Default to both hemispheres (no mirroring)
+end
 
 % Load Allen atlas - use 10um version as expected by the original code
-allen_atlas_path = '/home/jf5479/Dropbox/Atlas/allenCCF';
-tv = readNPY([allen_atlas_path, filesep, 'template_volume_10um.npy']);
-av = readNPY([allen_atlas_path, filesep, 'annotation_volume_10um_by_index.npy']);
-st = ya_loadStructureTree([allen_atlas_path, filesep, 'structure_tree_safe_2017.csv']);
+cl_myPaths;
+%allenAtlasPath = '/home/jf5479/Dropbox/Atlas/allenCCF';
+tv = readNPY([allenAtlasPath, filesep, 'template_volume_10um.npy']);
+av = readNPY([allenAtlasPath, filesep, 'annotation_volume_10um_by_index.npy']);
+st = ya_loadStructureTree([allenAtlasPath, filesep, 'structure_tree_safe_2017.csv']);
 slice_spacing = 10;
 
 % Also load the 25um atlas for st_br compatibility
-brainglobeLocation = '/home/jf5479/Dropbox/Atlas/brainglobe/';
+%brainglobeLocation = '/home/jf5479/Dropbox/Atlas/brainglobe/';
 atlasType = 'allen';
 atlasSpecies = 'mouse';
 atlasResolution_um = 25;
@@ -77,7 +93,7 @@ n_snr =0;
 % Generate colors for regions
 if ischar(regionColors) && strcmp(regionColors, 'allen')
     % Load Allen CCF colormap
-    cmap_filename = [allen_atlas_path, filesep, 'allen_ccf_colormap_2017.mat'];
+    cmap_filename = [allenAtlasPath, filesep, 'allen_ccf_colormap_2017.mat'];
     if exist(cmap_filename, 'file')
         load(cmap_filename, 'cmap');
         theseColors = cell(length(regionsNames), 1);
@@ -119,8 +135,11 @@ if ischar(regionColors) && strcmp(regionColors, 'allen')
         theseColors = mat2cell(theseColors, ones(size(theseColors,1),1), 3);
     end
 elseif iscell(regionColors) && length(regionColors) == length(regionsNames)
-    % User-provided colors
+    % User-provided colors as cell array
     theseColors = regionColors;
+elseif isnumeric(regionColors) && size(regionColors, 1) == length(regionsNames) && size(regionColors, 2) == 3
+    % User-provided colors as numeric matrix - convert to cell array
+    theseColors = mat2cell(regionColors, ones(size(regionColors,1),1), 3);
 else
     % Default to lines colormap
     theseColors = lines(length(regionsNames));
@@ -147,13 +166,32 @@ for iType = 1:size(animalsType, 2)
         set(brain_outline, 'LineWidth', thickBrainLines);
     end
 
-    %overlay regions - plot bilaterally (both hemispheres)
+    %overlay regions - plot based on hemisphere preferences
     for iRegion = 1:length(regionsNames)
         curr_plot_structure = find(strcmp(st.acronym, regionsNames{iRegion}));
         
-        % Plot the full structure (both hemispheres)
-        structure_3d = isosurface(permute(av(1:slice_spacing:end, ...
-            1:slice_spacing:end, 1:slice_spacing:end) == curr_plot_structure, [3, 1, 2]), 0);
+        % Get the structure volume
+        structure_volume = av(1:slice_spacing:end, ...
+            1:slice_spacing:end, 1:slice_spacing:end) == curr_plot_structure;
+        
+        % Apply hemisphere filtering if specified
+        if ~isempty(regionPlotLoc) && regionPlotLoc(iRegion) ~= 0
+            % Allen CCF is in (AP, DV, ML) order when loaded
+            % After permute for isosurface it becomes (ML, AP, DV)
+            [ap_size, dv_size, ml_size] = size(structure_volume);
+            ml_midline = round(ml_size / 2);
+            
+            if regionPlotLoc(iRegion) == -1
+                % Keep only left hemisphere (ml < midline)
+                structure_volume(:, :, ml_midline:end) = 0;
+            elseif regionPlotLoc(iRegion) == 1
+                % Keep only right hemisphere (ml > midline)
+                structure_volume(:, :, 1:ml_midline) = 0;
+            end
+        end
+        
+        % Create isosurface from filtered volume
+        structure_3d = isosurface(permute(structure_volume, [3, 1, 2]), 0);
         
         if strcmp(regionsNames{iRegion}, 'STR') == 0 && ~isempty(structure_3d.vertices)
             hold on;
@@ -171,13 +209,39 @@ for iType = 1:size(animalsType, 2)
     end % end region plotting loop
     
     % Plot probe tracks for all animals
-    % Get colors for each animal (same color per mouse)
-    mouseColors = lines(length(theseAnimals));
+    % Generate 23 unique colors for mice (ensure we have enough colors)
+    if length(theseAnimals) <= 7
+        % Use default MATLAB colors for small number of mice
+        mouseColors = lines(length(theseAnimals));
+    else
+        % Generate more distinguishable colors for larger number of mice
+        numColors = max(23, length(theseAnimals));
+        
+        % Create a mix of colormap strategies for better distinction
+        colors1 = jet(ceil(numColors/3));
+        colors2 = hsv(ceil(numColors/3));
+        colors3 = cool(ceil(numColors/3));
+        
+        % Combine and shuffle for better distribution
+        allColors = [colors1; colors2; colors3];
+        
+        % Take first numColors and make sure they're distinct
+        mouseColors = allColors(1:numColors, :);
+        
+        % Ensure no color is too dark (minimum brightness)
+        brightness = sum(mouseColors, 2);
+        tooLow = brightness < 0.8;
+        mouseColors(tooLow, :) = mouseColors(tooLow, :) + 0.3;
+        mouseColors(mouseColors > 1) = 1; % Cap at 1
+        
+        % Use only the colors we need
+        mouseColors = mouseColors(1:length(theseAnimals), :);
+    end
     
     for iAnimal = 1:size(theseAnimals, 2)
             %iAnimal = iAnimal + 1;
-            % Load probe data using the same path pattern as ya_histologyMain_JF_wittenLab
-            outputDir = ['/home/jf5479/cup/Chris/data/cta_backwards/' theseAnimals{iAnimal} '/histology/alignedAllen/'];
+            % Load probe data
+            outputDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal} '/brainReg/'];
             probe_ccf_location = [outputDir, 'probe_ccf.mat'];
             
             % Check if file exists
@@ -214,50 +278,198 @@ for iType = 1:size(animalsType, 2)
                     end
                     
                     if plotThisProbe
-                        thesePoints = probe_ccf(curr_probe).points * 2.5; % Scale to match brain grid
+                        % Keep original probe_ccf.points order - don't rearrange!
+                        % The plot3 visualization handles the coordinate mapping
+                        thesePoints = probe_ccf(curr_probe).points * 2.5; % Just scale, don't rearrange
                         
-                        % Plot probe points if requested
-                        if showPoints
-                            plot3(thesePoints(:, 1), ...
-                                thesePoints(:, 2), ...
-                                thesePoints(:, 3), ...
-                                '.', 'color', animalColor, 'MarkerSize', 20);
-                        end
+                        % Detect multi-shank probe by looking for gaps in ML coordinates
+                        % probe_ccf.points need to be rearranged for plotting
+                        % Plot3 expects (AP, ML, DV) based on the axis limits
+                        % Sort points by ML coordinate (2nd column) to find gaps
+                        [sorted_ml, sort_idx] = sort(thesePoints(:, 2));
+                        ml_diff = diff(sorted_ml);
                         
-                        % Fit curve through points
-                        if useBezierFit && size(thesePoints, 1) >= 3
-                            % Use Bezier curve fitting
-                            % Sort points by one dimension (e.g., DV) to get proper curve order
-                            [~, sort_idx] = sort(thesePoints(:, 2)); % Sort by DV (y-axis)
-                            sorted_points = thesePoints(sort_idx, :);
+                        % Find large gaps (> 200um scaled) indicating separate shanks
+                        shank_gap_threshold = 200; % 200um scaled gap between shanks
+                        shank_boundaries = find(ml_diff > shank_gap_threshold);
+                        
+                        % Split points into shanks
+                        if ~isempty(shank_boundaries)
+                            % Multi-shank probe detected
+                            n_shanks = length(shank_boundaries) + 1;
+                            shank_points = cell(n_shanks, 1);
                             
-                            % Create Bezier curve
-                            t = linspace(0, 1, 1000);
-                            bezier_curve_points = bezier_curve(t, sorted_points);
+                            % Assign points to shanks
+                            shank_starts = [1; shank_boundaries + 1];
+                            shank_ends = [shank_boundaries; length(sorted_ml)];
                             
-                            % Plot Bezier curve
-                            plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
-                                'color', animalColor, 'linewidth', 2);
-                        else
-                            % Use linear fit (original method)
-                            r0 = mean(thesePoints, 1);
-                            xyz = bsxfun(@minus, thesePoints, r0);
-                            [~, ~, V] = svd(xyz, 0);
-                            histology_probe_direction = V(:, 1);
-                            
-                            % Make sure the direction goes down in DV - flip if it's going up
-                            if histology_probe_direction(2) < 0
-                                histology_probe_direction = -histology_probe_direction;
+                            for iShank = 1:n_shanks
+                                shank_idx = sort_idx(shank_starts(iShank):shank_ends(iShank));
+                                shank_points{iShank} = thesePoints(shank_idx, :);
                             end
-
-                            line_eval = [-1000, 1000];
-                            probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
                             
-                            % Plot linear fit
-                            plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-                                'color', animalColor, 'linewidth', 2);
+                            fprintf('Probe %d from %s: Multi-shank with %d shanks\n', iProbe, theseAnimals{iAnimal}, n_shanks);
+                        else
+                            % Single shank probe
+                            n_shanks = 1;
+                            shank_points = {thesePoints};
                         end
-                    end
+                        
+                        % Process each shank separately
+                        for iShank = 1:n_shanks
+                            theseShankPoints = shank_points{iShank};
+                            
+                            % Collect ALL hemisphere preferences for regions this probe passes through
+                            targetHemispheres = [];
+                            
+                            if ~isempty(regionPlotLoc) && any(regionPlotLoc ~= 0)
+                                % Check which regions this probe passes through
+                                probePassesThroughROI = false;
+                                if isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
+                                    for iRegion = 1:length(regionsNames)
+                                        struct_idx_br = find(strcmp(st_br.acronym, regionsNames{iRegion}));
+                                        if ~isempty(struct_idx_br)
+                                            struct_curr_br = st_br.id(struct_idx_br(1));
+                                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
+                                                probePassesThroughROI = true;
+                                                if regionPlotLoc(iRegion) ~= 0
+                                                    % Collect this region's hemisphere preference
+                                                    targetHemispheres = [targetHemispheres, regionPlotLoc(iRegion)];
+                                                    if n_shanks > 1
+                                                        fprintf('Probe %d shank %d from %s passes through %s, hemisphere preference %d\n', ...
+                                                            iProbe, iShank, theseAnimals{iAnimal}, regionsNames{iRegion}, regionPlotLoc(iRegion));
+                                                    else
+                                                        fprintf('Probe %d from %s passes through %s, hemisphere preference %d\n', ...
+                                                            iProbe, theseAnimals{iAnimal}, regionsNames{iRegion}, regionPlotLoc(iRegion));
+                                                    end
+                                                end
+                                            end
+                                        end
+                                    end
+                                end
+                                
+                                % Get unique hemisphere preferences
+                                targetHemispheres = unique(targetHemispheres);
+                                
+                                % If onlyROIProbes is true and probe doesn't pass through ROI, skip it
+                                if onlyROIProbes && ~probePassesThroughROI
+                                    continue; % Skip this shank
+                                end
+                                
+                                % If no hemisphere preferences found, use default
+                                if isempty(targetHemispheres)
+                                    targetHemispheres = 0; % Plot in actual position
+                                end
+                            else
+                                targetHemispheres = 0; % Plot in actual position
+                            end
+                        
+                            % Plot shank for each target hemisphere
+                            for iHemisphere = 1:length(targetHemispheres)
+                                currentTargetHemisphere = targetHemispheres(iHemisphere);
+                                plotPoints = theseShankPoints;
+                                
+                                % Mirror points if needed
+                                if currentTargetHemisphere ~= 0
+                                % probe_ccf points are in CCF coordinates (AP, DV, ML)
+                                % After scaling by 2.5, plotPoints are still (AP, DV, ML)
+                                % In plot3(x, y, z), this maps to plot3(AP, DV, ML)
+                                [ap_max, dv_max, ml_max] = size(tv);
+                                
+                                % Use the same midline as Witten lab code (570 after scaling)
+                                ml_midline_scaled = 570; % This is the empirical midline value
+                                
+                                % Debug output - ML is 2nd coordinate
+                                mean_ml = mean(plotPoints(:, 2));
+                                is_left = mean_ml < ml_midline_scaled;
+                                if is_left
+                                    current_side = 'left';
+                                else
+                                    current_side = 'right';
+                                end
+                                fprintf('  Shank %d/%d ML: mean=%.1f, midline=%.1f, currently in %s hemisphere\n', ...
+                                    iShank, n_shanks, mean_ml, ml_midline_scaled, current_side);
+                                
+                                % Mirror ML coordinate (2nd coordinate) using correct formula
+                                if currentTargetHemisphere == -1
+                                    % Want probe on left hemisphere
+                                    if ~is_left
+                                        % Probe is on right, mirror to left
+                                        plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                        fprintf('  Mirroring from right to left\n');
+                                    end
+                                elseif currentTargetHemisphere == 1
+                                    % Want probe on right hemisphere  
+                                    if is_left
+                                        % Probe is on left, mirror to right
+                                        plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                        fprintf('  Mirroring from left to right\n');
+                                    end
+                                end
+                                
+                                fprintf('  Final ML range: [%.1f, %.1f]\n', ...
+                                    min(plotPoints(:, 2)), max(plotPoints(:, 2)));
+                            end
+                            
+                            % Plot probe points if requested
+                            if showPoints
+                                plot3(plotPoints(:, 1), ...
+                                    plotPoints(:, 2), ...
+                                    plotPoints(:, 3), ...
+                                    '.', 'color', animalColor, 'MarkerSize', 20);
+                            end
+                            
+                            % Fit curve through points
+                            if useBezierFit && size(plotPoints, 1) >= 3
+                                % Use Bezier curve fitting
+                                % Sort points by one dimension (e.g., DV) to get proper curve order
+                                [~, sort_idx] = sort(plotPoints(:, 3)); % Sort by DV (z-axis)
+                                sorted_points = plotPoints(sort_idx, :);
+                                
+                                % Create Bezier curve
+                                t = linspace(0, 1, 1000);
+                                bezier_curve_points = bezier_curve(t, sorted_points);
+                                
+                                % Mirror bezier curve if needed (in case it extends beyond probe points)
+                                if currentTargetHemisphere ~= 0
+                                    ml_midline_scaled_bezier = 570; % Same empirical midline
+                                    mean_ml_bezier = mean(bezier_curve_points(:, 2)); % ML is 2nd coordinate
+                                    is_left_bezier = mean_ml_bezier < ml_midline_scaled_bezier;
+                                    
+                                    if currentTargetHemisphere == -1 && ~is_left_bezier
+                                        % Want on left but is on right
+                                        bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
+                                    elseif currentTargetHemisphere == 1 && is_left_bezier
+                                        % Want on right but is on left
+                                        bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
+                                    end
+                                end
+                                
+                                % Plot Bezier curve
+                                plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
+                                    'color', animalColor, 'linewidth', 2);
+                            else
+                                % Use linear fit (original method)
+                                r0 = mean(plotPoints, 1);
+                                xyz = bsxfun(@minus, plotPoints, r0);
+                                [~, ~, V] = svd(xyz, 0);
+                                histology_probe_direction = V(:, 1);
+                                
+                                % Make sure the direction goes down in DV - flip if it's going up
+                                if histology_probe_direction(3) < 0
+                                    histology_probe_direction = -histology_probe_direction;
+                                end
+
+                                line_eval = [-1000, 1000];
+                                probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
+                                
+                                % Plot linear fit
+                                plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+                                    'color', animalColor, 'linewidth', 2);
+                            end
+                            end % end hemisphere loop
+                        end % end shank loop
+                    end % end if plotThisProbe
                     
                     % Count probes per region (regardless of plotting)
                     if isfield(probe_ccf(iProbe), 'trajectory_areas')
@@ -338,7 +550,7 @@ end
 
 %% Create brain regions per probe plot
 if showRegionPlot
-    plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allen_atlas_path);
+    plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath);
 end
 
 end
@@ -356,10 +568,10 @@ end
 B = B';
 end
 
-function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allen_atlas_path)
+function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath)
 % Plot brain regions that each probe passes through
 % Load Allen CCF colormap
-cmap_filename = [allen_atlas_path, filesep, 'allen_ccf_colormap_2017.mat'];
+cmap_filename = [allenAtlasPath, filesep, 'allen_ccf_colormap_2017.mat'];
 if ~exist(cmap_filename, 'file')
     warning('Allen CCF colormap not found, using default colormap');
     cmap = lines(256);
