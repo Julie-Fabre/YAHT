@@ -6,8 +6,14 @@
       "Bash(cp:*)",
       "Bash(git restore:*)",
       "Bash(touch:*)",
-      "Bash(matlab:*)"
+      "Bash(matlab:*)",
+      "Bash(rm:*)",
+      "Bash(/Applications/MATLAB_R2025a.app/bin/matlab:*)"
     ],
-    "deny": []
+    "deny": [],
+    "additionalDirectories": [
+      "/Users/jf5479/Dropbox/Histology",
+      "/Users/jf5479/Dropbox/MATLAB/onPaths"
+    ]
   }
 }

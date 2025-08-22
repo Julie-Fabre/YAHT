@@ -98,13 +98,13 @@ if ischar(regionColors) && strcmp(regionColors, 'allen')
         load(cmap_filename, 'cmap');
         theseColors = cell(length(regionsNames), 1);
         
-        % Need to use st_br for proper ID mapping as in trajectory_areas
+        % Need to use Allen CCF (st) for proper ID mapping as trajectory_areas uses Allen IDs
         for iRegion = 1:length(regionsNames)
-            % Find structure in st_br (brainglobe structure tree) which matches trajectory_areas
-            struct_idx_br = find(strcmp(st_br.acronym, regionsNames{iRegion}));
-            if ~isempty(struct_idx_br)
-                % Get the structure ID from st_br - this matches trajectory_areas values
-                structure_id = st_br.id(struct_idx_br(1));
+            % Find structure in Allen CCF structure tree which matches trajectory_areas
+            struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+            if ~isempty(struct_idx)
+                % Get the structure ID from Allen CCF - this matches trajectory_areas values
+                structure_id = st.id(struct_idx(1));
                 
                 % The colormap is indexed by structure ID directly
                 if structure_id > 0 && structure_id <= size(cmap, 1)
@@ -287,19 +287,70 @@ for iType = 1:size(animalsType, 2)
                         % Only plot if probe passes through any of the ROIs
                         if isfield(probe_ccf(iProbe), 'trajectory_areas')
                             for iRegion = 1:length(regionsNames)
-                                struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
-                                if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
-                                    plotThisProbe = true;
-                                    break;
+                                % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
+                                struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                                if ~isempty(struct_idx)
+                                    struct_curr = st.id(struct_idx(1));
+                                    if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                                        plotThisProbe = true;
+                                        break;
+                                    end
+                                end
                                 end
                             end
                         end
                     end
                     
                     if plotThisProbe
-                        % Keep original probe_ccf.points order - don't rearrange!
-                        % The plot3 visualization handles the coordinate mapping
-                        thesePoints = probe_ccf(curr_probe).points * 2.5; % Just scale, don't rearrange
+                        % Determine which points to use based on onlyROIProbes setting
+                        if onlyROIProbes && isfield(probe_ccf(iProbe), 'trajectory_coords') && ~isempty(probe_ccf(iProbe).trajectory_coords) && ...
+                           isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
+                            
+                            % Use trajectory_coords for ROI filtering (these match trajectory_areas)
+                            % Get ROI structure IDs
+                            roiStructureIds = [];
+                            for iRegion = 1:length(regionsNames)
+                                struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                                if ~isempty(struct_idx)
+                                    roiStructureIds = [roiStructureIds, st.id(struct_idx(1))];
+                                end
+                            end
+                            
+                            % Filter trajectory_coords to only those in ROI structures
+                            if ~isempty(roiStructureIds)
+                                trajectory_coords = probe_ccf(iProbe).trajectory_coords;
+                                trajectory_areas = probe_ccf(iProbe).trajectory_areas;
+                                
+                                % Find which trajectory points are in ROI
+                                pointsInROI = false(size(trajectory_coords, 1), 1);
+                                for iPoint = 1:length(trajectory_areas)
+                                    if any(roiStructureIds == trajectory_areas(iPoint))
+                                        pointsInROI(iPoint) = true;
+                                    end
+                                end
+                                
+                                % Use filtered trajectory_coords if any ROI points found
+                                if any(pointsInROI)
+                                    % trajectory_coords are in (AP, DV, ML) order
+                                    % but we need (AP, ML, DV) for plotting
+                                    filtered_coords = trajectory_coords(pointsInROI, :);
+                                    % Swap columns 2 and 3 to convert from (AP, DV, ML) to (AP, ML, DV)
+                                    thesePoints = filtered_coords(:, [1, 3, 2]) * 2.5;
+                                else
+                                    continue; % Skip if no ROI points
+                                end
+                            else
+                                continue; % Skip if no ROI structures defined
+                            end
+                        else
+                            % Use the original sparse points (standard behavior)
+                            thesePoints = probe_ccf(curr_probe).points * 2.5;
+                        end
+                        
+                        % Check if we still have points after ROI filtering
+                        if isempty(thesePoints)
+                            continue; % Skip if no points remain after filtering
+                        end
                         
                         % Detect multi-shank probe by looking for gaps in ML coordinates
                         % probe_ccf.points need to be rearranged for plotting
@@ -345,10 +396,11 @@ for iType = 1:size(animalsType, 2)
                                 probePassesThroughROI = false;
                                 if isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
                                     for iRegion = 1:length(regionsNames)
-                                        struct_idx_br = find(strcmp(st_br.acronym, regionsNames{iRegion}));
-                                        if ~isempty(struct_idx_br)
-                                            struct_curr_br = st_br.id(struct_idx_br(1));
-                                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
+                                        % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
+                                        struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                                        if ~isempty(struct_idx)
+                                            struct_curr = st.id(struct_idx(1));
+                                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
                                                 probePassesThroughROI = true;
                                                 if regionPlotLoc(iRegion) ~= 0
                                                     % Collect this region's hemisphere preference
@@ -379,13 +431,8 @@ for iType = 1:size(animalsType, 2)
                             for iHemisphere = 1:length(targetHemispheres)
                                 currentTargetHemisphere = targetHemispheres(iHemisphere);
                                 
-                                % Filter points to only those within ROI structures
-                                roiPoints = filterPointsToROI(theseShankPoints, regionsNames, st_br, probe_ccf(iProbe), st);
-                                
-                                if isempty(roiPoints)
-                                    continue; % Skip if no points in ROI
-                                end
-                                plotPoints = roiPoints;
+                                % Use the shank points (already filtered if onlyROIProbes=true)
+                                plotPoints = theseShankPoints;
                                 
                                 % Mirror points if needed
                                 if currentTargetHemisphere ~= 0
@@ -498,15 +545,19 @@ for iType = 1:size(animalsType, 2)
                     % Count probes per region (regardless of plotting)
                     if isfield(probe_ccf(iProbe), 'trajectory_areas')
                         for iRegion = 1:length(regionsNames)
-                            struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
-                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
-                                % Count probes per region
-                                if strcmpi(regionsNames{iRegion}, 'CP') || strcmpi(regionsNames{iRegion}, 'STR')
-                                    n_str = n_str+1;
-                                elseif strcmpi(regionsNames{iRegion}, 'GPe')
-                                    n_gpe = n_gpe+1;
-                                elseif strcmpi(regionsNames{iRegion}, 'SNr')
-                                    n_snr = n_snr+1;
+                            % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
+                            struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                            if ~isempty(struct_idx)
+                                struct_curr = st.id(struct_idx(1));
+                                if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                                    % Count probes per region
+                                    if strcmpi(regionsNames{iRegion}, 'CP') || strcmpi(regionsNames{iRegion}, 'STR')
+                                        n_str = n_str+1;
+                                    elseif strcmpi(regionsNames{iRegion}, 'GPe')
+                                        n_gpe = n_gpe+1;
+                                    elseif strcmpi(regionsNames{iRegion}, 'SNr')
+                                        n_snr = n_snr+1;
+                                    end
                                 end
                             end
                         end
@@ -514,7 +565,8 @@ for iType = 1:size(animalsType, 2)
                 end
             end
     end % end animal loop
-end % end animalsType loop
+ % end animalsType loop
+
 % Set final view
 view([-30, 25]);
 if blackBackground
@@ -574,9 +626,8 @@ end
 
 %% Create brain regions per probe plot
 if showRegionPlot
-    plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath);
+    plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath, st);
 end
-
 end
 
 function B = bezier_curve(t, control_points)
@@ -620,24 +671,34 @@ if isempty(roiStructureIds)
     return;
 end
 
-% Check if the probe passes through any ROI structures at all
+% Check each point using trajectory_areas data
 trajectory_areas = probe_ccf_struct.trajectory_areas;
-unique_trajectory_areas = unique(trajectory_areas);
 
-% Check if any trajectory areas match our ROI structures
-roi_matches = intersect(unique_trajectory_areas, roiStructureIds);
-if isempty(roi_matches)
-    % This probe doesn't pass through any ROI structures
-    return;
+% We need to map from the input points to the corresponding trajectory_areas
+% The challenge is that points might be a subset (e.g., shank points) of the full trajectory
+% For simplicity, we'll assume points correspond to the first N trajectory areas
+% This works for most cases where points are extracted sequentially
+
+pointsInROI = false(size(points, 1), 1);
+numPointsToCheck = min(size(points, 1), length(trajectory_areas));
+
+for iPoint = 1:numPointsToCheck
+    structureId = trajectory_areas(iPoint);
+    if any(roiStructureIds == structureId)
+        pointsInROI(iPoint) = true;
+    end
 end
 
-% For now, return all points if the probe passes through ROI
-% TODO: Could be refined to only return points in ROI coordinates
-roiPoints = points;
+% Return only points that are in ROI structures
+if any(pointsInROI)
+    roiPoints = points(pointsInROI, :);
+else
+    roiPoints = [];
+end
 
 end
 
-function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath)
+function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath, st)
 % Plot brain regions that each probe passes through
 % Load Allen CCF colormap
 cmap_filename = [allenAtlasPath, filesep, 'allen_ccf_colormap_2017.mat'];
@@ -653,8 +714,8 @@ totalProbes = 0;
 allProbeData = {};
 
 for iAnimal = 1:length(theseAnimals)
-    % Load probe data
-    outputDir = ['/home/jf5479/cup/Chris/data/cta_backwards/' theseAnimals{iAnimal} '/histology/alignedAllen/'];
+    % Load probe data using the same path as main function
+    outputDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal} '/brainReg/'];
     probe_ccf_location = [outputDir, 'probe_ccf.mat'];
     
     if ~exist(probe_ccf_location, 'file')
@@ -670,10 +731,14 @@ for iAnimal = 1:length(theseAnimals)
             includeThisProbe = false;
             if isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
                 for iRegion = 1:length(regionsNames)
-                    struct_curr_br = st_br.id(strcmp(st_br.acronym, regionsNames{iRegion}));
-                    if any(probe_ccf(iProbe).trajectory_areas == struct_curr_br)
-                        includeThisProbe = true;
-                        break;
+                    % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
+                    struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                    if ~isempty(struct_idx)
+                        struct_curr = st.id(struct_idx(1));
+                        if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                            includeThisProbe = true;
+                            break;
+                        end
                     end
                 end
             end
@@ -716,9 +781,10 @@ for iProbe = 1:totalProbes
         trajectory_area_labels = cell(length(trajectory_area_centers), 1);
         for iArea = 1:length(trajectory_area_centers)
             area_id = trajectory_areas(round(trajectory_area_centers(iArea)));
-            matching_idx = find(st_br.id == area_id);
+            % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
+            matching_idx = find(st.id == area_id);
             if ~isempty(matching_idx)
-                trajectory_area_labels{iArea} = st_br.acronym{matching_idx(1)};
+                trajectory_area_labels{iArea} = st.acronym{matching_idx(1)};
             else
                 trajectory_area_labels{iArea} = sprintf('ID_%d', area_id);
             end
@@ -750,7 +816,7 @@ for iProbe = 1:totalProbes
 end
 
 % Add overall title
-sgtitle('Brain Regions Traversed by Each Probe', 'FontSize', 14, 'Color', 'w');
+%sgtitle('Brain Regions Traversed by Each Probe', 'FontSize', 14, 'Color', 'w');
 
 end
 
