@@ -209,32 +209,51 @@ for iType = 1:size(animalsType, 2)
     end % end region plotting loop
     
     % Plot probe tracks for all animals
-    % Generate 23 unique colors for mice (ensure we have enough colors)
-    if length(theseAnimals) <= 7
-        % Use default MATLAB colors for small number of mice
-        mouseColors = lines(length(theseAnimals));
+    % Generate colors like MATLAB's lines() but with more variety
+    numColors = max(23, length(theseAnimals));
+    
+    % Start with MATLAB's default lines colors and extend
+    if numColors <= 7
+        mouseColors = lines(numColors);
     else
-        % Generate more distinguishable colors for larger number of mice
-        numColors = max(23, length(theseAnimals));
+        % Get the base lines colors
+        baseColors = lines(7);
         
-        % Create a mix of colormap strategies for better distinction
-        colors1 = jet(ceil(numColors/3));
-        colors2 = hsv(ceil(numColors/3));
-        colors3 = cool(ceil(numColors/3));
+        % Generate additional colors with maximum separation like lines() does
+        additionalColors = [];
+        numAdditional = numColors - 7;
         
-        % Combine and shuffle for better distribution
-        allColors = [colors1; colors2; colors3];
+        % Create hues with maximum separation (like lines() algorithm)
+        % Start with offsets to avoid overlapping with base colors
+        hueOffsets = [0.15, 0.45, 0.75, 0.05, 0.35, 0.65, 0.95, 0.25, 0.55, 0.85, ...
+                     0.10, 0.40, 0.70, 0.20, 0.50, 0.80, 0.30, 0.60, 0.90, 0.00];
         
-        % Take first numColors and make sure they're distinct
-        mouseColors = allColors(1:numColors, :);
+        for i = 1:numAdditional
+            % Use predefined hue offsets for maximum separation
+            hue = hueOffsets(mod(i-1, length(hueOffsets)) + 1);
+            
+            % Vary saturation and brightness to maintain distinction
+            sat = 0.7 + 0.2 * sin(i * pi/4); % Vary saturation between 0.7-0.9
+            val = 0.75 + 0.2 * cos(i * pi/5); % Vary brightness between 0.75-0.95
+            
+            % Convert HSV to RGB
+            hsv_color = [hue, sat, val];
+            rgb_color = hsv2rgb(hsv_color);
+            
+            % Special handling for mouse 15 (index 8 in additionalColors) - make it less fluorescent
+            if i == 8  % This would be mouse 15 (7 base colors + 8th additional = mouse 15)
+                % Replace with a more muted color (darker blue-gray)
+                rgb_color = [0.4, 0.5, 0.7];
+            end
+            
+            additionalColors = [additionalColors; rgb_color];
+        end
         
-        % Ensure no color is too dark (minimum brightness)
-        brightness = sum(mouseColors, 2);
-        tooLow = brightness < 0.8;
-        mouseColors(tooLow, :) = mouseColors(tooLow, :) + 0.3;
-        mouseColors(mouseColors > 1) = 1; % Cap at 1
+        % Combine base colors with additional colors
+        mouseColors = [baseColors; additionalColors];
         
-        % Use only the colors we need
+        % Use only what we need
+        mouseColors = mouseColors(1:numColors, :);
         mouseColors = mouseColors(1:length(theseAnimals), :);
     end
     
@@ -308,7 +327,6 @@ for iType = 1:size(animalsType, 2)
                                 shank_points{iShank} = thesePoints(shank_idx, :);
                             end
                             
-                            fprintf('Probe %d from %s: Multi-shank with %d shanks\n', iProbe, theseAnimals{iAnimal}, n_shanks);
                         else
                             % Single shank probe
                             n_shanks = 1;
@@ -335,13 +353,6 @@ for iType = 1:size(animalsType, 2)
                                                 if regionPlotLoc(iRegion) ~= 0
                                                     % Collect this region's hemisphere preference
                                                     targetHemispheres = [targetHemispheres, regionPlotLoc(iRegion)];
-                                                    if n_shanks > 1
-                                                        fprintf('Probe %d shank %d from %s passes through %s, hemisphere preference %d\n', ...
-                                                            iProbe, iShank, theseAnimals{iAnimal}, regionsNames{iRegion}, regionPlotLoc(iRegion));
-                                                    else
-                                                        fprintf('Probe %d from %s passes through %s, hemisphere preference %d\n', ...
-                                                            iProbe, theseAnimals{iAnimal}, regionsNames{iRegion}, regionPlotLoc(iRegion));
-                                                    end
                                                 end
                                             end
                                         end
@@ -367,7 +378,14 @@ for iType = 1:size(animalsType, 2)
                             % Plot shank for each target hemisphere
                             for iHemisphere = 1:length(targetHemispheres)
                                 currentTargetHemisphere = targetHemispheres(iHemisphere);
-                                plotPoints = theseShankPoints;
+                                
+                                % Filter points to only those within ROI structures
+                                roiPoints = filterPointsToROI(theseShankPoints, regionsNames, st_br, probe_ccf(iProbe), st);
+                                
+                                if isempty(roiPoints)
+                                    continue; % Skip if no points in ROI
+                                end
+                                plotPoints = roiPoints;
                                 
                                 % Mirror points if needed
                                 if currentTargetHemisphere ~= 0
@@ -387,8 +405,6 @@ for iType = 1:size(animalsType, 2)
                                 else
                                     current_side = 'right';
                                 end
-                                fprintf('  Shank %d/%d ML: mean=%.1f, midline=%.1f, currently in %s hemisphere\n', ...
-                                    iShank, n_shanks, mean_ml, ml_midline_scaled, current_side);
                                 
                                 % Mirror ML coordinate (2nd coordinate) using correct formula
                                 if currentTargetHemisphere == -1
@@ -396,19 +412,15 @@ for iType = 1:size(animalsType, 2)
                                     if ~is_left
                                         % Probe is on right, mirror to left
                                         plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
-                                        fprintf('  Mirroring from right to left\n');
                                     end
                                 elseif currentTargetHemisphere == 1
                                     % Want probe on right hemisphere  
                                     if is_left
                                         % Probe is on left, mirror to right
                                         plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
-                                        fprintf('  Mirroring from left to right\n');
                                     end
                                 end
                                 
-                                fprintf('  Final ML range: [%.1f, %.1f]\n', ...
-                                    min(plotPoints(:, 2)), max(plotPoints(:, 2)));
                             end
                             
                             % Plot probe points if requested
@@ -449,23 +461,35 @@ for iType = 1:size(animalsType, 2)
                                 plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
                                     'color', animalColor, 'linewidth', 2);
                             else
-                                % Use linear fit (original method)
-                                r0 = mean(plotPoints, 1);
-                                xyz = bsxfun(@minus, plotPoints, r0);
-                                [~, ~, V] = svd(xyz, 0);
-                                histology_probe_direction = V(:, 1);
-                                
-                                % Make sure the direction goes down in DV - flip if it's going up
-                                if histology_probe_direction(3) < 0
-                                    histology_probe_direction = -histology_probe_direction;
-                                end
+                                % Use linear fit but only within the ROI segment bounds
+                                if size(plotPoints, 1) >= 2
+                                    r0 = mean(plotPoints, 1);
+                                    xyz = bsxfun(@minus, plotPoints, r0);
+                                    [~, ~, V] = svd(xyz, 0);
+                                    histology_probe_direction = V(:, 1);
+                                    
+                                    % Make sure the direction goes down in DV - flip if it's going up
+                                    if histology_probe_direction(3) < 0
+                                        histology_probe_direction = -histology_probe_direction;
+                                    end
 
-                                line_eval = [-1000, 1000];
-                                probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
-                                
-                                % Plot linear fit
-                                plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-                                    'color', animalColor, 'linewidth', 2);
+                                    % Limit line to the extent of the ROI points instead of extending infinitely
+                                    minPoint = min(plotPoints, [], 1);
+                                    maxPoint = max(plotPoints, [], 1);
+                                    
+                                    % Project endpoints onto the probe direction
+                                    range = max(sqrt(sum((plotPoints - r0).^2, 2))) * 1.1; % Extend slightly beyond data
+                                    line_eval = [-range, range];
+                                    probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
+                                    
+                                    % Plot linear fit
+                                    plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+                                        'color', animalColor, 'linewidth', 2);
+                                else
+                                    % Just plot the points if less than 2 points
+                                    plot3(plotPoints(:, 1), plotPoints(:, 2), plotPoints(:, 3), ...
+                                        'color', animalColor, 'linewidth', 2);
+                                end
                             end
                             end % end hemisphere loop
                         end % end shank loop
@@ -510,7 +534,7 @@ h = rotate3d(gca);
 h.Enable = 'on';
 
 % Add title
-t = title(sprintf('Probe tracks for %d animals in %s', length(theseAnimals), strjoin(regionsNames, ', ')));
+t = title(sprintf('Probe tracks for %d mice in %s', length(theseAnimals), strjoin(regionsNames, ', ')));
 if blackBackground
     set(t, 'Color', 'w');
 end
@@ -524,7 +548,7 @@ for iMouse = 1:length(theseAnimals)
     % Create a dummy line for legend
     h_legend = plot3(NaN, NaN, NaN, 'color', mouseColors(iMouse, :), 'linewidth', 3);
     legendHandles(end+1) = h_legend;
-    legendEntries{end+1} = strrep(theseAnimals{iMouse},'_', '-');
+    legendEntries{end+1} = sprintf('Mouse %d', iMouse);
 end
 
 % Add separator
@@ -566,6 +590,51 @@ for i = 0:n
     B = B + nchoosek(n, i) * (1 - t).^(n - i) .* t.^i .* control_points(i+1, :)';
 end
 B = B';
+end
+
+function roiPoints = filterPointsToROI(points, regionsNames, st_br, probe_ccf_struct, st)
+% Filter probe points to only those within the regions of interest
+% Uses the existing trajectory_areas data instead of looking up coordinates
+% points: Nx3 array of probe points (already scaled by 2.5)
+% probe_ccf_struct: the probe_ccf structure containing trajectory_areas
+% Returns only the points that fall within any of the ROI structures
+
+roiPoints = [];
+
+if isempty(points) || ~isfield(probe_ccf_struct, 'trajectory_areas') || isempty(probe_ccf_struct.trajectory_areas)
+    return;
+end
+
+% Get ROI structure IDs from Allen CCF structure tree (st)
+% trajectory_areas uses Allen CCF IDs, not brainglobe IDs
+roiStructureIds = [];
+for iRegion = 1:length(regionsNames)
+    struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+    if ~isempty(struct_idx)
+        struct_id = st.id(struct_idx(1));
+        roiStructureIds = [roiStructureIds, struct_id];
+    end
+end
+
+if isempty(roiStructureIds)
+    return;
+end
+
+% Check if the probe passes through any ROI structures at all
+trajectory_areas = probe_ccf_struct.trajectory_areas;
+unique_trajectory_areas = unique(trajectory_areas);
+
+% Check if any trajectory areas match our ROI structures
+roi_matches = intersect(unique_trajectory_areas, roiStructureIds);
+if isempty(roi_matches)
+    % This probe doesn't pass through any ROI structures
+    return;
+end
+
+% For now, return all points if the probe passes through ROI
+% TODO: Could be refined to only return points in ROI coordinates
+roiPoints = points;
+
 end
 
 function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath)

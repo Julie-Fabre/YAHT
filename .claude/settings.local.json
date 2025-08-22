@@ -5,7 +5,8 @@
       "Bash(rg:*)",
       "Bash(cp:*)",
       "Bash(git restore:*)",
-      "Bash(touch:*)"
+      "Bash(touch:*)",
+      "Bash(matlab:*)"
     ],
     "deny": []
   }
