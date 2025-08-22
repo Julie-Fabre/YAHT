@@ -302,50 +302,18 @@ for iType = 1:size(animalsType, 2)
                     end
                     
                     if plotThisProbe
-                        % Determine which points to use based on onlyROIProbes setting
-                        if onlyROIProbes && isfield(probe_ccf(iProbe), 'trajectory_coords') && ~isempty(probe_ccf(iProbe).trajectory_coords) && ...
-                           isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
-                            
-                            % Use trajectory_coords for ROI filtering (these match trajectory_areas)
-                            % Get ROI structure IDs
-                            roiStructureIds = [];
-                            for iRegion = 1:length(regionsNames)
-                                struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
-                                if ~isempty(struct_idx)
-                                    roiStructureIds = [roiStructureIds, st.id(struct_idx(1))];
-                                end
-                            end
-                            
-                            % Filter trajectory_coords to only those in ROI structures
-                            if ~isempty(roiStructureIds)
-                                trajectory_coords = probe_ccf(iProbe).trajectory_coords;
-                                trajectory_areas = probe_ccf(iProbe).trajectory_areas;
-                                
-                                % Find which trajectory points are in ROI
-                                pointsInROI = false(size(trajectory_coords, 1), 1);
-                                for iPoint = 1:length(trajectory_areas)
-                                    if any(roiStructureIds == trajectory_areas(iPoint))
-                                        pointsInROI(iPoint) = true;
-                                    end
-                                end
-                                
-                                % Use filtered trajectory_coords if any ROI points found
-                                if any(pointsInROI)
-                                    % trajectory_coords are in (AP, DV, ML) order
-                                    % but we need (AP, ML, DV) for plotting
-                                    filtered_coords = trajectory_coords(pointsInROI, :);
-                                    % Swap columns 2 and 3 to convert from (AP, DV, ML) to (AP, ML, DV)
-                                    thesePoints = filtered_coords(:, [1, 3, 2]) * 2.5;
-                                else
-                                    continue; % Skip if no ROI points
-                                end
-                            else
-                                continue; % Skip if no ROI structures defined
-                            end
+                        % For ROI filtering, we'll handle it inside the hemisphere loop
+                        % to make it hemisphere-specific
+                        if onlyROIProbes
+                            % Store trajectory data for later filtering
+                            useTrajectoryForROI = isfield(probe_ccf(iProbe), 'trajectory_coords') && ~isempty(probe_ccf(iProbe).trajectory_coords) && ...
+                                                  isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas);
                         else
-                            % Use the original sparse points (standard behavior)
-                            thesePoints = probe_ccf(curr_probe).points * 2.5;
+                            useTrajectoryForROI = false;
                         end
+                        
+                        % Use original points for multi-shank detection (or as fallback)
+                        thesePoints = probe_ccf(curr_probe).points * 2.5;
                         
                         % Check if we still have points after ROI filtering
                         if isempty(thesePoints)
@@ -431,8 +399,49 @@ for iType = 1:size(animalsType, 2)
                             for iHemisphere = 1:length(targetHemispheres)
                                 currentTargetHemisphere = targetHemispheres(iHemisphere);
                                 
-                                % Use the shank points (already filtered if onlyROIProbes=true)
-                                plotPoints = theseShankPoints;
+                                % Apply hemisphere-specific ROI filtering
+                                if useTrajectoryForROI
+                                    % Get ROI structure IDs for this specific hemisphere
+                                    hemisphereROIIds = [];
+                                    for iRegion = 1:length(regionsNames)
+                                        % Only include regions that should appear on this hemisphere
+                                        if regionPlotLoc(iRegion) == currentTargetHemisphere || ...
+                                           (currentTargetHemisphere == 0 && regionPlotLoc(iRegion) ~= 0)
+                                            struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
+                                            if ~isempty(struct_idx)
+                                                hemisphereROIIds = [hemisphereROIIds, st.id(struct_idx(1))];
+                                            end
+                                        end
+                                    end
+                                    
+                                    % Filter trajectory_coords for hemisphere-specific ROIs
+                                    if ~isempty(hemisphereROIIds)
+                                        trajectory_coords = probe_ccf(iProbe).trajectory_coords;
+                                        trajectory_areas = probe_ccf(iProbe).trajectory_areas;
+                                        
+                                        % Find points in hemisphere-specific ROIs
+                                        pointsInHemisphereROI = false(size(trajectory_coords, 1), 1);
+                                        for iPoint = 1:length(trajectory_areas)
+                                            if any(hemisphereROIIds == trajectory_areas(iPoint))
+                                                pointsInHemisphereROI(iPoint) = true;
+                                            end
+                                        end
+                                        
+                                        % Use filtered coords if any found
+                                        if any(pointsInHemisphereROI)
+                                            filtered_coords = trajectory_coords(pointsInHemisphereROI, :);
+                                            % Convert from (AP, DV, ML) to (AP, ML, DV)
+                                            plotPoints = filtered_coords(:, [1, 3, 2]) * 2.5;
+                                        else
+                                            continue; % Skip if no hemisphere-specific ROI points
+                                        end
+                                    else
+                                        continue; % Skip if no ROI regions for this hemisphere
+                                    end
+                                else
+                                    % Use shank points without ROI filtering
+                                    plotPoints = theseShankPoints;
+                                end
                                 
                                 % Mirror points if needed
                                 if currentTargetHemisphere ~= 0
