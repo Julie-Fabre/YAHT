@@ -410,8 +410,18 @@ for iType = 1:size(animalsType, 2)
                                         struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
                                         if ~isempty(struct_idx)
                                             struct_curr = st.id(struct_idx(1));
-                                            if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
-                                                probePassesThroughROI = true;
+                                            if isOldHisto
+                                                % Map old histo IDs to Allen IDs for comparison
+                                                mapped_areas = arrayfun(@mapOldHistoToAllenID, probe_ccf(iProbe).trajectory_areas);
+                                                if any(mapped_areas == struct_curr)
+                                                    probePassesThroughROI = true;
+                                                end
+                                            else
+                                                if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                                                    probePassesThroughROI = true;
+                                                end
+                                            end
+                                            if probePassesThroughROI
                                                 if regionPlotLoc(iRegion) ~= 0
                                                     % Collect this region's hemisphere preference
                                                     targetHemispheres = [targetHemispheres, regionPlotLoc(iRegion)];
@@ -462,8 +472,16 @@ for iType = 1:size(animalsType, 2)
                                         % Find points in hemisphere-specific ROIs
                                         pointsInHemisphereROI = false(size(trajectory_coords, 1), 1);
                                         for iPoint = 1:length(trajectory_areas)
-                                            if any(hemisphereROIIds == trajectory_areas(iPoint))
-                                                pointsInHemisphereROI(iPoint) = true;
+                                            if isOldHisto
+                                                % Map old histo ID to Allen ID for comparison
+                                                mapped_id = mapOldHistoToAllenID(trajectory_areas(iPoint));
+                                                if any(hemisphereROIIds == mapped_id)
+                                                    pointsInHemisphereROI(iPoint) = true;
+                                                end
+                                            else
+                                                if any(hemisphereROIIds == trajectory_areas(iPoint))
+                                                    pointsInHemisphereROI(iPoint) = true;
+                                                end
                                             end
                                         end
                                         
@@ -680,7 +698,20 @@ for iType = 1:size(animalsType, 2)
                             struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
                             if ~isempty(struct_idx)
                                 struct_curr = st.id(struct_idx(1));
-                                if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                                probeInRegion = false;
+                                if isOldHisto
+                                    % Map old histo IDs to Allen IDs for comparison
+                                    mapped_areas = arrayfun(@mapOldHistoToAllenID, probe_ccf(iProbe).trajectory_areas);
+                                    if any(mapped_areas == struct_curr)
+                                        probeInRegion = true;
+                                    end
+                                else
+                                    if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
+                                        probeInRegion = true;
+                                    end
+                                end
+                                
+                                if probeInRegion
                                     % Count probes per region
                                     if strcmpi(regionsNames{iRegion}, 'CP') || strcmpi(regionsNames{iRegion}, 'STR')
                                         n_str = n_str+1;
@@ -758,6 +789,32 @@ end
 %% Create brain regions per probe plot
 if showRegionPlot
     plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath, st);
+end
+end
+
+function id_mapped = mapOldHistoToAllenID(old_id)
+% Map old histology IDs to Allen CCF IDs
+% Known mappings:
+%   CP: 574 -> 672
+%   GPe: 611 -> 1022
+%   SNr: 823 -> 381
+
+persistent old_to_allen_map;
+if isempty(old_to_allen_map)
+    % Create mapping table
+    old_to_allen_map = containers.Map('KeyType', 'int32', 'ValueType', 'int32');
+    % Add known mappings
+    old_to_allen_map(574) = 672;   % CP
+    old_to_allen_map(611) = 1022;  % GPe
+    old_to_allen_map(823) = 381;   % SNr
+    % Add more mappings as needed
+end
+
+if isKey(old_to_allen_map, int32(old_id))
+    id_mapped = double(old_to_allen_map(int32(old_id)));
+else
+    % If no mapping found, return original ID as double
+    id_mapped = double(old_id);
 end
 end
 
@@ -950,8 +1007,25 @@ for iProbe = 1:totalProbes
         trajectory_area_labels = cell(length(trajectory_area_centers), 1);
         for iArea = 1:length(trajectory_area_centers)
             area_id = trajectory_areas(round(trajectory_area_centers(iArea)));
+            
+            % Check if this is old histology format
+            isOldHistoAnimal = false;
+            currentAnimal = animal_name;
+            if (startsWith(currentAnimal, 'AP') || ...
+                (startsWith(currentAnimal, 'JF') && ...
+                 str2double(currentAnimal(3:end)) <= 44))
+                isOldHistoAnimal = true;
+            end
+            
+            if isOldHistoAnimal
+                % Map old histo ID to Allen ID for label lookup
+                area_id_for_lookup = mapOldHistoToAllenID(area_id);
+            else
+                area_id_for_lookup = area_id;
+            end
+            
             % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
-            matching_idx = find(st.id == area_id);
+            matching_idx = find(st.id == area_id_for_lookup);
             if ~isempty(matching_idx)
                 trajectory_area_labels{iArea} = st.acronym{matching_idx(1)};
             else
@@ -960,7 +1034,13 @@ for iProbe = 1:totalProbes
         end
         
         % Plot trajectory areas
-        image(trajectory_areas);
+        if isOldHistoAnimal
+            % Map old histo IDs to Allen IDs for colormap
+            mapped_trajectory_areas = arrayfun(@mapOldHistoToAllenID, trajectory_areas);
+            image(mapped_trajectory_areas);
+        else
+            image(trajectory_areas);
+        end
         colormap(curr_axes, cmap);
         caxis([1, size(cmap, 1)]);
         set(curr_axes, 'YTick', trajectory_area_centers, 'YTickLabels', trajectory_area_labels);
