@@ -6,7 +6,7 @@ function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBr
 %   regionsOfInterest - Cell array of region names to highlight (e.g., {'CP', 'GPe', 'SNr'})
 %                       If empty or not provided, defaults to {'CP', 'GPe', 'GPi', 'STN', 'SNr'}
 %   patchBrain - Boolean to use surface patch (1) or wire grid (0) for brain. Default: 0
-%   onlyROIProbes - Boolean to plot only probes that pass through ROIs (1) or all probes (0). Default: 0
+%   onlyROIProbes - Boolean to plot only probe sections within ROIs (1) or entire probe tracks (0). Default: 0
 %   showPoints - Boolean to show probe points (1) or just fitted lines (0). Default: 1
 %   useBezierFit - Boolean to use Bezier curve fit (1) or linear fit (0). Default: 1
 %   showRegionPlot - Boolean to show brain regions per probe plot (1) or not (0). Default: 1
@@ -18,10 +18,10 @@ function ya_plotAllProbeTracksInROIs_JF(theseAnimals, regionsOfInterest, patchBr
 %                    Default: empty (plots probes in their actual positions)
 %
 % Example:
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1, 1, 1, 1); % All features with Allen colors
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 0, {[1 0 0], [0 1 0]}); % Custom colors
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 1, 'allen', 1, 2); % Black background, thick lines
-%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 1, 'allen', 0, 0.5, [-1, 1]); % CP on left, SNr on right
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1, 1, 1, 1); % Plot only ROI sections with Allen colors
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 1, 1, 1); % Plot full probe tracks with Allen colors
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 0, 0, 1, 0, {[1 0 0], [0 1 0]}); % Full tracks, custom colors
+%   ya_plotAllProbeTracksInROIs_JF({'JF058', 'JF059'}, {'CP', 'SNr'}, 0, 1, 0, 1, 1, 'allen', 1, 2); % ROI sections only, black bg
 
 % Set defaults
 if nargin < 2 || isempty(regionsOfInterest)
@@ -259,9 +259,38 @@ for iType = 1:size(animalsType, 2)
     
     for iAnimal = 1:size(theseAnimals, 2)
             %iAnimal = iAnimal + 1;
-            % Load probe data
-            outputDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal} '/brainReg/'];
-            probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+            % Check if this is one of the special format mice
+            isOldHisto = false;
+            currentAnimal = theseAnimals{iAnimal};
+            if (startsWith(currentAnimal, 'AP') || ...
+                (startsWith(currentAnimal, 'JF') && ...
+                 str2double(currentAnimal(3:end)) <= 44))
+                isOldHisto = true;
+            end
+            
+            % Load probe data - check both possible locations
+            if ismac
+                baseDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal}];
+            else
+                baseDir = ['/home/jf5479/Dropbox/Histology/' theseAnimals{iAnimal}];
+            end
+            
+            % Try different paths based on mouse type
+            if isOldHisto
+                % First try processed/slices path for special mice
+                outputDir = [baseDir '/processed/slices/'];
+                probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+                
+                % If not found, try the standard brainReg path
+                if ~exist(probe_ccf_location, 'file')
+                    outputDir = [baseDir '/brainReg/'];
+                    probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+                end
+            else
+                % Standard mice use brainReg path
+                outputDir = [baseDir '/brainReg/'];
+                probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+            end
             
             % Check if file exists
             if ~exist(probe_ccf_location, 'file')
@@ -270,6 +299,35 @@ for iType = 1:size(animalsType, 2)
             end
             
             load(probe_ccf_location)
+            
+            % Handle potential format differences for special mice
+            if isOldHisto
+                % Check if data is in a different format and convert if needed
+                if exist('probe_ccf', 'var')
+                    % Standard format, no conversion needed
+                elseif exist('probe_ccf_data', 'var')
+                    % Alternative format - rename variable
+                    probe_ccf = probe_ccf_data;
+                elseif exist('probeData', 'var')
+                    % Another alternative format
+                    probe_ccf = probeData;
+                else
+                    % Try to find any probe-related variable
+                    vars = whos('-file', probe_ccf_location);
+                    probeVarIdx = find(contains({vars.name}, 'probe', 'IgnoreCase', true));
+                    if ~isempty(probeVarIdx)
+                        % Load the first probe-related variable
+                        load(probe_ccf_location, vars(probeVarIdx(1)).name);
+                        eval(['probe_ccf = ' vars(probeVarIdx(1)).name ';']);
+                    else
+                        warning('No probe data found in %s for %s', probe_ccf_location, theseAnimals{iAnimal});
+                        continue;
+                    end
+                end
+                
+                % For old histology format, points are already in the correct format
+                % No conversion needed
+            end
 
             % Get color for this animal (same for all probes from this mouse)
             animalColor = mouseColors(iAnimal, :);
@@ -280,40 +338,21 @@ for iType = 1:size(animalsType, 2)
                 % Check if probe has points
                 if isfield(probe_ccf(iProbe), 'points') && ~isempty(probe_ccf(iProbe).points)
                     
-                    % Check if we should plot this probe based on ROI filtering
+                    % Always plot all probes, but control which sections to show
                     plotThisProbe = true;
-                    if onlyROIProbes
-                        plotThisProbe = false;
-                        % Only plot if probe passes through any of the ROIs
-                        if isfield(probe_ccf(iProbe), 'trajectory_areas')
-                            for iRegion = 1:length(regionsNames)
-                                % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
-                                struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
-                                if ~isempty(struct_idx)
-                                    struct_curr = st.id(struct_idx(1));
-                                    if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
-                                        plotThisProbe = true;
-                                        break;
-                                    end
-                                end
-                                end
-                            end
-                        end
-                    end
-                    
-                    if plotThisProbe
-                        % For ROI filtering, we'll handle it inside the hemisphere loop
-                        % to make it hemisphere-specific
-                        if onlyROIProbes
-                            % Store trajectory data for later filtering
-                            useTrajectoryForROI = isfield(probe_ccf(iProbe), 'trajectory_coords') && ~isempty(probe_ccf(iProbe).trajectory_coords) && ...
-                                                  isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas);
-                        else
-                            useTrajectoryForROI = false;
-                        end
+                        % Store trajectory data for ROI-based filtering
+                        useTrajectoryForROI = onlyROIProbes && ...
+                                            isfield(probe_ccf(iProbe), 'trajectory_coords') && ~isempty(probe_ccf(iProbe).trajectory_coords) && ...
+                                            isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas);
                         
                         % Use original points for multi-shank detection (or as fallback)
-                        thesePoints = probe_ccf(curr_probe).points * 2.5;
+                        if isOldHisto
+                            % Old histology format: points are already scaled, no need to multiply by 2.5
+                            thesePoints = probe_ccf(curr_probe).points;
+                        else
+                            % Standard format: scale points
+                            thesePoints = probe_ccf(curr_probe).points * 2.5;
+                        end
                         
                         % Check if we still have points after ROI filtering
                         if isempty(thesePoints)
@@ -321,10 +360,13 @@ for iType = 1:size(animalsType, 2)
                         end
                         
                         % Detect multi-shank probe by looking for gaps in ML coordinates
-                        % probe_ccf.points need to be rearranged for plotting
-                        % Plot3 expects (AP, ML, DV) based on the axis limits
-                        % Sort points by ML coordinate (2nd column) to find gaps
-                        [sorted_ml, sort_idx] = sort(thesePoints(:, 2));
+                        if isOldHisto
+                            % Old histology: ML is 3rd column
+                            [sorted_ml, sort_idx] = sort(thesePoints(:, 3));
+                        else
+                            % Standard format: ML is 2nd column
+                            [sorted_ml, sort_idx] = sort(thesePoints(:, 2));
+                        end
                         ml_diff = diff(sorted_ml);
                         
                         % Find large gaps (> 200um scaled) indicating separate shanks
@@ -382,10 +424,8 @@ for iType = 1:size(animalsType, 2)
                                 % Get unique hemisphere preferences
                                 targetHemispheres = unique(targetHemispheres);
                                 
-                                % If onlyROIProbes is true and probe doesn't pass through ROI, skip it
-                                if onlyROIProbes && ~probePassesThroughROI
-                                    continue; % Skip this shank
-                                end
+                                % Note: We no longer skip probes even if they don't pass through ROIs
+                                % The ROI filtering is handled in the trajectory coordinate filtering below
                                 
                                 % If no hemisphere preferences found, use default
                                 if isempty(targetHemispheres)
@@ -430,8 +470,13 @@ for iType = 1:size(animalsType, 2)
                                         % Use filtered coords if any found
                                         if any(pointsInHemisphereROI)
                                             filtered_coords = trajectory_coords(pointsInHemisphereROI, :);
-                                            % Convert from (AP, DV, ML) to (AP, ML, DV)
-                                            plotPoints = filtered_coords(:, [1, 3, 2]) * 2.5;
+                                            if isOldHisto
+                                                % Old histology: coords are already in correct format and scaled
+                                                plotPoints = filtered_coords;
+                                            else
+                                                % Standard format: convert from (AP, DV, ML) to (AP, ML, DV) and scale
+                                                plotPoints = filtered_coords(:, [1, 3, 2]) * 2.5;
+                                            end
                                         else
                                             continue; % Skip if no hemisphere-specific ROI points
                                         end
@@ -453,8 +498,14 @@ for iType = 1:size(animalsType, 2)
                                 % Use the same midline as Witten lab code (570 after scaling)
                                 ml_midline_scaled = 570; % This is the empirical midline value
                                 
-                                % Debug output - ML is 2nd coordinate
-                                mean_ml = mean(plotPoints(:, 2));
+                                % Get ML coordinate based on format
+                                if isOldHisto
+                                    % Old histology: ML is 3rd coordinate
+                                    mean_ml = mean(plotPoints(:, 3));
+                                else
+                                    % Standard format: ML is 2nd coordinate
+                                    mean_ml = mean(plotPoints(:, 2));
+                                end
                                 is_left = mean_ml < ml_midline_scaled;
                                 if is_left
                                     current_side = 'left';
@@ -462,18 +513,36 @@ for iType = 1:size(animalsType, 2)
                                     current_side = 'right';
                                 end
                                 
-                                % Mirror ML coordinate (2nd coordinate) using correct formula
-                                if currentTargetHemisphere == -1
-                                    % Want probe on left hemisphere
-                                    if ~is_left
-                                        % Probe is on right, mirror to left
-                                        plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                % Mirror ML coordinate using correct formula
+                                if isOldHisto
+                                    % Old histology: ML is 3rd coordinate
+                                    if currentTargetHemisphere == -1
+                                        % Want probe on left hemisphere
+                                        if ~is_left
+                                            % Probe is on right, mirror to left
+                                            plotPoints(:, 3) = 2*ml_midline_scaled - plotPoints(:, 3);
+                                        end
+                                    elseif currentTargetHemisphere == 1
+                                        % Want probe on right hemisphere  
+                                        if is_left
+                                            % Probe is on left, mirror to right
+                                            plotPoints(:, 3) = 2*ml_midline_scaled - plotPoints(:, 3);
+                                        end
                                     end
-                                elseif currentTargetHemisphere == 1
-                                    % Want probe on right hemisphere  
-                                    if is_left
-                                        % Probe is on left, mirror to right
-                                        plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                else
+                                    % Standard format: ML is 2nd coordinate
+                                    if currentTargetHemisphere == -1
+                                        % Want probe on left hemisphere
+                                        if ~is_left
+                                            % Probe is on right, mirror to left
+                                            plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                        end
+                                    elseif currentTargetHemisphere == 1
+                                        % Want probe on right hemisphere  
+                                        if is_left
+                                            % Probe is on left, mirror to right
+                                            plotPoints(:, 2) = 2*ml_midline_scaled - plotPoints(:, 2);
+                                        end
                                     end
                                 end
                                 
@@ -481,17 +550,32 @@ for iType = 1:size(animalsType, 2)
                             
                             % Plot probe points if requested
                             if showPoints
-                                plot3(plotPoints(:, 1), ...
-                                    plotPoints(:, 2), ...
-                                    plotPoints(:, 3), ...
-                                    '.', 'color', animalColor, 'MarkerSize', 20);
+                                if isOldHisto
+                                    % Old histology format: plot as (AP, ML, DV) which is (:,1), (:,3), (:,2)
+                                    plot3(plotPoints(:, 1), ...
+                                        plotPoints(:, 3), ...
+                                        plotPoints(:, 2), ...
+                                        '.', 'color', animalColor, 'MarkerSize', 20);
+                                else
+                                    % Standard format: plot as (AP, ML, DV)
+                                    plot3(plotPoints(:, 1), ...
+                                        plotPoints(:, 2), ...
+                                        plotPoints(:, 3), ...
+                                        '.', 'color', animalColor, 'MarkerSize', 20);
+                                end
                             end
                             
                             % Fit curve through points
                             if useBezierFit && size(plotPoints, 1) >= 3
                                 % Use Bezier curve fitting
-                                % Sort points by one dimension (e.g., DV) to get proper curve order
-                                [~, sort_idx] = sort(plotPoints(:, 3)); % Sort by DV (z-axis)
+                                % Sort points by DV to get proper curve order
+                                if isOldHisto
+                                    % Old histology: DV is 2nd coordinate
+                                    [~, sort_idx] = sort(plotPoints(:, 2));
+                                else
+                                    % Standard format: DV is 3rd coordinate
+                                    [~, sort_idx] = sort(plotPoints(:, 3));
+                                end
                                 sorted_points = plotPoints(sort_idx, :);
                                 
                                 % Create Bezier curve
@@ -501,21 +585,41 @@ for iType = 1:size(animalsType, 2)
                                 % Mirror bezier curve if needed (in case it extends beyond probe points)
                                 if currentTargetHemisphere ~= 0
                                     ml_midline_scaled_bezier = 570; % Same empirical midline
-                                    mean_ml_bezier = mean(bezier_curve_points(:, 2)); % ML is 2nd coordinate
-                                    is_left_bezier = mean_ml_bezier < ml_midline_scaled_bezier;
-                                    
-                                    if currentTargetHemisphere == -1 && ~is_left_bezier
-                                        % Want on left but is on right
-                                        bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
-                                    elseif currentTargetHemisphere == 1 && is_left_bezier
-                                        % Want on right but is on left
-                                        bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
+                                    if isOldHisto
+                                        % Old histology: ML is 3rd coordinate
+                                        mean_ml_bezier = mean(bezier_curve_points(:, 3));
+                                        is_left_bezier = mean_ml_bezier < ml_midline_scaled_bezier;
+                                        
+                                        if currentTargetHemisphere == -1 && ~is_left_bezier
+                                            % Want on left but is on right
+                                            bezier_curve_points(:, 3) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 3);
+                                        elseif currentTargetHemisphere == 1 && is_left_bezier
+                                            % Want on right but is on left
+                                            bezier_curve_points(:, 3) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 3);
+                                        end
+                                    else
+                                        % Standard format: ML is 2nd coordinate
+                                        mean_ml_bezier = mean(bezier_curve_points(:, 2));
+                                        is_left_bezier = mean_ml_bezier < ml_midline_scaled_bezier;
+                                        
+                                        if currentTargetHemisphere == -1 && ~is_left_bezier
+                                            % Want on left but is on right
+                                            bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
+                                        elseif currentTargetHemisphere == 1 && is_left_bezier
+                                            % Want on right but is on left
+                                            bezier_curve_points(:, 2) = 2*ml_midline_scaled_bezier - bezier_curve_points(:, 2);
+                                        end
                                     end
                                 end
                                 
                                 % Plot Bezier curve
-                                plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
-                                    'color', animalColor, 'linewidth', 2);
+                                if isOldHisto
+                                    plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 3), bezier_curve_points(:, 2), ...
+                                        'color', animalColor, 'linewidth', 2);
+                                else
+                                    plot3(bezier_curve_points(:, 1), bezier_curve_points(:, 2), bezier_curve_points(:, 3), ...
+                                        'color', animalColor, 'linewidth', 2);
+                                end
                             else
                                 % Use linear fit but only within the ROI segment bounds
                                 if size(plotPoints, 1) >= 2
@@ -525,8 +629,16 @@ for iType = 1:size(animalsType, 2)
                                     histology_probe_direction = V(:, 1);
                                     
                                     % Make sure the direction goes down in DV - flip if it's going up
-                                    if histology_probe_direction(3) < 0
-                                        histology_probe_direction = -histology_probe_direction;
+                                    if isOldHisto
+                                        % For old histology, DV is the 2nd component
+                                        if histology_probe_direction(2) < 0
+                                            histology_probe_direction = -histology_probe_direction;
+                                        end
+                                    else
+                                        % For standard format, DV is the 3rd component
+                                        if histology_probe_direction(3) < 0
+                                            histology_probe_direction = -histology_probe_direction;
+                                        end
                                     end
 
                                     % Limit line to the extent of the ROI points instead of extending infinitely
@@ -539,12 +651,22 @@ for iType = 1:size(animalsType, 2)
                                     probe_fit_line = bsxfun(@plus, bsxfun(@times, line_eval', histology_probe_direction'), r0);
                                     
                                     % Plot linear fit
-                                    plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
-                                        'color', animalColor, 'linewidth', 2);
+                                    if isOldHisto
+                                        plot3(probe_fit_line(:, 1), probe_fit_line(:, 3), probe_fit_line(:, 2), ...
+                                            'color', animalColor, 'linewidth', 2);
+                                    else
+                                        plot3(probe_fit_line(:, 1), probe_fit_line(:, 2), probe_fit_line(:, 3), ...
+                                            'color', animalColor, 'linewidth', 2);
+                                    end
                                 else
                                     % Just plot the points if less than 2 points
-                                    plot3(plotPoints(:, 1), plotPoints(:, 2), plotPoints(:, 3), ...
-                                        'color', animalColor, 'linewidth', 2);
+                                    if isOldHisto
+                                        plot3(plotPoints(:, 1), plotPoints(:, 3), plotPoints(:, 2), ...
+                                            'color', animalColor, 'linewidth', 2);
+                                    else
+                                        plot3(plotPoints(:, 1), plotPoints(:, 2), plotPoints(:, 3), ...
+                                            'color', animalColor, 'linewidth', 2);
+                                    end
                                 end
                             end
                             end % end hemisphere loop
@@ -707,7 +829,7 @@ end
 
 end
 
-function plotProbeRegions(theseAnimals, mouseColors, onlyROIProbes, regionsNames, st_br, allenAtlasPath, st)
+function plotProbeRegions(theseAnimals, mouseColors, ~, regionsNames, st_br, allenAtlasPath, st)
 % Plot brain regions that each probe passes through
 % Load Allen CCF colormap
 cmap_filename = [allenAtlasPath, filesep, 'allen_ccf_colormap_2017.mat'];
@@ -723,9 +845,39 @@ totalProbes = 0;
 allProbeData = {};
 
 for iAnimal = 1:length(theseAnimals)
-    % Load probe data using the same path as main function
-    outputDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal} '/brainReg/'];
-    probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+    % Check if this is one of the special format mice
+    isSpecialMouse = false;
+    currentAnimal = theseAnimals{iAnimal};
+    if (startsWith(currentAnimal, 'AP082') || startsWith(currentAnimal, 'AP083') || ...
+        startsWith(currentAnimal, 'AP084') || ...
+        (startsWith(currentAnimal, 'JF') && length(currentAnimal) >= 5 && ...
+         str2double(currentAnimal(3:end)) >= 1 && str2double(currentAnimal(3:end)) <= 44))
+        isSpecialMouse = true;
+    end
+    
+    % Load probe data - check both possible locations
+    if ismac
+        baseDir = ['/Users/jf5479/Dropbox/Histology/' theseAnimals{iAnimal}];
+    else
+        baseDir = ['/home/jf5479/Dropbox/Histology/' theseAnimals{iAnimal}];
+    end
+    
+    % Try different paths based on mouse type
+    if isSpecialMouse
+        % First try processed/slices path for special mice
+        outputDir = [baseDir '/processed/slices/'];
+        probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+        
+        % If not found, try the standard brainReg path
+        if ~exist(probe_ccf_location, 'file')
+            outputDir = [baseDir '/brainReg/'];
+            probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+        end
+    else
+        % Standard mice use brainReg path
+        outputDir = [baseDir '/brainReg/'];
+        probe_ccf_location = [outputDir, 'probe_ccf.mat'];
+    end
     
     if ~exist(probe_ccf_location, 'file')
         continue;
@@ -733,27 +885,35 @@ for iAnimal = 1:length(theseAnimals)
     
     load(probe_ccf_location, 'probe_ccf');
     
-    for iProbe = 1:length(probe_ccf)
-        % Check if we should include this probe based on ROI filtering
-        includeThisProbe = true;
-        if onlyROIProbes
-            includeThisProbe = false;
-            if isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
-                for iRegion = 1:length(regionsNames)
-                    % Use Allen CCF structure tree since trajectory_areas uses Allen IDs
-                    struct_idx = find(strcmp(st.acronym, regionsNames{iRegion}));
-                    if ~isempty(struct_idx)
-                        struct_curr = st.id(struct_idx(1));
-                        if any(probe_ccf(iProbe).trajectory_areas == struct_curr)
-                            includeThisProbe = true;
-                            break;
-                        end
-                    end
-                end
+    % Handle potential format differences for special mice
+    if isSpecialMouse
+        % Check if data is in a different format and convert if needed
+        if exist('probe_ccf', 'var')
+            % Standard format, no conversion needed
+        elseif exist('probe_ccf_data', 'var')
+            % Alternative format - rename variable
+            probe_ccf = probe_ccf_data;
+        elseif exist('probeData', 'var')
+            % Another alternative format
+            probe_ccf = probeData;
+        else
+            % Try to find any probe-related variable
+            vars = whos('-file', probe_ccf_location);
+            probeVarIdx = find(contains({vars.name}, 'probe', 'IgnoreCase', true));
+            if ~isempty(probeVarIdx)
+                % Load the first probe-related variable
+                load(probe_ccf_location, vars(probeVarIdx(1)).name);
+                eval(['probe_ccf = ' vars(probeVarIdx(1)).name ';']);
+            else
+                warning('No probe data found in %s for %s', probe_ccf_location, theseAnimals{iAnimal});
+                continue;
             end
         end
-        
-        if includeThisProbe && isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
+    end
+    
+    for iProbe = 1:length(probe_ccf)
+        % Include all probes that have trajectory data
+        if isfield(probe_ccf(iProbe), 'trajectory_areas') && ~isempty(probe_ccf(iProbe).trajectory_areas)
             totalProbes = totalProbes + 1;
             allProbeData{totalProbes} = struct(...
                 'trajectory_areas', probe_ccf(iProbe).trajectory_areas, ...
