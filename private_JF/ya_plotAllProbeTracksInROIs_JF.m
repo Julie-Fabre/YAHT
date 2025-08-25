@@ -209,6 +209,9 @@ for iType = 1:size(animalsType, 2)
     end % end region plotting loop
     
     % Plot probe tracks for all animals
+    % Track which animals have ROI probes when onlyROIProbes is true
+    animalsWithROIProbes = false(length(theseAnimals), 1);
+    
     % Generate colors like MATLAB's lines() but with more variety
     numColors = max(23, length(theseAnimals));
     
@@ -422,6 +425,10 @@ for iType = 1:size(animalsType, 2)
                                                 end
                                             end
                                             if probePassesThroughROI
+                                                % Mark this animal as having ROI probes
+                                                if onlyROIProbes
+                                                    animalsWithROIProbes(iAnimal) = true;
+                                                end
                                                 if regionPlotLoc(iRegion) ~= 0
                                                     % Collect this region's hemisphere preference
                                                     targetHemispheres = [targetHemispheres, regionPlotLoc(iRegion)];
@@ -495,6 +502,10 @@ for iType = 1:size(animalsType, 2)
                                                 % Standard format: convert from (AP, DV, ML) to (AP, ML, DV) and scale
                                                 plotPoints = filtered_coords(:, [1, 3, 2]) * 2.5;
                                             end
+                                            % Mark this animal as having ROI probes
+                                            if onlyROIProbes
+                                                animalsWithROIProbes(iAnimal) = true;
+                                            end
                                         else
                                             continue; % Skip if no hemisphere-specific ROI points
                                         end
@@ -504,6 +515,10 @@ for iType = 1:size(animalsType, 2)
                                 else
                                     % Use shank points without ROI filtering
                                     plotPoints = theseShankPoints;
+                                    % When not filtering ROIs, all animals are included
+                                    if ~onlyROIProbes
+                                        animalsWithROIProbes(iAnimal) = true;
+                                    end
                                 end
                                 
                                 % Mirror points if needed
@@ -759,16 +774,21 @@ legendHandles = [];
 
 % Mouse legend entries
 for iMouse = 1:length(theseAnimals)
-    % Create a dummy line for legend
-    h_legend = plot3(NaN, NaN, NaN, 'color', mouseColors(iMouse, :), 'linewidth', 3);
-    legendHandles(end+1) = h_legend;
-    legendEntries{end+1} = sprintf('Mouse %d', iMouse);
+    % Only include mice with ROI probes when onlyROIProbes is true
+    if ~onlyROIProbes || animalsWithROIProbes(iMouse)
+        % Create a dummy line for legend
+        h_legend = plot3(NaN, NaN, NaN, 'color', mouseColors(iMouse, :), 'linewidth', 3);
+        legendHandles(end+1) = h_legend;
+        legendEntries{end+1} = sprintf('Mouse %d', iMouse);
+    end
 end
 
-% Add separator
-h_legend = plot3(NaN, NaN, NaN, 'color', 'none');
-legendHandles(end+1) = h_legend;
-legendEntries{end+1} = '--- Regions ---';
+% Add separator only if we have mouse entries
+if ~isempty(legendHandles)
+    h_legend = plot3(NaN, NaN, NaN, 'color', 'none');
+    legendHandles(end+1) = h_legend;
+    legendEntries{end+1} = '--- Regions ---';
+end
 
 % Region legend entries
 for iRegion = 1:length(regionsNames)
